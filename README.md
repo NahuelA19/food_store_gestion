@@ -95,19 +95,60 @@ Todo cambio al sistema sigue este ciclo:
 /opsx:archive   →  sincronizar specs y cerrar el change
 ```
 
-### Orden de implementación
+### Orden de implementación (23 changes, 2-3 meses)
 
+**FASE 0 — Cimientos** (6-8 días):
 ```
-us-000-setup               ← infraestructura base (Sprint 0)
-us-001-auth                ← JWT · RBAC · refresh tokens
-us-002-categorias          ← catálogo jerárquico
-us-003-productos           ← CRUD · stock · ingredientes
-us-004-carrito             ← estado client-side con Zustand
-us-005-pedidos             ← UoW · FSM · audit trail
-us-006-pagos-mercadopago   ← checkout · webhooks IPN
-us-007-admin               ← panel · métricas
-us-008-direcciones         ← direcciones de entrega
+1. infrastructure-setup          ← monorepo, FastAPI, React, patrones
+2. database-domain-models        ← ERD, 18 entidades, Alembic
+3. global-error-handling         ← RFC 7807, validaciones, rate limiting
 ```
+
+**FASE 1 — Autenticación** (7 días, secuencial):
+```
+4. authentication-system         ← JWT, refresh tokens
+5. rbac-authorization            ← roles, guards, ownership
+6. user-management               ← CRUD usuarios
+```
+
+**FASE 2 — Catálogo** (5-6 días, parallelizable):
+```
+7. categories-hierarchy          ← CTE, validación ciclos
+8. ingredients-allergen-system   ← ingredientes, alérgenos
+9. products-catalog              ← CRUD, M2M, stock, snapshots
+```
+
+**FASE 3 — Cliente** (5-6 días, parallelizable):
+```
+10. client-addresses             ← CRUD direcciones
+11. shopping-cart-ui             ← Zustand + localStorage
+12. navigation-layout            ← header/sidebar, token refresh
+```
+
+**FASE 4 — Pedidos (CRÍTICA, 12-14 días, secuencial):**
+```
+13. order-creation-uow-atomic    ← UoW, snapshots, SELECT FOR UPDATE [PIVOT]
+14. payment-mercadopago          ← Orders API, webhooks, idempotencia
+15. order-fsm-state-machine      ← 6 estados, transiciones, historial
+16. order-visualization          ← listado, detalle, tracking
+17. payment-ui-feedback          ← modal confirmación, toasts
+```
+
+**FASE 5 — Admin** (5 días, parallelizable):
+```
+18. admin-dashboard-metrics      ← KPIs, gráficos
+19. admin-catalog-management     ← CRUD avanzado
+20. system-configuration         ← key-value store, auditoría
+```
+
+**FASE 6 — Refinamiento** (5-8 días):
+```
+21. testing-coverage-pytest      ← > 60% coverage [Bonus +10 pts]
+22. deployment-railway           ← URL pública [Bonus +10 pts]
+23. documentation                ← README, Swagger, arquitectura
+```
+
+**Punto crítico**: el change #13 (`order-creation-uow-atomic`) es el pivot arquitectónico — todo después depende de él.
 
 ---
 

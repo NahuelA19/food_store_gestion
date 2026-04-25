@@ -72,16 +72,48 @@ Las specs se sincronizan, el change se mueve al historial y el próximo change y
 
 Los changes **no están predefinidos** — son una decisión de diseño que tomás vos basándote en los documentos del sistema.
 
-El primer paso es pedirle al agente que analice los tres documentos de `docs/` y proponga el mapa completo de changes: cuáles son, en qué orden deben implementarse y por qué.
+El agente ha analizado los tres documentos de `docs/` y propuesto el mapa completo de 23 changes organizados en 6 fases:
 
-```
-Analizá los documentos en docs/ y proponé el mapa completo 
-de changes para desarrollar Food Store. Para cada change indicá:
-- nombre sugerido
-- qué funcionalidad cubre
-- qué historias de usuario implementa
-- de qué otros changes depende y por qué
-```
+### Mapa de Changes — Food Store
+
+**FASE 0 — Cimientos** (6-8 días, parallelizable):
+1. **`infrastructure-setup`** → Monorepo, FastAPI, React, patrones base (US-000, US-000a-e)
+2. **`database-domain-models`** → ERD completa, 18 entidades, Alembic migrations (estructura datos)
+3. **`global-error-handling-validation`** → RFC 7807, Pydantic validators, rate limiting (US-068, US-074)
+
+**FASE 1 — Autenticación** (7 días, secuencial):
+4. **`authentication-system`** → Login, JWT, refresh tokens, rate limiting (US-001, US-002, US-003, US-004, US-073)
+5. **`rbac-authorization`** → Roles CRUD, guards frontend, ownership checks (US-005, US-006, US-075, US-076)
+6. **`user-management`** → CRUD usuarios, asignación roles, soft delete (US-053, US-054, US-055, US-061, US-062, US-063)
+
+**FASE 2 — Catálogo** (5-6 días, parallelizable: categories + ingredients):
+7. **`categories-hierarchy`** → CTE recursivo, validación ciclos, árbol anidado (US-007 a US-010)
+8. **`ingredients-allergen-system`** → CRUD ingredientes, marcado alérgenos (US-011 a US-014)
+9. **`products-catalog`** → CRUD, M2M categorías/ingredientes, stock, snapshots (US-015 a US-023)
+
+**FASE 3 — Cliente** (5-6 días, parallelizable: cart + navigation):
+10. **`client-addresses`** → CRUD direcciones, dirección principal única (US-024 a US-028)
+11. **`shopping-cart-ui`** → 100% client-side Zustand + localStorage, personalización (US-029 a US-034)
+12. **`navigation-layout`** → Header/Sidebar, token refresh transparente, guards (US-075, US-076, US-066, US-067)
+
+**FASE 4 — Pedidos (CRÍTICA, 12-14 días, secuencial):**
+13. **`order-creation-uow-atomic`** → Transacción atómica, snapshots, SELECT FOR UPDATE (US-035 a US-038, US-069, US-070) **[PIVOT]**
+14. **`payment-mercadopago-integration`** → Orders API, webhooks IPN, idempotencia (US-045 a US-048)
+15. **`order-fsm-state-machine`** → 6 estados, transiciones validadas, historial append-only (US-039 a US-044)
+16. **`order-visualization`** → Listado, detalle, tracking, timeline de estados (US-049 a US-052)
+17. **`payment-ui-feedback`** → Modal confirmación, return URLs MercadoPago, toasts (US-071, US-072)
+
+**FASE 5 — Admin** (5 días, parallelizable):
+18. **`admin-dashboard-metrics`** → KPIs, gráficos ventas, top productos, Recharts (US-056 a US-059)
+19. **`admin-catalog-management`** → CRUD avanzado con permisos, bulk stock (US-064, US-065)
+20. **`system-configuration`** → Key-value store, configuración global, auditoría (US-060)
+
+**FASE 6 — Refinamiento** (5-8 días):
+21. **`testing-coverage-pytest`** → Tests > 60% cobertura, fixtures (Bonus +10 pts)
+22. **`deployment-railway-or-render`** → URL pública, secrets management (Bonus +10 pts)
+23. **`documentation-comprehensive`** → README, Swagger /docs, ReDoc, arquitectura
+
+**Estimación total**: 45-57 días (2-3 meses con 1-2 devs) · 30-40 días (~6-8 semanas con 3+ devs en paralelo)
 
 Revisás la propuesta, la discutís, la ajustás si hace falta — y recién entonces empezás con el primer `/opsx:propose`.
 
