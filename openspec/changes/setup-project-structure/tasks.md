@@ -88,7 +88,7 @@
 
 - [x] 10.1 Verify all npm scripts work: `npm run dev`, `npm run build`, `npm run test`, `npm run lint`
 - [x] 10.2 Verify pre-commit hooks work by making a test commit
-- [ ] 10.3 Verify GitHub Actions workflows trigger on PR creation
-- [ ] 10.4 Test that linting/formatting workflow fails with violations (confirm it catches issues)
+- [x] 10.3 Verify GitHub Actions workflows trigger on PR creation
+- [x] 10.4 Test that linting/formatting workflow fails with violations (confirm it catches issues)
 - [x] 10.5 Create `GETTING-STARTED.md` with troubleshooting section
 - [x] 10.6 Document environment variable requirements in README
