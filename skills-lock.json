@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "fastapi-python": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "computedHash": "1d7346210a6690d2faeb089f074c0dc20a7056c2c83ac1062a11c1b73158be72"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "computedHash": "9e1c8b3103f92fa8092568a44fe64858de7c5c9dc65ce4bea8f168080e889cfd"
+    },
+    "postgresql-database-engineering": {
+      "source": "manutej/luxor-claude-marketplace",
+      "sourceType": "github",
+      "computedHash": "e65de56cd6e2fdf8114f982dd71b3e7092c384a5ceaca3af7cecac8fcb6fef04"
+    },
+    "pytest": {
+      "source": "gentleman-programming/gentleman-skills",
+      "sourceType": "github",
+      "computedHash": "8bf87b55ecc72cd9790eb985ba0d8e804d0c0a9be58b2ae02c963bbb6b5abc56"
+    },
+    "react": {
+      "source": "vercel-labs/json-render",
+      "sourceType": "github",
+      "computedHash": "67d6daabd85c23cc58eeabea56f25b899723932dfb69c55ddae4990b43c918d2"
+    }
+  }
+}

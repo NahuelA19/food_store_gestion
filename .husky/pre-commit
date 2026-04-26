@@ -1,0 +1,25 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Check if we're in the root directory
+if [ -f "package.json" ]; then
+  # Run ESLint on staged files
+  echo "📝 Linting frontend code..."
+  npm run lint --workspaces -- --max-warnings 0 || exit 1
+
+  # Check Python backend if files changed
+  if git diff --cached --name-only | grep -q "backend/"; then
+    echo "🐍 Linting backend code..."
+    cd backend
+    source venv/bin/activate
+    ruff check . || exit 1
+    cd ..
+  fi
+
+  echo "✅ Pre-commit checks passed!"
+else
+  echo "❌ Not in repository root"
+  exit 1
+fi

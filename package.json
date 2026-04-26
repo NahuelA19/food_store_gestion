@@ -1,0 +1,32 @@
+{
+  "name": "foodstore",
+  "version": "0.1.0",
+  "description": "Food Store - Modern E-commerce Platform",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "test:frontend": "npm run test --workspace frontend",
+    "test:backend": "cd backend && python -m pytest",
+    "lint": "npm run lint --workspaces && cd backend && ruff check .",
+    "format": "npm run format --workspaces && cd backend && black .",
+    "check:all": "npm run lint && npm run test && npm run build",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@commitlint/config-conventional": "^20.5.0",
+    "commitlint": "^18.0.0",
+    "husky": "^8.0.0",
+    "prettier": "^3.0.0"
+  }
+}

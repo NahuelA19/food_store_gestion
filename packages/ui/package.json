@@ -1,0 +1,11 @@
+{
+  "name": "@foodstore/ui",
+  "version": "0.1.0",
+  "description": "Shared UI components for Food Store platform",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "lint": "echo 'No linting configured for ui package yet'",
+    "format": "echo 'No formatting configured for ui package yet'"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@foodstore/core",
+  "version": "0.1.0",
+  "description": "Shared core utilities for Food Store platform",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "lint": "echo 'No linting configured for core package yet'",
+    "format": "echo 'No formatting configured for core package yet'"
+  }
+}

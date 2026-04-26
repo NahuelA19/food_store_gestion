@@ -1,186 +1,240 @@
-# Food Store — Repositorio Base
+# 🍕 Food Store - Modern E-commerce Platform
 
-Sistema de e-commerce de productos alimenticios desarrollado con **Spec-Driven Development (SDD)** usando OPSX y Claude Code.
+A full-stack e-commerce platform built with modern web technologies. This monorepo contains both backend (FastAPI) and frontend (React) applications.
 
----
+## Tech Stack
 
-## Documentación del sistema
+### Backend
+- **Framework**: FastAPI (Python)
+- **Server**: Uvicorn
+- **Validation**: Pydantic v2
+- **Package Manager**: pip (with venv)
 
-Antes de escribir una línea de código, leé los tres documentos en `docs/`:
+### Frontend
+- **Framework**: React 18
+- **Language**: TypeScript
+- **Build Tool**: Vite
+- **Testing**: Vitest
+- **Linting**: ESLint
+- **Formatting**: Prettier
 
-| Archivo | Contenido |
-|---------|-----------|
-| `docs/Descripcion.txt` | Visión general, actores del sistema y stack tecnológico |
-| `docs/Integrador.txt` | Arquitectura en capas, ERD, API REST y patrones de diseño |
-| `docs/Historias_de_usuario.txt` | US-000 a US-076 con criterios de aceptación y reglas de negocio |
+### DevOps & Quality
+- **Monorepo**: npm workspaces
+- **Git Hooks**: Husky
+- **Commit Linting**: commitlint (Conventional Commits)
+- **CI/CD**: GitHub Actions
+- **Code Formatting**: Black (Python), Prettier (JS/TS)
+- **Linting**: Ruff (Python), ESLint (JS/TS)
 
-Estos documentos son la fuente de verdad del sistema. El agente los lee antes de cada propuesta.
+## Quick Start
 
----
+### Prerequisites
+- Node.js 18+ and npm 9+
+- Python 3.10+
+- Git
 
-## Stack tecnológico
-
-**Backend**: FastAPI · SQLModel · PostgreSQL · Alembic · bcrypt · python-jose · slowapi · MercadoPago SDK  
-**Frontend**: React · TypeScript · Vite · TanStack Query · TanStack Form · Zustand · Axios · Tailwind CSS · Recharts
-
----
-
-## Setup del entorno de desarrollo
-
-### Requisitos previos
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL 15+
-- Claude Code: `npm install -g @anthropic-ai/claude-code`
-- OpenSpec CLI: `npm install -g @fission-ai/openspec`
-
-### 1. Clonar e inicializar
-
-```bash
-git clone <url-del-repo> food-store
-cd food-store
-```
-
-### 2. Inicializar OpenSpec
+### Installation
 
 ```bash
-npx @fission-ai/openspec@latest init
+# Clone the repository
+git clone https://github.com/yourusername/foodstore.git
+cd foodstore
+
+# Install dependencies (frontend + root)
+npm install
+
+# Install backend dependencies
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cd ..
 ```
 
-Esto genera la carpeta `openspec/` donde van a vivir todos los artefactos del proyecto.
+### Development
 
-### 3. Backend
+**Frontend:**
+```bash
+npm run dev --workspace frontend
+# Open http://localhost:5173
+```
 
+**Backend:**
 ```bash
 cd backend
-cp .env.example .env
-# Completar las variables de entorno en .env
-
-python -m venv .venv
-source .venv/bin/activate   # Linux/Mac
-.venv\Scripts\activate      # Windows
-
-pip install -r requirements.txt
-alembic upgrade head
-python -m app.db.seed
+source venv/bin/activate
 uvicorn app.main:app --reload
+# API available at http://localhost:8000
+# Docs at http://localhost:8000/docs
 ```
 
-API disponible en `http://localhost:8000`  
-Documentación Swagger en `http://localhost:8000/docs`
+**All scripts:**
+```bash
+npm run dev          # Start all dev servers
+npm run build        # Build all packages
+npm run test         # Run all tests
+npm run lint         # Lint all code
+npm run format       # Format all code
+npm run check:all    # Lint + test + build (local verification)
+```
 
-### 4. Frontend
+## Project Structure
+
+```
+foodstore/
+├── backend/                 # FastAPI backend
+│   ├── app/
+│   │   ├── main.py         # FastAPI app entry point
+│   │   ├── routes/         # API route modules
+│   │   └── models/         # Pydantic models
+│   ├── tests/              # Backend tests
+│   ├── venv/               # Python virtual environment
+│   ├── requirements.txt    # Python dependencies
+│   ├── pyproject.toml      # Python project config
+│   └── .env.example        # Environment variables template
+│
+├── frontend/               # React frontend
+│   ├── src/
+│   │   ├── main.tsx        # Entry point
+│   │   ├── App.tsx         # Root component
+│   │   ├── components/     # Reusable components
+│   │   ├── pages/          # Page components
+│   │   ├── hooks/          # Custom React hooks
+│   │   └── .env.example    # Environment variables template
+│   ├── public/             # Static assets
+│   ├── package.json        # Frontend config
+│   └── tsconfig.json       # TypeScript config
+│
+├── packages/               # Shared libraries
+│   ├── core/              # Shared utilities
+│   └── ui/                # Shared UI components
+│
+├── docs/                  # Documentation
+│   ├── SETUP.md          # Setup instructions
+│   ├── ARCHITECTURE.md   # System architecture
+│   ├── CONTRIBUTING.md   # Contribution guidelines
+│   ├── guides/           # How-to guides
+│   ├── api/              # API documentation
+│   └── architecture/     # Architecture diagrams
+│
+├── .github/workflows/     # CI/CD pipelines
+├── .husky/               # Git hooks
+├── package.json          # Root workspace config
+├── .eslintrc.json        # ESLint config
+├── .prettierrc.json      # Prettier config
+├── commitlint.config.js  # Commit lint config
+├── .editorconfig         # Editor settings
+└── .gitignore            # Git ignore rules
+```
+
+## Documentation
+
+- **[Setup Instructions](./docs/SETUP.md)** - Detailed development environment setup
+- **[Architecture](./docs/ARCHITECTURE.md)** - System design and layers
+- **[Contributing](./docs/CONTRIBUTING.md)** - Git workflow and code standards
+- **[API Documentation](./docs/API.md)** - Backend API endpoints
+- **[Getting Started](./GETTING-STARTED.md)** - First-time developer guide
+- **[Guides](./docs/guides/)** - How-to guides for common tasks
+
+## Git Workflow
+
+This project follows **Conventional Commits**. All commits must follow this format:
+
+```
+type(scope): subject
+
+body
+footer
+```
+
+**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`
+
+**Example**:
+```
+feat(auth): add login endpoint
+
+- Implement JWT-based authentication
+- Add password hashing with bcrypt
+
+Closes #42
+```
+
+Git hooks will validate commits automatically. See [Contributing Guidelines](./docs/CONTRIBUTING.md) for details.
+
+## CI/CD Pipeline
+
+Automated checks run on every pull request:
+
+✅ **Linting** - ESLint (frontend), Ruff (backend)
+✅ **Code Formatting** - Prettier (frontend), Black (backend)
+✅ **Tests** - Vitest (frontend), pytest (backend)
+✅ **Build** - Vite (frontend), syntax check (backend)
+✅ **Security** - npm audit, Python dependency scanning
+
+Branch protection rules require all checks to pass before merging.
+
+## Testing
 
 ```bash
-cd frontend
-cp .env.example .env
-# Completar VITE_API_URL=http://localhost:8000
+# Frontend tests
+npm run test --workspace frontend
+npm run test:ui --workspace frontend  # With UI
 
-npm install
-npm run dev
+# Backend tests
+cd backend && python -m pytest
+cd backend && python -m pytest --cov=app  # With coverage
+
+# Both
+npm run test  # Runs all test workspaces
 ```
 
-App disponible en `http://localhost:5173`
+## Code Quality
 
----
+```bash
+# Lint all code
+npm run lint
 
-## Flujo de desarrollo con OPSX
+# Format all code (auto-fixes)
+npm run format
 
-Todo cambio al sistema sigue este ciclo:
+# Type checking
+npm run type-check --workspace frontend
 
-```
-/opsx:explore   →  pensar antes de comprometerse (opcional)
-/opsx:propose   →  generar propuesta + diseño + tareas
-/opsx:apply     →  implementar tarea por tarea
-/opsx:archive   →  sincronizar specs y cerrar el change
-```
-
-### Orden de implementación (23 changes, 2-3 meses)
-
-**FASE 0 — Cimientos** (6-8 días):
-```
-1. infrastructure-setup          ← monorepo, FastAPI, React, patrones
-2. database-domain-models        ← ERD, 18 entidades, Alembic
-3. global-error-handling         ← RFC 7807, validaciones, rate limiting
+# Full checks (before committing)
+npm run check:all
 ```
 
-**FASE 1 — Autenticación** (7 días, secuencial):
+## Environment Variables
+
+### Frontend (`.env.local`)
 ```
-4. authentication-system         ← JWT, refresh tokens
-5. rbac-authorization            ← roles, guards, ownership
-6. user-management               ← CRUD usuarios
+VITE_API_URL=http://localhost:8000/api
+VITE_API_TIMEOUT=30000
+VITE_ENV=development
+VITE_DEBUG=true
 ```
 
-**FASE 2 — Catálogo** (5-6 días, parallelizable):
+### Backend (`.env`)
 ```
-7. categories-hierarchy          ← CTE, validación ciclos
-8. ingredients-allergen-system   ← ingredientes, alérgenos
-9. products-catalog              ← CRUD, M2M, stock, snapshots
-```
-
-**FASE 3 — Cliente** (5-6 días, parallelizable):
-```
-10. client-addresses             ← CRUD direcciones
-11. shopping-cart-ui             ← Zustand + localStorage
-12. navigation-layout            ← header/sidebar, token refresh
+ENVIRONMENT=development
+DEBUG=True
+HOST=0.0.0.0
+PORT=8000
+SECRET_KEY=your-secret-key-change-in-production
 ```
 
-**FASE 4 — Pedidos (CRÍTICA, 12-14 días, secuencial):**
-```
-13. order-creation-uow-atomic    ← UoW, snapshots, SELECT FOR UPDATE [PIVOT]
-14. payment-mercadopago          ← Orders API, webhooks, idempotencia
-15. order-fsm-state-machine      ← 6 estados, transiciones, historial
-16. order-visualization          ← listado, detalle, tracking
-17. payment-ui-feedback          ← modal confirmación, toasts
-```
+See `.env.example` files in each directory for all available variables.
 
-**FASE 5 — Admin** (5 días, parallelizable):
-```
-18. admin-dashboard-metrics      ← KPIs, gráficos
-19. admin-catalog-management     ← CRUD avanzado
-20. system-configuration         ← key-value store, auditoría
-```
+## Troubleshooting
 
-**FASE 6 — Refinamiento** (5-8 días):
-```
-21. testing-coverage-pytest      ← > 60% coverage [Bonus +10 pts]
-22. deployment-railway           ← URL pública [Bonus +10 pts]
-23. documentation                ← README, Swagger, arquitectura
-```
+See [Getting Started](./GETTING-STARTED.md) for common issues and solutions.
 
-**Punto crítico**: el change #13 (`order-creation-uow-atomic`) es el pivot arquitectónico — todo después depende de él.
+## License
 
----
+MIT
 
-## Variables de entorno
+## Support
 
-Crear `backend/.env` a partir de `backend/.env.example`:
-
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/foodstore
-SECRET_KEY=tu-clave-secreta-de-64-caracteres-minimo
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
-MP_ACCESS_TOKEN=TEST-tu-token-de-mercadopago
-MP_PUBLIC_KEY=TEST-tu-public-key-de-mercadopago
-CORS_ORIGINS=http://localhost:5173
-```
-
-Crear `frontend/.env` a partir de `frontend/.env.example`:
-
-```env
-VITE_API_URL=http://localhost:8000
-VITE_MP_PUBLIC_KEY=TEST-tu-public-key-de-mercadopago
-```
-
----
-
-## Convenciones de commits
-
-```
-feat(modulo): descripción del cambio
-fix(modulo): descripción del bug corregido
-refactor(modulo): descripción del refactor
-test(modulo): descripción de los tests
-docs(modulo): descripción del cambio en docs
-```
+- 📖 [Documentation](./docs/)
+- 🐛 [Issues](https://github.com/yourusername/foodstore/issues)
+- 💬 [Discussions](https://github.com/yourusername/foodstore/discussions)

@@ -1,127 +1,260 @@
-# Changes — Qué son y cómo trabajar con ellos
+# Food Store OPSX Change Map
 
-## ¿Qué es un change?
+Complete roadmap of planned changes for Food Store e-commerce platform. This document syncs with the OpenSpec (OPSX) workflow for systematic development.
 
-Un **change** es la unidad mínima de trabajo en el flujo SDD. No es una tarea suelta ni un ticket — es un conjunto de tres artefactos que juntos describen, diseñan e implementan una funcionalidad del sistema de forma completa y trazable.
+## Overview
 
-Cada change tiene su propia carpeta dentro de `openspec/changes/` y contiene exactamente estos tres archivos:
+**Total Changes**: 23 planned
+**Phases**: 6 (from scratch to production)
+**Timeline**: 2-3 months (estimated)
+**Status**: Phase 1 in progress
 
-```
-openspec/changes/nombre-del-change/
-├── proposal.md   ← QUÉ se va a construir y POR QUÉ
-├── design.md     ← CÓMO técnicamente (arquitectura, modelos, endpoints)
-└── tasks.md      ← CHECKLIST atómica de implementación
-```
+## Phase 1: Foundation (Weeks 1-2)
 
-Una vez que el change está completamente implementado y verificado, se **archiva**: las specs se sincronizan en `openspec/specs/` y la carpeta del change se mueve al historial. Esa documentación viva queda disponible para todos los changes futuros.
+Core infrastructure and project setup.
 
----
+### Change 1: **setup-project-structure** ✅ IN PROGRESS
+- **Status**: Implementing
+- **Duration**: 5-7 days
+- **Description**: Initialize monorepo, dev tools, CI/CD, documentation
+- **Dependencies**: None (prerequisite)
+- **Artifacts**: Complete
+- **Progress**: 43/65 tasks
 
-## ¿Para qué sirve?
+### Change 2: **add-database-layer** (PENDING)
+- **Status**: Ready to propose
+- **Duration**: 3-5 days
+- **Description**: PostgreSQL setup, SQLAlchemy ORM, migrations
+- **Dependencies**: Change 1
+- **Blocks**: All data-driven changes
 
-- **Trazabilidad**: cada línea de código tiene una propuesta y un diseño que la justifica.
-- **Revisión antes de implementar**: el diseño se aprueba en papel antes de que el agente escriba una sola línea de código. Un error en el diseño cuesta 0. El mismo error en código cuesta horas de refactor.
-- **Contexto persistente**: cuando el agente empieza un nuevo change, lee las specs de los changes anteriores ya archivados. Sabe qué existe, qué patrones se usaron, y no propone código duplicado o inconsistente.
-- **Documentación automática**: al terminar el proyecto, `openspec/specs/` es la documentación completa del sistema. No hay que escribirla por separado.
-
----
-
-## ¿Cómo se generan?
-
-Los changes **no se crean a mano** — los genera el agente a partir de los documentos del proyecto y las historias de usuario. El flujo es siempre el mismo:
-
-### 1. Explorar (opcional)
-Antes de proponer, podés pedirle al agente que piense y analice el problema:
-```
-/opsx:explore [tema o pregunta]
-```
-El agente investiga el codebase y razona con vos. No genera código ni toma compromisos. Útil cuando no tenés claro cómo encaja algo en la arquitectura.
-
-### 2. Proponer
-Le pedís al agente que genere los tres artefactos del change:
-```
-/opsx:propose [nombre-del-change]
-```
-El agente lee los documentos en `docs/`, las historias de usuario relevantes y las specs ya archivadas. Genera `proposal.md`, `design.md` y `tasks.md`.
-
-**Antes de continuar, revisás los artefactos.** Verificás que:
-- El diseño respeta la arquitectura en capas (Router → Service → UoW → Repository → Model)
-- Las tareas son atómicas (horas, no días)
-- Las reglas de negocio están reflejadas
-- El stack tecnológico es el correcto
-
-Si algo está mal, lo corregís antes de implementar.
-
-### 3. Aplicar
-Una vez aprobados los artefactos, el agente implementa tarea por tarea:
-```
-/opsx:apply [nombre-del-change]
-```
-El agente lee `design.md` y `tasks.md`, implementa cada tarea en orden y la marca como completada. No improvisa — sigue el plan.
-
-### 4. Archivar
-Cuando todas las tareas están completas y los tests pasan:
-```
-/opsx:archive [nombre-del-change]
-```
-Las specs se sincronizan, el change se mueve al historial y el próximo change ya puede usarlas como contexto.
+### Change 3: **implement-authentication** (PENDING)
+- **Status**: Ready to propose
+- **Duration**: 4-6 days
+- **Description**: JWT auth, user registration, password hashing
+- **Dependencies**: Change 1, 2
+- **Blocks**: Authorization layer
 
 ---
 
-## ¿Cómo saber qué changes crear para este proyecto?
+## Phase 2: User & Product Management (Weeks 3-5)
 
-Los changes **no están predefinidos** — son una decisión de diseño que tomás vos basándote en los documentos del sistema.
+Core business entities and operations.
 
-El agente ha analizado los tres documentos de `docs/` y propuesto el mapa completo de 23 changes organizados en 6 fases:
+### Change 4: **create-user-service** (PENDING)
+- **Duration**: 3-4 days
+- **Description**: User CRUD, profiles, preferences
+- **Dependencies**: Change 3
+- **API Endpoints**: 5-7
 
-### Mapa de Changes — Food Store
+### Change 5: **create-product-service** (PENDING)
+- **Duration**: 4-5 days
+- **Description**: Product catalog, categories, inventory
+- **Dependencies**: Change 2
+- **API Endpoints**: 6-8
 
-**FASE 0 — Cimientos** (6-8 días, parallelizable):
-1. **`infrastructure-setup`** → Monorepo, FastAPI, React, patrones base (US-000, US-000a-e)
-2. **`database-domain-models`** → ERD completa, 18 entidades, Alembic migrations (estructura datos)
-3. **`global-error-handling-validation`** → RFC 7807, Pydantic validators, rate limiting (US-068, US-074)
+### Change 6: **build-search-and-filtering** (PENDING)
+- **Duration**: 3-4 days
+- **Description**: Full-text search, filters by price/category/rating
+- **Dependencies**: Change 5
+- **Frontend Components**: Search bar, filters
 
-**FASE 1 — Autenticación** (7 días, secuencial):
-4. **`authentication-system`** → Login, JWT, refresh tokens, rate limiting (US-001, US-002, US-003, US-004, US-073)
-5. **`rbac-authorization`** → Roles CRUD, guards frontend, ownership checks (US-005, US-006, US-075, US-076)
-6. **`user-management`** → CRUD usuarios, asignación roles, soft delete (US-053, US-054, US-055, US-061, US-062, US-063)
-
-**FASE 2 — Catálogo** (5-6 días, parallelizable: categories + ingredients):
-7. **`categories-hierarchy`** → CTE recursivo, validación ciclos, árbol anidado (US-007 a US-010)
-8. **`ingredients-allergen-system`** → CRUD ingredientes, marcado alérgenos (US-011 a US-014)
-9. **`products-catalog`** → CRUD, M2M categorías/ingredientes, stock, snapshots (US-015 a US-023)
-
-**FASE 3 — Cliente** (5-6 días, parallelizable: cart + navigation):
-10. **`client-addresses`** → CRUD direcciones, dirección principal única (US-024 a US-028)
-11. **`shopping-cart-ui`** → 100% client-side Zustand + localStorage, personalización (US-029 a US-034)
-12. **`navigation-layout`** → Header/Sidebar, token refresh transparente, guards (US-075, US-076, US-066, US-067)
-
-**FASE 4 — Pedidos (CRÍTICA, 12-14 días, secuencial):**
-13. **`order-creation-uow-atomic`** → Transacción atómica, snapshots, SELECT FOR UPDATE (US-035 a US-038, US-069, US-070) **[PIVOT]**
-14. **`payment-mercadopago-integration`** → Orders API, webhooks IPN, idempotencia (US-045 a US-048)
-15. **`order-fsm-state-machine`** → 6 estados, transiciones validadas, historial append-only (US-039 a US-044)
-16. **`order-visualization`** → Listado, detalle, tracking, timeline de estados (US-049 a US-052)
-17. **`payment-ui-feedback`** → Modal confirmación, return URLs MercadoPago, toasts (US-071, US-072)
-
-**FASE 5 — Admin** (5 días, parallelizable):
-18. **`admin-dashboard-metrics`** → KPIs, gráficos ventas, top productos, Recharts (US-056 a US-059)
-19. **`admin-catalog-management`** → CRUD avanzado con permisos, bulk stock (US-064, US-065)
-20. **`system-configuration`** → Key-value store, configuración global, auditoría (US-060)
-
-**FASE 6 — Refinamiento** (5-8 días):
-21. **`testing-coverage-pytest`** → Tests > 60% cobertura, fixtures (Bonus +10 pts)
-22. **`deployment-railway-or-render`** → URL pública, secrets management (Bonus +10 pts)
-23. **`documentation-comprehensive`** → README, Swagger /docs, ReDoc, arquitectura
-
-**Estimación total**: 45-57 días (2-3 meses con 1-2 devs) · 30-40 días (~6-8 semanas con 3+ devs en paralelo)
-
-Revisás la propuesta, la discutís, la ajustás si hace falta — y recién entonces empezás con el primer `/opsx:propose`.
+### Change 7: **design-cart-system** (PENDING)
+- **Duration**: 3-4 days
+- **Description**: Shopping cart, quantity management, persistence
+- **Dependencies**: Change 3, 5
+- **Frontend Components**: Cart, cart item
 
 ---
 
-## Reglas importantes
+## Phase 3: Transactions & Payments (Weeks 6-7)
 
-- **Nunca implementes sin artefactos.** Si no existe `proposal.md` y `design.md` aprobados, no hay `/opsx:apply`.
-- **El orden importa.** Si el change B necesita código del change A, A tiene que estar archivado antes de proponer B.
-- **Un change = un commit** (o varios commits atómicos). Nunca mezcles dos changes en un mismo commit.
-- **Las specs son código.** Se versionan en git, se revisan en PRs, evolucionan con el proyecto.
+Order processing and payment integration.
+
+### Change 8: **implement-order-management** (PENDING)
+- **Duration**: 4-5 days
+- **Description**: Order creation, status tracking, history
+- **Dependencies**: Change 4, 5, 7
+- **API Endpoints**: 8-10
+
+### Change 9: **integrate-payment-gateway** (PENDING)
+- **Duration**: 5-6 days
+- **Description**: Stripe/PayPal integration, webhook handling
+- **Dependencies**: Change 8
+- **External Services**: Payment provider API
+
+### Change 10: **create-checkout-flow** (PENDING)
+- **Duration**: 4-5 days
+- **Description**: Multi-step checkout, address validation, confirmation
+- **Dependencies**: Change 8, 9
+- **Frontend Pages**: Checkout flow
+
+---
+
+## Phase 4: Features & Polish (Weeks 8-9)
+
+Enhanced functionality and user experience.
+
+### Change 11: **add-product-reviews** (PENDING)
+- **Duration**: 3-4 days
+- **Description**: Reviews, ratings, moderation
+- **Dependencies**: Change 5, 4
+- **API Endpoints**: 4-6
+
+### Change 12: **implement-favorites-wishlist** (PENDING)
+- **Duration**: 2-3 days
+- **Description**: Save favorites, wishlist functionality
+- **Dependencies**: Change 4, 5
+- **Frontend Components**: Favorite button
+
+### Change 13: **build-admin-dashboard** (PENDING)
+- **Duration**: 5-7 days
+- **Description**: Admin panel for products, orders, users
+- **Dependencies**: Change 4, 5, 8
+- **Frontend Pages**: Multiple admin pages
+
+### Change 14: **add-notifications** (PENDING)
+- **Duration**: 3-4 days
+- **Description**: Email notifications, order updates, alerts
+- **Dependencies**: Change 8
+- **External Services**: Email service
+
+### Change 15: **implement-recommendation-engine** (PENDING)
+- **Duration**: 4-5 days
+- **Description**: Basic product recommendations
+- **Dependencies**: Change 5, 11
+- **Algorithm**: Collaborative filtering
+
+---
+
+## Phase 5: Monitoring & Optimization (Week 10)
+
+Performance, analytics, and reliability.
+
+### Change 16: **setup-monitoring-logging** (PENDING)
+- **Duration**: 2-3 days
+- **Description**: ELK stack / CloudWatch, error tracking
+- **Dependencies**: All previous
+- **External Services**: Monitoring platform
+
+### Change 17: **add-caching-layer** (PENDING)
+- **Duration**: 3-4 days
+- **Description**: Redis caching for products, user sessions
+- **Dependencies**: Change 5, 4
+- **Performance Gain**: 10-50x faster queries
+
+### Change 18: **optimize-database** (PENDING)
+- **Duration**: 2-3 days
+- **Description**: Indexing strategy, query optimization
+- **Dependencies**: Change 2, 8
+- **Performance Metric**: < 100ms queries
+
+### Change 19: **add-analytics** (PENDING)
+- **Duration**: 3-4 days
+- **Description**: User behavior tracking, conversion metrics
+- **Dependencies**: All previous
+- **Tools**: Google Analytics / Mixpanel
+
+---
+
+## Phase 6: Deployment & Scale (Week 11)
+
+Production deployment and scaling.
+
+### Change 20: **containerize-application** (PENDING)
+- **Duration**: 2-3 days
+- **Description**: Docker containers, docker-compose
+- **Dependencies**: All previous
+- **Output**: Deployable images
+
+### Change 21: **setup-kubernetes-deployment** (PENDING)
+- **Duration**: 4-5 days
+- **Description**: K8s manifests, autoscaling, health checks
+- **Dependencies**: Change 20
+- **Scalability**: Auto-scale to 10+ pods
+
+### Change 22: **setup-cdn-assets** (PENDING)
+- **Duration**: 2-3 days
+- **Description**: CloudFront / CDN for static assets
+- **Dependencies**: Change 1
+- **Performance Gain**: 50-100ms faster loads
+
+### Change 23: **production-hardening** (PENDING)
+- **Duration**: 3-5 days
+- **Description**: Security, SSL, rate limiting, backups
+- **Dependencies**: All previous
+- **Security Rating**: A+ (SSL Labs)
+
+---
+
+## Dependency Graph
+
+```
+setup-project-structure (1)
+├── add-database-layer (2)
+│   ├── implement-authentication (3)
+│   │   ├── create-user-service (4)
+│   │   ├── design-cart-system (7)
+│   │   └── implement-order-management (8)
+│   │       ├── integrate-payment-gateway (9)
+│   │       ├── create-checkout-flow (10)
+│   │       ├── add-notifications (14)
+│   │       └── setup-monitoring-logging (16)
+│   └── create-product-service (5)
+│       ├── build-search-and-filtering (6)
+│       ├── add-product-reviews (11)
+│       ├── implement-recommendation-engine (15)
+│       └── add-caching-layer (17)
+│           └── optimize-database (18)
+├── build-admin-dashboard (13)
+│   ├── create-user-service (4)
+│   ├── create-product-service (5)
+│   └── implement-order-management (8)
+├── add-analytics (19)
+├── containerize-application (20)
+│   └── setup-kubernetes-deployment (21)
+└── setup-cdn-assets (22)
+    └── production-hardening (23)
+```
+
+## Timeline & Milestones
+
+| Phase | Duration | Milestone | Status |
+|-------|----------|-----------|--------|
+| 1 | 2 weeks | Foundation ready, CI/CD passing | IN PROGRESS |
+| 2 | 3 weeks | Core features (products, users, cart) | PENDING |
+| 3 | 2 weeks | Payments & orders working | PENDING |
+| 4 | 2 weeks | Enhanced UX & admin panel | PENDING |
+| 5 | 1 week | Performance & monitoring | PENDING |
+| 6 | 1 week | Production deployment | PENDING |
+
+## Risk Mitigation
+
+| Risk | Impact | Mitigation |
+|------|--------|-----------|
+| Database design mistakes | High | Early schema review, migrations planning |
+| Payment integration issues | High | Sandbox testing, error handling, retry logic |
+| Performance problems | Medium | Caching strategy (Change 17), monitoring (Change 16) |
+| Security vulnerabilities | High | Code review, OWASP guidelines, penetration testing |
+| Team knowledge gaps | Medium | Documentation (Change 1), pair programming |
+
+## Success Metrics
+
+- [ ] Phase 1: All GitHub Actions passing ✅
+- [ ] Phase 2: 50+ API endpoints, products searchable
+- [ ] Phase 3: Orders + payments working end-to-end
+- [ ] Phase 4: Admin dashboard managing all entities
+- [ ] Phase 5: < 100ms API response times, error rate < 0.1%
+- [ ] Phase 6: Deployed on production, 99.9% uptime
+
+## Next Steps
+
+1. ✅ **Complete Change 1** (setup-project-structure)
+2. ➜ **Propose Change 2** (add-database-layer)
+3. ➜ **Propose Change 3** (implement-authentication)
+4. ➜ Continue with Phase 2 changes
+
+---
+
+**Last Updated**: 2026-04-26
+**Maintained By**: OPSX Orchestrator
