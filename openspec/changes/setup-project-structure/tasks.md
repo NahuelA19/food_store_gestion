@@ -79,16 +79,16 @@
 
 ## 9. Git and Initial Commit
 
-- [ ] 9.1 Initialize git repository: `git init`
-- [ ] 9.2 Create initial git commit: "chore: initial project setup"
-- [ ] 9.3 Create `main` branch as default
-- [ ] 9.4 Push to remote repository (if applicable)
+- [x] 9.1 Initialize git repository: `git init`
+- [x] 9.2 Create initial git commit: "chore: initial project setup"
+- [x] 9.3 Create `main` branch as default
+- [x] 9.4 Push to remote repository (if applicable)
 
 ## 10. Verification and Documentation
 
-- [ ] 10.1 Verify all npm scripts work: `npm run dev`, `npm run build`, `npm run test`, `npm run lint`
-- [ ] 10.2 Verify pre-commit hooks work by making a test commit
+- [x] 10.1 Verify all npm scripts work: `npm run dev`, `npm run build`, `npm run test`, `npm run lint`
+- [x] 10.2 Verify pre-commit hooks work by making a test commit
 - [ ] 10.3 Verify GitHub Actions workflows trigger on PR creation
 - [ ] 10.4 Test that linting/formatting workflow fails with violations (confirm it catches issues)
-- [ ] 10.5 Create `GETTING-STARTED.md` with troubleshooting section
-- [ ] 10.6 Document environment variable requirements in README
+- [x] 10.5 Create `GETTING-STARTED.md` with troubleshooting section
+- [x] 10.6 Document environment variable requirements in README
