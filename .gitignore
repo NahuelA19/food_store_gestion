@@ -1,22 +1,44 @@
-# Dependencies
-node_modules/
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+# ============================================================
+# .gitignore — Food Store
+# ============================================================
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
+# ------------------------------------------------------------
+# DATOS SENSIBLES 
+# ------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+
+# ------------------------------------------------------------
+# DEPENDENCIAS 
+# ------------------------------------------------------------
+node_modules/
 backend/venv/
 env/
 venv/
 ENV/
-build/
+
+# Lock files 
+yarn.lock
+pnpm-lock.yaml
+
+# ------------------------------------------------------------
+# PYTHON 
+# ------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.installed.cfg
+.Python
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -26,40 +48,58 @@ parts/
 sdist/
 var/
 wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
-# Environment variables
-.env
-.env.local
-.env.*.local
+# ------------------------------------------------------------
+# BUILD / DIST 
+# ------------------------------------------------------------
+dist/
+build/
+*.tsbuildinfo
 
-# IDE
+# ------------------------------------------------------------
+# TESTING 
+# ------------------------------------------------------------
+coverage/
+htmlcov/
+.nyc_output/
+.pytest_cache/
+.coverage
+.coverage.*
+
+# ------------------------------------------------------------
+# LOGS 
+# ------------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+
+# ------------------------------------------------------------
+# IDE / SO 
+# ------------------------------------------------------------
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
+Thumbs.db
 
-# Build outputs
-dist/
-build/
-*.tsbuildinfo
-
-# Testing
-coverage/
-.nyc_output/
-.pytest_cache/
-.coverage
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-
-# Misc
+# ------------------------------------------------------------
+# MISC 
+# ------------------------------------------------------------
 .turbo/
 .cache/
 .next/
+.ruff_cache/
+
+# ============================================================
+# NOTA: los siguientes directorios NO están en el .gitignore
+# y sí se versionan intencionalmente:
+#
+#   .agents/        → skills e instrucciones del agente IA
+#   openspec/       → artefactos del proceso SDD (cambios, specs)
+#   docs/           → documentación de arquitectura y API
+#   .github/        → workflows de CI/CD
+#   AGENTS.md       → configuración del agente para el proyecto
+#   GETTING-STARTED.md / README.md → documentación pública
+# ============================================================
