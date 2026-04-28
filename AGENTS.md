@@ -97,6 +97,7 @@ Skills are in `.agents/skills/`. **Before writing any code, identify which skill
 | Working on **database schema**, writing SQL queries, optimizing queries, managing indexes | `postgresql-database-engineering` |
 | Creating or modifying **any** frontend React component, hook, or page | `react` |
 | User asks "is there a skill for X?", "can you do X?", or wants to extend agent capabilities | `find-skills` |
+| Exporting/importing Engram memories, sharing team memory via GitHub | `engram-export` |
 
 ---
 
@@ -188,12 +189,31 @@ If the frontend does NOT use `@json-render/react`, apply only the **component ar
 **Load when**:
 - User says: "is there a skill for X?", "find a skill for X", "can you do X with a skill?"
 - User wants to extend the agent's capabilities for a domain not covered by installed skills
-- A task is outside the scope of the 4 skills above
+- A task is outside the scope of the 5 skills above
 
 **What it does**:
 - Searches `skills.sh` for installable skills
 - Verifies quality (install count, source reputation) before recommending
 - Provides the install command: `npx skills add <owner/repo@skill>`
+
+---
+
+### `engram-export` — Team Memory Sharing
+
+**Path**: `.agents/skills/engram-export/SKILL.md`
+
+**Load when**:
+- User says: "export engram", "share memory", "export memories", "exportar engram", "compartir memoria", "sync team memory"
+- Onboarding a new team member who needs the accumulated project context
+- Archiving decisions before a major refactor
+- Syncing Engram memories between machines (home ↔ lab)
+
+**Key rules from this skill**:
+- Export outputs to `docs/team-memory/engram-export.md`
+- One `##` section per memory entry — human-readable Markdown
+- Import by calling `mem_save` per entry; duplicates are skipped automatically
+- Always filter by `project` scope to avoid exporting personal memories
+- Commit with: `docs(memory): export engram team memories`
 
 ---
 
@@ -274,4 +294,4 @@ GitHub Actions runs on every PR:
 
 ---
 
-*Last updated: 2026-04-27 | Maintained by the Food Store team*
+*Last updated: 2026-04-28 | Maintained by the Food Store team*
