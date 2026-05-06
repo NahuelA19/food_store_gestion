@@ -7,7 +7,7 @@ Complete roadmap of planned changes for Food Store e-commerce platform. This doc
 **Total Changes**: 23 planned
 **Phases**: 6 (from scratch to production)
 **Timeline**: 2-3 months (estimated)
-**Status**: Phase 1 complete, Phase 2 ready to begin
+**Status**: Phase 1 complete ✅, Phase 2 in progress (Change 2 implemented, Change 3+ pending)
 
 ## Phase 1: Foundation (Weeks 1-2)
 
@@ -22,12 +22,15 @@ Core infrastructure and project setup.
 - **Progress**: 65/65 tasks ✓
 - **Archived**: 2026-04-26
 
-### Change 2: **add-database-layer** (PENDING)
-- **Status**: Ready to propose
+### Change 2: **add-database-layer** ✅ IMPLEMENTED
+- **Status**: Complete - Ready to archive
 - **Duration**: 3-5 days
 - **Description**: PostgreSQL setup, SQLAlchemy ORM, migrations
-- **Dependencies**: Change 1
+- **Dependencies**: Change 1 ✅
 - **Blocks**: All data-driven changes
+- **Implemented**: 2026-05-06
+- **Commit**: `5f1d749` - feat(database): add PostgreSQL ORM with SQLAlchemy and Alembic migrations
+- **Artifacts**: 48/48 tasks completed ✓
 
 ### Change 3: **implement-authentication** (PENDING)
 - **Status**: Ready to propose
@@ -223,7 +226,7 @@ setup-project-structure (1)
 | Phase | Duration | Milestone | Status |
 |-------|----------|-----------|--------|
 | 1 | 2 weeks | Foundation ready, CI/CD passing | ✅ COMPLETE |
-| 2 | 3 weeks | Core features (products, users, cart) | PENDING |
+| 2 | 3 weeks | Core features (products, users, cart) | 🔄 IN PROGRESS (Change 2 done) |
 | 3 | 2 weeks | Payments & orders working | PENDING |
 | 4 | 2 weeks | Enhanced UX & admin panel | PENDING |
 | 5 | 1 week | Performance & monitoring | PENDING |
@@ -251,9 +254,9 @@ setup-project-structure (1)
 ## Next Steps
 
 1. ✅ **Complete Change 1** (setup-project-structure) — DONE
-2. ➜ **Propose Change 2** (add-database-layer)
-3. ➜ **Propose Change 3** (implement-authentication)
-4. ➜ Continue with Phase 2 changes
+2. ✅ **Complete Change 2** (add-database-layer) — DONE
+3. ➜ **Propose & Implement Change 3** (implement-authentication)
+4. ➜ Continue with Phase 2 changes (4, 5, 6, 7)
 
 ---
 
