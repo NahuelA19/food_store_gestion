@@ -130,6 +130,8 @@ foodstore/
 ## Documentation
 
 - **[Setup Instructions](./docs/SETUP.md)** - Detailed development environment setup
+- **[Database Layer](./docs/DATABASE.md)** - PostgreSQL ORM, migrations, and connection management
+- **[Database Setup](./docs/DATABASE_SETUP.md)** - PostgreSQL installation and configuration
 - **[Architecture](./docs/ARCHITECTURE.md)** - System design and layers
 - **[Contributing](./docs/CONTRIBUTING.md)** - Git workflow and code standards
 - **[API Documentation](./docs/API.md)** - Backend API endpoints

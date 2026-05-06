@@ -6,11 +6,14 @@ from typing import AsyncGenerator, Generator
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from app.main import app
 from app.models import Base
+from app.models.user import User
+from app.security.password import get_password_hash
 from database.session import get_db_session
 
 # Override DATABASE_URL for testing
@@ -86,4 +89,31 @@ def override_get_db_session(get_test_db_session) -> Generator[AsyncSession, None
 def test_client(override_get_db_session) -> TestClient:
     """FastAPI test client with overridden database dependency."""
     return TestClient(app)
+
+
+@pytest.fixture
+async def async_client(override_get_db_session) -> AsyncClient:
+    """Async HTTP client for FastAPI app."""
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
+
+
+@pytest.fixture
+async def db_session(get_test_db_session) -> AsyncSession:
+    """Database session for tests."""
+    return get_test_db_session
+
+
+@pytest.fixture
+async def test_user(db_session: AsyncSession) -> User:
+    """Create a test user for authentication tests."""
+    user = User(
+        email="testuser@example.com",
+        hashed_password=get_password_hash("TestPassword123"),
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
 
