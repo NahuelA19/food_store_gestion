@@ -7,7 +7,7 @@ Complete roadmap of planned changes for Food Store e-commerce platform. This doc
 **Total Changes**: 23 planned
 **Phases**: 6 (from scratch to production)
 **Timeline**: 2-3 months (estimated)
-**Status**: Phase 1 complete ✅, Phase 2 in progress (Change 2 implemented, Change 3+ pending)
+**Status**: Phase 1 complete ✅, Phase 2 starting (Change 2 archived, Change 3 - Authentication ready to start)
 
 ## Phase 1: Foundation (Weeks 1-2)
 
@@ -22,13 +22,14 @@ Core infrastructure and project setup.
 - **Progress**: 65/65 tasks ✓
 - **Archived**: 2026-04-26
 
-### Change 2: **add-database-layer** ✅ IMPLEMENTED
-- **Status**: Complete - Ready to archive
+### Change 2: **add-database-layer** ✅ ARCHIVED
+- **Status**: Archived
 - **Duration**: 3-5 days
 - **Description**: PostgreSQL setup, SQLAlchemy ORM, migrations
 - **Dependencies**: Change 1 ✅
 - **Blocks**: All data-driven changes
 - **Implemented**: 2026-05-06
+- **Archived**: 2026-05-06
 - **Commit**: `5f1d749` - feat(database): add PostgreSQL ORM with SQLAlchemy and Alembic migrations
 - **Artifacts**: 48/48 tasks completed ✓
 
