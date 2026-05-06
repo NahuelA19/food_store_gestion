@@ -7,7 +7,7 @@ Complete roadmap of planned changes for Food Store e-commerce platform. This doc
 **Total Changes**: 23 planned
 **Phases**: 6 (from scratch to production)
 **Timeline**: 2-3 months (estimated)
-**Status**: Phase 1 complete ✅, Phase 2 starting (Change 2 archived, Change 3 - Authentication ready to start)
+**Status**: Phase 1 complete ✅, Phase 2 in progress (Change 3 - Authentication proposed and ready for implementation)
 
 ## Phase 1: Foundation (Weeks 1-2)
 
@@ -33,12 +33,14 @@ Core infrastructure and project setup.
 - **Commit**: `5f1d749` - feat(database): add PostgreSQL ORM with SQLAlchemy and Alembic migrations
 - **Artifacts**: 48/48 tasks completed ✓
 
-### Change 3: **implement-authentication** (PENDING)
-- **Status**: Ready to propose
+### Change 3: **implement-authentication** ✅ PROPOSED
+- **Status**: Ready for implementation
 - **Duration**: 4-6 days
-- **Description**: JWT auth, user registration, password hashing
-- **Dependencies**: Change 1, 2
-- **Blocks**: Authorization layer
+- **Description**: JWT auth, user registration, password hashing with bcrypt
+- **Dependencies**: Change 1 ✅, Change 2 ✅
+- **Blocks**: Authorization layer, Change 4 (create-user-service)
+- **Proposed**: 2026-05-06
+- **Artifacts**: proposal.md, design.md, specs (user-auth, auth-middleware, auth-frontend, core-entities), tasks.md (50+ tasks) ✓
 
 ---
 
