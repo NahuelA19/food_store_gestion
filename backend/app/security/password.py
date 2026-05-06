@@ -1,9 +1,6 @@
 """Password hashing and validation utilities."""
 
-from passlib.context import CryptContext
-
-# Configure bcrypt context with cost factor 12
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 
 def get_password_hash(password: str) -> str:
@@ -15,7 +12,10 @@ def get_password_hash(password: str) -> str:
     Returns:
         Hashed password string suitable for storage
     """
-    return pwd_context.hash(password)
+    # Use bcrypt with cost factor 12 for security
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -28,7 +28,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True if password matches, False otherwise
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+    )
 
 
 def validate_password_strength(password: str) -> tuple[bool, str]:

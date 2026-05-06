@@ -1,42 +1,42 @@
 ## 1. Dependencies & Environment Setup
 
-- [ ] 1.1 Add authentication dependencies to `backend/requirements.txt`: `python-jose[cryptography]`, `passlib[bcrypt]`, `python-multipart`
-- [ ] 1.2 Install dependencies: `pip install -r backend/requirements.txt`
-- [ ] 1.3 Add JWT configuration to `.env.example`: `SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`
-- [ ] 1.4 Verify all dependencies import correctly: `python -c "from passlib.context import CryptContext; from jose import jwt"`
+- [x] 1.1 Add authentication dependencies to `backend/requirements.txt`: `python-jose[cryptography]`, `passlib[bcrypt]`, `python-multipart`
+- [x] 1.2 Install dependencies: `pip install -r backend/requirements.txt`
+- [x] 1.3 Add JWT configuration to `.env.example`: `SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`
+- [x] 1.4 Verify all dependencies import correctly: `python -c "from passlib.context import CryptContext; from jose import jwt"`
 
 ## 2. Backend: User Model Extensions
 
-- [ ] 2.1 Create Alembic migration for User model: add `hashed_password` (String) and `is_active` (Boolean, default=true) columns
-- [ ] 2.2 Run migration: `alembic upgrade head`
-- [ ] 2.3 Test migration rollback and re-upgrade (idempotency check)
-- [ ] 2.4 Update User ORM model in `backend/app/models/user.py` to include new fields with proper type hints
+- [x] 2.1 Create Alembic migration for User model: add `hashed_password` (String) and `is_active` (Boolean, default=true) columns
+- [x] 2.2 Run migration: `alembic upgrade head`
+- [x] 2.3 Test migration rollback and re-upgrade (idempotency check)
+- [x] 2.4 Update User ORM model in `backend/app/models/user.py` to include new fields with proper type hints
 
 ## 3. Backend: Password Hashing Utilities
 
-- [ ] 3.1 Create `backend/app/security/password.py` with:
+- [x] 3.1 Create `backend/app/security/password.py` with:
   - `verify_password(plain_password: str, hashed_password: str) -> bool` using bcrypt
   - `get_password_hash(password: str) -> str` with cost factor 12
-- [ ] 3.2 Add password validation rules in `backend/app/security/password.py`:
+- [x] 3.2 Add password validation rules in `backend/app/security/password.py`:
   - Minimum 8 characters
   - At least 1 uppercase letter
   - At least 1 digit
   - Function: `validate_password_strength(password: str) -> tuple[bool, str]` returning (is_valid, error_message)
-- [ ] 3.3 Create unit tests in `backend/tests/test_security_password.py`:
+- [x] 3.3 Create unit tests in `backend/tests/test_security_password.py`:
   - Test password hashing (same password, different hashes)
   - Test password verification (correct/incorrect passwords)
   - Test password validation rules (weak passwords rejected)
 
 ## 4. Backend: JWT Token Management
 
-- [ ] 4.1 Create `backend/app/security/jwt.py` with:
+- [x] 4.1 Create `backend/app/security/jwt.py` with:
   - `create_access_token(data: dict, expires_delta: timedelta) -> str` using HS256
   - `verify_token(token: str) -> dict` to decode and validate JWT
   - Configure expiration (15 minutes default)
-- [ ] 4.2 Create Pydantic model for token response in `backend/app/models/token.py`:
+- [x] 4.2 Create Pydantic model for token response in `backend/app/models/token.py`:
   - `Token` with fields: `access_token: str`, `token_type: str` (literal "bearer")
   - `TokenData` with fields: `user_id: int`, `email: str` (for decoded claims)
-- [ ] 4.3 Add unit tests in `backend/tests/test_security_jwt.py`:
+- [x] 4.3 Add unit tests in `backend/tests/test_security_jwt.py`:
   - Test token generation and decoding
   - Test token expiration (expired tokens rejected)
   - Test invalid token signature (tampered tokens rejected)
