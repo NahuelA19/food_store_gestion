@@ -218,10 +218,10 @@
 
 ## 15. Git & Commit
 
-- [ ] 15.1 Add all implementation files to staging
-- [ ] 15.2 Review git diff to ensure all changes are intentional
-- [ ] 15.3 Create commit with message: `feat(auth): implement JWT authentication with registration and login`
-- [ ] 15.4 Verify commit created: `git log -1 --oneline`
+- [x] 15.1 Add all implementation files to staging
+- [x] 15.2 Review git diff to ensure all changes are intentional
+- [x] 15.3 Create commit with message: `feat(auth): implement JWT authentication with registration and login`
+- [x] 15.4 Verify commit created: `git log -1 --oneline`
 
 ---
 
