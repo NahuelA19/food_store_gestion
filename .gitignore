@@ -92,11 +92,6 @@ Thumbs.db
 .next/
 .ruff_cache/
 
-# ------------------------------------------------------------
-# MEMORY / ENGRAM
-# ------------------------------------------------------------
-.engram/
-
 # ============================================================
 # NOTA: los siguientes directorios NO están en el .gitignore
 # y sí se versionan intencionalmente:
