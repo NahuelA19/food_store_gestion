@@ -44,19 +44,19 @@
 
 ## 5. Backend: Authentication Routes
 
-- [ ] 5.1 Create Pydantic models in `backend/app/models/auth.py`:
+- [x] 5.1 Create Pydantic models in `backend/app/models/auth.py`:
   - `RegisterRequest` with fields: `email`, `password` (validated format)
   - `LoginRequest` with fields: `email`, `password`
   - `AuthResponse` with fields: `id`, `email`, `access_token`, `token_type`
-- [ ] 5.2 Create `backend/app/routes/auth.py` with:
+- [x] 5.2 Create `backend/app/routes/auth.py` with:
   - `POST /api/auth/register` endpoint: validate input, hash password, create user, return JWT
   - `POST /api/auth/login` endpoint: validate credentials, return JWT
   - Both endpoints handle error cases (duplicate email, invalid credentials, validation errors)
-- [ ] 5.3 Add comprehensive error handling:
+- [x] 5.3 Add comprehensive error handling:
   - 409 Conflict: Email already registered
   - 422 Unprocessable Entity: Invalid email format, weak password
   - 401 Unauthorized: Invalid credentials
-- [ ] 5.4 Create tests in `backend/tests/test_auth_routes.py`:
+- [x] 5.4 Create tests in `backend/tests/test_auth_routes.py`:
   - Test successful registration
   - Test registration with duplicate email (409 error)
   - Test registration with weak password (422 error)
@@ -66,17 +66,17 @@
 
 ## 6. Backend: Authentication Middleware & Dependency Injection
 
-- [ ] 6.1 Create `backend/app/security/auth.py` with:
+- [x] 6.1 Create `backend/app/security/auth.py` with:
   - `get_current_user()` dependency: extracts JWT from Authorization header, validates, returns User
   - Handle missing/invalid tokens with HTTPException 401
   - Decorator `@require_auth()` or pattern for protecting routes
-- [ ] 6.2 Update `backend/app/main.py`:
+- [x] 6.2 Update `backend/app/main.py`:
   - Import and register auth routes: `app.include_router(auth_router, prefix="/api/auth", tags=["auth"])`
   - Register auth dependency globally for use in route handlers
-- [ ] 6.3 Create test routes in `backend/app/routes/health.py`:
+- [x] 6.3 Create test routes in `backend/app/routes/health.py`:
   - `GET /api/protected/test` - requires authentication, returns current user info
   - `GET /api/public/test` - no authentication required, returns "Hello"
-- [ ] 6.4 Add integration tests in `backend/tests/test_auth_middleware.py`:
+- [x] 6.4 Add integration tests in `backend/tests/test_auth_middleware.py`:
   - Test protected route accepts valid JWT
   - Test protected route rejects missing JWT (401)
   - Test protected route rejects invalid JWT (401)
@@ -84,12 +84,13 @@
 
 ## 7. Backend: CI/CD & Testing
 
-- [ ] 7.1 Run all backend tests: `python -m pytest backend/tests/ -v`
+- [x] 7.1 Run all backend tests: `python -m pytest backend/tests/ -v`
   - All auth-related tests pass
   - No warnings or errors
-- [ ] 7.2 Check code style: `ruff check backend/`
+- [x] 7.2 Check code style: `ruff check backend/`
 - [ ] 7.3 Check type hints: `mypy backend/ --strict`
   - All type hints correct, no errors
+  - ⚠️ **PENDING**: mypy never ran — needs to be verified before merging
 - [ ] 7.4 Manual verification:
   - Start backend: `uvicorn backend.app.main:app --reload`
   - Register new user: `curl -X POST http://localhost:8000/api/auth/register -H "Content-Type: application/json" -d '{"email":"test@example.com","password":"TestPass123"}'`
@@ -97,51 +98,52 @@
   - Login with same credentials: verify JWT returned
   - Call protected endpoint with JWT: `curl http://localhost:8000/api/protected/test -H "Authorization: Bearer <token>"`
   - Verify response includes user info
+  - ⚠️ **PENDING**: Requires PostgreSQL running locally
 
 ## 8. Frontend: Dependencies & Setup
 
-- [ ] 8.1 Add frontend authentication libraries to `frontend/package.json`: `jsonwebtoken` (optional, for parsing), or just use localStorage
-- [ ] 8.2 Update `frontend/.env.local`: `VITE_API_URL=http://localhost:8000/api`
-- [ ] 8.3 Create `frontend/src/hooks/useAuth.ts` custom hook:
+- [x] 8.1 Add frontend authentication libraries to `frontend/package.json`: `react-router-dom` for routing
+- [x] 8.2 Update `frontend/.env.local`: `VITE_API_URL=http://localhost:8000/api`
+- [x] 8.3 Create `frontend/src/hooks/useAuth.ts` custom hook:
   - State: `isAuthenticated`, `user`, `loading`, `error`
   - Functions: `login()`, `register()`, `logout()`
   - Handle localStorage for token persistence
   - Restore auth state on mount (check localStorage for token)
-- [ ] 8.4 Create `frontend/src/context/AuthContext.tsx`:
+- [x] 8.4 Create `frontend/src/context/AuthContext.tsx`:
   - Provide `useAuth` hook to all components
   - Export `AuthProvider` component for wrapping app
 
 ## 9. Frontend: UI Components
 
-- [ ] 9.1 Create `frontend/src/pages/LoginPage.tsx`:
+- [x] 9.1 Create `frontend/src/pages/LoginPage.tsx`:
   - Form with email and password inputs
   - Validation: email format, password required
   - Call `useAuth().login()` on submit
   - Display error messages
   - Redirect to home on successful login
   - Link to register page
-- [ ] 9.2 Create `frontend/src/pages/RegisterPage.tsx`:
+- [x] 9.2 Create `frontend/src/pages/RegisterPage.tsx`:
   - Form with email and password inputs
   - Validation: email format, password 8+ chars, uppercase + digit
   - Call `useAuth().register()` on submit
   - Display error messages
   - Redirect to home on successful registration
   - Link to login page
-- [ ] 9.3 Update `frontend/src/App.tsx`:
+- [x] 9.3 Update `frontend/src/App.tsx`:
   - Wrap with `AuthProvider`
   - Add route protection: redirect unauthenticated users from protected pages to login
   - Add routes: `/login`, `/register`
 
 ## 10. Frontend: Navigation & Session Management
 
-- [ ] 10.1 Update `frontend/src/components/Navigation.tsx`:
+- [x] 10.1 Update `frontend/src/components/Navigation.tsx`:
   - Conditionally show "Login" / "Register" if unauthenticated
   - Conditionally show "Profile" / "Logout" if authenticated
   - Logout button clears token and redirects to home
-- [ ] 10.2 Create `frontend/src/components/ProtectedRoute.tsx`:
+- [x] 10.2 Create `frontend/src/components/ProtectedRoute.tsx`:
   - Route wrapper that checks `useAuth().isAuthenticated`
   - Redirects unauthenticated users to login
-- [ ] 10.3 Implement token auto-refresh on page load:
+- [x] 10.3 Implement token auto-refresh on page load:
   - On `AuthProvider` mount, check localStorage for token
   - If token exists, verify it's still valid (not expired)
   - Restore `user` state from token claims
@@ -153,12 +155,12 @@
   - Test registration success (token stored, user state updated)
   - Test logout (token cleared from localStorage)
   - Test token persistence on page refresh
-- [ ] 11.2 Create component tests in `frontend/src/__tests__/LoginPage.test.tsx`:
+- [x] 11.2 Create component tests in `frontend/src/__tests__/LoginPage.test.tsx`:
   - Test form validation (empty fields rejected)
   - Test successful login navigation
   - Test error message display
-- [ ] 11.3 Run frontend tests: `npm run test --workspace frontend`
-  - All auth tests pass
+- [x] 11.3 Run frontend tests: `npm run test --workspace frontend`
+  - All auth tests pass (11/11)
   - No warnings or errors
 
 ## 12. Integration Testing & Manual Verification
@@ -170,19 +172,22 @@
   - Submit and verify redirect to home
   - Check browser localStorage for JWT
   - Refresh page, verify still logged in
+  - ⚠️ **PENDING**: Requires PostgreSQL + both dev servers running
 - [ ] 12.2 Error scenario tests:
   - Try registering with duplicate email (should show error)
   - Try registering with weak password (should show error)
   - Log out, try accessing protected page (should redirect to login)
   - Log in with incorrect password (should show error)
+  - ⚠️ **PENDING**: Requires PostgreSQL + both dev servers running
 - [ ] 12.3 Protected endpoint test:
   - From browser, logged-in user calls protected API endpoint
   - Verify JWT sent in Authorization header
   - Verify request succeeds with authenticated response
+  - ⚠️ **PENDING**: Requires PostgreSQL + both dev servers running
 
 ## 13. Documentation
 
-- [ ] 13.1 Create `docs/AUTHENTICATION.md`:
+- [x] 13.1 Create `docs/AUTHENTICATION.md`:
   - Overview of JWT auth flow
   - How to register/login (API examples with curl)
   - How to use protected routes in backend (code examples)
@@ -202,12 +207,14 @@
 - [ ] 14.2 Linting & formatting:
   - Backend: `ruff check backend/`, `black --check backend/`, `mypy backend/`
   - Frontend: `npm run lint --workspace frontend`, `npm run format --workspace frontend`
+  - ⚠️ **PENDING**: mypy never ran on backend
 - [ ] 14.3 Manual smoke test:
   - Register new user: confirm JWT in response
   - Login: confirm JWT in response
   - Protected endpoint with JWT: confirm success
   - Protected endpoint without JWT: confirm 401 error
   - Logout in UI: confirm token cleared from localStorage
+  - ⚠️ **PENDING**: Requires PostgreSQL running locally
 
 ## 15. Git & Commit
 

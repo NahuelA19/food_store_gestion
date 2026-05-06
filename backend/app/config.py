@@ -1,10 +1,16 @@
 """Application configuration."""
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings from environment variables."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
 
     # Server
     environment: str = "development"
@@ -36,13 +42,6 @@ class Settings(BaseSettings):
         # Parse ALLOWED_ORIGINS if it's a string
         if isinstance(self.allowed_origins, str):
             self.allowed_origins = [origin.strip() for origin in self.allowed_origins.split(",")]
-
-    class Config:
-        """Pydantic config."""
-
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
 
 
 # Global settings instance

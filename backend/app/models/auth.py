@@ -1,6 +1,6 @@
 """Authentication request and response models."""
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class RegisterRequest(BaseModel):
@@ -28,11 +28,9 @@ class LoginRequest(BaseModel):
 class AuthResponse(BaseModel):
     """Authentication response with user info and token."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int = Field(..., description="User ID")
     email: str = Field(..., description="User email")
     access_token: str = Field(..., description="JWT access token")
     token_type: str = Field("bearer", description="Token type")
-
-    class Config:
-        """Pydantic config."""
-        from_attributes = True
