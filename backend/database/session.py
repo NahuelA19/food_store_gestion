@@ -1,19 +1,27 @@
 """Database session management and dependency injection."""
 
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from database.client import engine
+# Lazy-loaded session factory
+_async_session_local: Optional[async_sessionmaker] = None
 
-# Create async session factory
-AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-    autocommit=False,
-)
+
+def get_async_session_local() -> async_sessionmaker:
+    """Get or create the async session factory."""
+    global _async_session_local
+    if _async_session_local is None:
+        from database.client import get_engine
+
+        _async_session_local = async_sessionmaker(
+            get_engine(),
+            class_=AsyncSession,
+            expire_on_commit=False,
+            autoflush=False,
+            autocommit=False,
+        )
+    return _async_session_local
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -29,7 +37,8 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             result = await session.execute(select(Product))
             return result.scalars().all()
     """
-    async with AsyncSessionLocal() as session:
+    session_factory = get_async_session_local()
+    async with session_factory() as session:
         try:
             yield session
         finally:

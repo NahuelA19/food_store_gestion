@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.health import router as health_router
-from database.client import engine
+from database.client import dispose_engine, init_engine
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +19,13 @@ async def lifespan(app: FastAPI):
     """Manage FastAPI lifespan events: startup and shutdown."""
     # Startup
     logger.info("Starting up Food Store API")
+    await init_engine()
+    logger.info("Database engine initialized")
     yield
     # Shutdown
     logger.info("Shutting down Food Store API")
-    await engine.dispose()
+    await dispose_engine()
+    logger.info("Database engine disposed")
 
 
 # Create FastAPI app
