@@ -20,9 +20,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Create enum type for order status
-    op.execute("CREATE TYPE orderstatus AS ENUM ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')")
-
     # Create users table
     op.create_table(
         'users',
