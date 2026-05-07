@@ -193,11 +193,11 @@
   - How to use protected routes in backend (code examples)
   - How to use useAuth hook in frontend (code examples)
   - Token expiration and refresh strategy (Phase 2 note)
-- [ ] 13.2 Update `README.md`:
-  - Add link to AUTHENTICATION.md
-  - Add "Authentication" section with quickstart (register, login, logout)
-- [ ] 13.3 Update `backend/app/main.py` docstring:
-  - Document auth routes and authentication dependency usage
+- [x] 13.2 Update `README.md`:
+   - Add link to AUTHENTICATION.md ✓
+   - Add "Authentication" section with quickstart (register, login, logout) ✓
+- [x] 13.3 Update `backend/app/main.py` docstring:
+   - Document auth routes and authentication dependency usage ✓
 
 ## 14. Quality Assurance & Verification
 

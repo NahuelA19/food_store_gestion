@@ -133,6 +133,7 @@ foodstore/
 - **[Database Layer](./docs/DATABASE.md)** - PostgreSQL ORM, migrations, and connection management
 - **[Database Setup](./docs/DATABASE_SETUP.md)** - PostgreSQL installation and configuration
 - **[Architecture](./docs/ARCHITECTURE.md)** - System design and layers
+- **[Authentication](./docs/AUTHENTICATION.md)** - JWT auth flow, registration, login, protected endpoints
 - **[Contributing](./docs/CONTRIBUTING.md)** - Git workflow and code standards
 - **[API Documentation](./docs/API.md)** - Backend API endpoints
 - **[Getting Started](./GETTING-STARTED.md)** - First-time developer guide
