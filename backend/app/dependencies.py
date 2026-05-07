@@ -82,10 +82,9 @@ async def get_admin_user(
     Raises:
         HTTPException 403: If user is not admin
     """
-    # For now, we'll check for a role field or attribute that indicates admin
-    # This will be expanded in Phase 4 when admin dashboard is built
-    # For MVP, we'll assume no admin users exist and this will be updated later
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="This endpoint requires admin privileges",
-    )
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required",
+        )
+    return current_user

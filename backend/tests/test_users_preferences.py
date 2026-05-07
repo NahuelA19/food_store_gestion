@@ -21,28 +21,32 @@ async def user_with_profile(db_session: AsyncSession) -> User:
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
-    
+
     # Add default preferences
     for key, value in DEFAULT_PREFERENCES.items():
         pref = UserPreference(user_id=user.id, pref_key=key, pref_value=value)
         db_session.add(pref)
     await db_session.commit()
-    
+
     return user
 
 
 @pytest.fixture
 def auth_headers(user_with_profile: User) -> dict:
     """Generate auth headers for test user."""
-    token = create_access_token(data={"user_id": user_with_profile.id, "email": user_with_profile.email})
+    token = create_access_token(
+        data={"user_id": user_with_profile.id, "email": user_with_profile.email}
+    )
     return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.mark.asyncio
-async def test_get_preferences_success(test_client: TestClient, user_with_profile: User, auth_headers: dict) -> None:
+async def test_get_preferences_success(
+    test_client: TestClient, user_with_profile: User, auth_headers: dict
+) -> None:
     """Test GET /api/users/me/preferences returns default preferences."""
     response = test_client.get("/api/users/me/preferences", headers=auth_headers)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["language"] == "en"
@@ -54,16 +58,18 @@ async def test_get_preferences_success(test_client: TestClient, user_with_profil
 async def test_get_preferences_without_auth(test_client: TestClient) -> None:
     """Test GET /api/users/me/preferences without auth returns 403."""
     response = test_client.get("/api/users/me/preferences")
-    
+
     assert response.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_update_preferences_single(test_client: TestClient, user_with_profile: User, auth_headers: dict) -> None:
+async def test_update_preferences_single(
+    test_client: TestClient, user_with_profile: User, auth_headers: dict
+) -> None:
     """Test PUT /api/users/me/preferences updates single preference."""
     payload = {"theme": "dark"}
     response = test_client.put("/api/users/me/preferences", json=payload, headers=auth_headers)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["theme"] == "dark"
@@ -72,7 +78,9 @@ async def test_update_preferences_single(test_client: TestClient, user_with_prof
 
 
 @pytest.mark.asyncio
-async def test_update_preferences_multiple(test_client: TestClient, user_with_profile: User, auth_headers: dict) -> None:
+async def test_update_preferences_multiple(
+    test_client: TestClient, user_with_profile: User, auth_headers: dict
+) -> None:
     """Test PUT /api/users/me/preferences updates multiple preferences."""
     payload = {
         "theme": "auto",
@@ -80,7 +88,7 @@ async def test_update_preferences_multiple(test_client: TestClient, user_with_pr
         "notifications": "push",
     }
     response = test_client.put("/api/users/me/preferences", json=payload, headers=auth_headers)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["theme"] == "auto"
@@ -89,20 +97,24 @@ async def test_update_preferences_multiple(test_client: TestClient, user_with_pr
 
 
 @pytest.mark.asyncio
-async def test_update_preferences_invalid_theme(test_client: TestClient, user_with_profile: User, auth_headers: dict) -> None:
+async def test_update_preferences_invalid_theme(
+    test_client: TestClient, user_with_profile: User, auth_headers: dict
+) -> None:
     """Test PUT /api/users/me/preferences with invalid theme returns 422."""
     payload = {"theme": "invalid-color"}
     response = test_client.put("/api/users/me/preferences", json=payload, headers=auth_headers)
-    
+
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
-async def test_update_preferences_invalid_language(test_client: TestClient, user_with_profile: User, auth_headers: dict) -> None:
+async def test_update_preferences_invalid_language(
+    test_client: TestClient, user_with_profile: User, auth_headers: dict
+) -> None:
     """Test PUT /api/users/me/preferences with invalid language returns 422."""
     payload = {"language": "xx"}
     response = test_client.put("/api/users/me/preferences", json=payload, headers=auth_headers)
-    
+
     assert response.status_code == 422
 
 
@@ -111,5 +123,5 @@ async def test_update_preferences_without_auth(test_client: TestClient) -> None:
     """Test PUT /api/users/me/preferences without auth returns 403."""
     payload = {"theme": "dark"}
     response = test_client.put("/api/users/me/preferences", json=payload)
-    
+
     assert response.status_code == 403

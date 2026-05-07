@@ -135,3 +135,25 @@ class UserPreferencesResponse(BaseModel):
     notifications: str
 
     model_config = {"from_attributes": True}
+
+
+class AdminUserResponse(BaseModel):
+    """Full user response for admin endpoints."""
+
+    id: int
+    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+    is_active: bool
+    role: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class UserStatusUpdate(BaseModel):
+    """User status update request (admin)."""
+
+    is_active: bool = Field(..., description="Set user active or inactive")

@@ -48,7 +48,9 @@ async def readiness() -> HealthResponse:
 
 
 @router.get("/db", response_model=DatabaseHealthResponse)
-async def database_health(session: AsyncSession = Depends(get_db_session)) -> DatabaseHealthResponse:
+async def database_health(
+    session: AsyncSession = Depends(get_db_session),
+) -> DatabaseHealthResponse:
     """Database connectivity check"""
     try:
         # Perform a simple query to check database connectivity
@@ -90,4 +92,3 @@ async def protected_test(current_user: User = Depends(get_current_user)) -> Prot
         user_id=current_user.id,
         user_email=current_user.email,
     )
-

@@ -1,7 +1,5 @@
 """Tests for user validation utilities."""
 
-import pytest
-
 from app.validation.user_validation import (
     validate_phone,
     validate_preference_key,

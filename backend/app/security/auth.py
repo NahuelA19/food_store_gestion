@@ -58,9 +58,7 @@ async def get_current_user(
         ) from None
 
     # Fetch user from database to verify it still exists and is active
-    result = await session.execute(
-        select(User).where(User.id == token_data.user_id)
-    )
+    result = await session.execute(select(User).where(User.id == token_data.user_id))
     user = result.scalar_one_or_none()
 
     if user is None:

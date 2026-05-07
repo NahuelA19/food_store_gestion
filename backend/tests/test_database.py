@@ -31,9 +31,7 @@ async def test_user_creation_and_query(get_test_db_session: AsyncSession) -> Non
     await session.commit()
 
     # Query the user back
-    result = await session.execute(
-        select(User).where(User.email == "test@example.com")
-    )
+    result = await session.execute(select(User).where(User.email == "test@example.com"))
     fetched_user = result.scalar_one_or_none()
 
     assert fetched_user is not None
@@ -56,9 +54,7 @@ async def test_database_isolation(get_test_db_session: AsyncSession) -> None:
     await session.commit()
 
     # Verify it exists
-    result = await session.execute(
-        select(User).where(User.email == "isolation_test@example.com")
-    )
+    result = await session.execute(select(User).where(User.email == "isolation_test@example.com"))
     assert result.scalar_one_or_none() is not None
 
 

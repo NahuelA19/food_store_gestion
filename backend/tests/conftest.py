@@ -82,6 +82,7 @@ async def get_test_db_session(test_engine) -> AsyncGenerator[AsyncSession, None]
 @pytest.fixture
 def override_get_db_session(get_test_db_session) -> Generator[AsyncSession, None, None]:
     """Override FastAPI dependency for test database session."""
+
     async def _get_db_session() -> AsyncGenerator[AsyncSession, None]:
         yield get_test_db_session
 
@@ -121,4 +122,3 @@ async def test_user(db_session: AsyncSession) -> User:
     await db_session.commit()
     await db_session.refresh(user)
     return user
-

@@ -10,8 +10,12 @@ class RegisterRequest(BaseModel):
 
     email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., min_length=8, description="User password (min 8 chars)")
-    first_name: Optional[str] = Field(None, min_length=1, max_length=50, description="First name (optional)")
-    last_name: Optional[str] = Field(None, min_length=1, max_length=50, description="Last name (optional)")
+    first_name: Optional[str] = Field(
+        None, min_length=1, max_length=50, description="First name (optional)"
+    )
+    last_name: Optional[str] = Field(
+        None, min_length=1, max_length=50, description="Last name (optional)"
+    )
     phone: Optional[str] = Field(None, max_length=20, description="Phone number (optional)")
 
     @field_validator("email")
@@ -31,6 +35,7 @@ class RegisterRequest(BaseModel):
         if len(v) < 7 or len(v) > 20:
             raise ValueError("Phone must be 7-20 characters")
         import re
+
         if not re.match(r"^\+?[0-9\-\(\)\s]{7,20}$", v):
             raise ValueError("Phone must contain only +, -, (), space, and digits")
         return v

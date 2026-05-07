@@ -1,10 +1,10 @@
 """Tests for user profile endpoints."""
 
-import pytest
 from datetime import datetime, timezone
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from app.models.user import User, UserPreference
 from app.security.jwt import create_access_token
@@ -26,28 +26,32 @@ async def user_with_profile(db_session: AsyncSession) -> User:
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
-    
+
     # Add default preferences
     for key, value in DEFAULT_PREFERENCES.items():
         pref = UserPreference(user_id=user.id, pref_key=key, pref_value=value)
         db_session.add(pref)
     await db_session.commit()
-    
+
     return user
 
 
 @pytest.fixture
 def auth_headers(user_with_profile: User) -> dict:
     """Generate auth headers for test user."""
-    token = create_access_token(data={"user_id": user_with_profile.id, "email": user_with_profile.email})
+    token = create_access_token(
+        data={"user_id": user_with_profile.id, "email": user_with_profile.email}
+    )
     return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.mark.asyncio
-async def test_get_current_profile_success(test_client: TestClient, user_with_profile: User, auth_headers: dict) -> None:
+async def test_get_current_profile_success(
+    test_client: TestClient, user_with_profile: User, auth_headers: dict
+) -> None:
     """Test GET /api/users/me returns user's full profile."""
     response = test_client.get("/api/users/me", headers=auth_headers)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == user_with_profile.id
@@ -63,7 +67,7 @@ async def test_get_current_profile_success(test_client: TestClient, user_with_pr
 async def test_get_current_profile_without_auth(test_client: TestClient) -> None:
     """Test GET /api/users/me without auth returns 401."""
     response = test_client.get("/api/users/me")
-    
+
     assert response.status_code == 403  # 403 because no credentials at all
 
 
@@ -71,14 +75,14 @@ async def test_get_current_profile_without_auth(test_client: TestClient) -> None
 async def test_get_public_profile_success(test_client: TestClient, user_with_profile: User) -> None:
     """Test GET /api/users/{id} returns limited public profile."""
     response = test_client.get(f"/api/users/{user_with_profile.id}")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == user_with_profile.id
     assert data["first_name"] == "John"
     assert data["last_name"] == "Doe"
     assert "created_at" in data
-    
+
     # Should NOT include email or phone for public profile
     assert "email" not in data
     assert "phone" not in data
@@ -89,12 +93,14 @@ async def test_get_public_profile_success(test_client: TestClient, user_with_pro
 async def test_get_public_profile_non_existent(test_client: TestClient) -> None:
     """Test GET /api/users/{id} with non-existent user returns 404."""
     response = test_client.get("/api/users/99999")
-    
+
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_get_deleted_user_profile_returns_404(test_client: TestClient, db_session: AsyncSession) -> None:
+async def test_get_deleted_user_profile_returns_404(
+    test_client: TestClient, db_session: AsyncSession
+) -> None:
     """Test GET /api/users/{id} with deleted user returns 404."""
     # Create and delete a user
     user = User(
@@ -106,7 +112,7 @@ async def test_get_deleted_user_profile_returns_404(test_client: TestClient, db_
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
-    
+
     response = test_client.get(f"/api/users/{user.id}")
-    
+
     assert response.status_code == 404

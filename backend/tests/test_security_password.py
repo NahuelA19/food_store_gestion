@@ -89,12 +89,15 @@ class TestPasswordValidation:
         assert not is_valid
         assert "digit" in error.lower()
 
-    @pytest.mark.parametrize("valid_password", [
-        "ValidPass123",
-        "AnotherGood2Pass",
-        "Secure9Pass",
-        "ComplexPassw0rd",
-    ])
+    @pytest.mark.parametrize(
+        "valid_password",
+        [
+            "ValidPass123",
+            "AnotherGood2Pass",
+            "Secure9Pass",
+            "ComplexPassw0rd",
+        ],
+    )
     def test_various_valid_passwords(self, valid_password):
         """Various valid passwords pass validation."""
         is_valid, error = validate_password_strength(valid_password)
@@ -102,12 +105,15 @@ class TestPasswordValidation:
         assert is_valid, f"Password '{valid_password}' should be valid: {error}"
         assert error == ""
 
-    @pytest.mark.parametrize("invalid_password,reason", [
-        ("short1", "too short"),
-        ("nouppercase123", "no uppercase"),
-        ("NODIGITS", "no digit"),
-        ("NoD", "multiple issues"),
-    ])
+    @pytest.mark.parametrize(
+        "invalid_password,reason",
+        [
+            ("short1", "too short"),
+            ("nouppercase123", "no uppercase"),
+            ("NODIGITS", "no digit"),
+            ("NoD", "multiple issues"),
+        ],
+    )
     def test_various_invalid_passwords(self, invalid_password, reason):
         """Various invalid passwords fail validation."""
         is_valid, error = validate_password_strength(invalid_password)

@@ -6,10 +6,10 @@ from typing import Optional
 
 def validate_profile_name(name: Optional[str]) -> bool:
     """Validate profile name (first_name or last_name).
-    
+
     Args:
         name: Name to validate
-        
+
     Returns:
         True if valid, False otherwise
     """
@@ -22,10 +22,10 @@ def validate_profile_name(name: Optional[str]) -> bool:
 
 def validate_phone(phone: Optional[str]) -> bool:
     """Validate phone format.
-    
+
     Args:
         phone: Phone number to validate
-        
+
     Returns:
         True if valid or None (optional), False otherwise
     """
@@ -41,10 +41,10 @@ def validate_phone(phone: Optional[str]) -> bool:
 
 def validate_preference_key(key: str) -> bool:
     """Validate preference key is in allowed list.
-    
+
     Args:
         key: Preference key to validate
-        
+
     Returns:
         True if valid, False otherwise
     """
@@ -54,11 +54,11 @@ def validate_preference_key(key: str) -> bool:
 
 def validate_preference_value(key: str, value: str) -> bool:
     """Validate preference value is in allowed list for the key.
-    
+
     Args:
         key: Preference key
         value: Preference value to validate
-        
+
     Returns:
         True if valid, False otherwise
     """
@@ -67,10 +67,10 @@ def validate_preference_value(key: str, value: str) -> bool:
         "theme": ["light", "dark", "auto"],
         "notifications": ["email", "push", "off"],
     }
-    
+
     if key not in allowed_values:
         return False
-    
+
     return value in allowed_values[key]
 
 

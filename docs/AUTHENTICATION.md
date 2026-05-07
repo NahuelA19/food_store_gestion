@@ -41,6 +41,29 @@ curl -X POST http://localhost:8000/api/auth/register \
 {
   "id": 1,
   "email": "user@example.com",
+  "first_name": null,
+  "last_name": null,
+  "phone": null,
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer"
+}
+```
+
+**With optional profile fields:**
+```bash
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"SecurePass123","first_name":"John","last_name":"Doe","phone":"+1-555-123-4567"}'
+```
+
+**Response with profile** (201 Created):
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "phone": "+1-555-123-4567",
   "access_token": "eyJhbGciOiJIUzI1NiIs...",
   "token_type": "bearer"
 }
@@ -65,6 +88,9 @@ curl -X POST http://localhost:8000/api/auth/login \
 {
   "id": 1,
   "email": "user@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "phone": "+1-555-123-4567",
   "access_token": "eyJhbGciOiJIUzI1NiIs...",
   "token_type": "bearer"
 }
@@ -91,6 +117,32 @@ curl http://localhost:8000/api/health/protected/test \
   "user_email": "user@example.com"
 }
 ```
+
+---
+
+### Fetch Profile After Login
+
+After logging in, fetch the user's full profile:
+
+```bash
+curl http://localhost:8000/api/users/me \
+  -H "Authorization: Bearer <your-jwt-token>"
+```
+
+**Response** (200 OK):
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "phone": "+1-555-123-4567",
+  "created_at": "2026-05-07T12:00:00+00:00",
+  "updated_at": "2026-05-07T12:00:00+00:00"
+}
+```
+
+For the complete User Service API reference (profile CRUD, preferences, admin endpoints), see [docs/USER-SERVICE.md](./USER-SERVICE.md).
 
 ---
 

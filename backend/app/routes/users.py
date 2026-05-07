@@ -1,19 +1,22 @@
 """User profile and preferences routes."""
 
 from datetime import datetime, timezone
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.dependencies import get_current_user
+from app.dependencies import get_admin_user, get_current_user
 from app.models.user import User, UserPreference
 from app.models.user_profile import (
+    AdminUserResponse,
     UserPreferencesResponse,
     UserPreferenceUpdate,
     UserProfileUpdate,
     UserPublicResponse,
     UserResponse,
+    UserStatusUpdate,
 )
 from app.validation import DEFAULT_PREFERENCES
 from database.session import get_db_session
@@ -243,3 +246,85 @@ async def delete_account(
 
     session.add(current_user)
     await session.commit()
+
+
+@router.get("", response_model=dict)
+async def list_users(
+    cursor: Optional[int] = Query(None, description="Cursor for pagination (user ID)"),
+    limit: int = Query(10, ge=1, le=100, description="Number of users per page"),
+    current_user: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """List all users with cursor-based pagination (admin only).
+
+    Args:
+        cursor: Cursor user ID for pagination
+        limit: Number of users per page (1-100)
+        current_user: Current admin user
+        session: Database session
+
+    Returns:
+        dict with users list and next_cursor
+
+    Raises:
+        HTTPException 403: If user is not admin
+    """
+    query = select(User)
+    if cursor:
+        query = query.where(User.id > cursor)
+    query = query.order_by(User.id).limit(limit + 1)
+
+    result = await session.execute(query)
+    users = result.scalars().all()
+
+    next_cursor = None
+    if len(users) > limit:
+        users = users[:limit]
+        next_cursor = users[-1].id
+
+    return {
+        "users": [AdminUserResponse.model_validate(u) for u in users],
+        "next_cursor": next_cursor,
+    }
+
+
+@router.patch("/{user_id}/status", response_model=AdminUserResponse)
+async def update_user_status(
+    user_id: int,
+    body: UserStatusUpdate,
+    current_user: User = Depends(get_admin_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminUserResponse:
+    """Activate or deactivate a user (admin only).
+
+    Args:
+        user_id: ID of user to update
+        body: Status update request with is_active
+        current_user: Current admin user
+        session: Database session
+
+    Returns:
+        AdminUserResponse with updated user
+
+    Raises:
+        HTTPException 403: If user is not admin
+        HTTPException 404: If user not found or deleted
+    """
+    result = await session.execute(
+        select(User).where(User.id == user_id, User.deleted_at.is_(None))
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    user.is_active = body.is_active
+    user.updated_at = datetime.now(timezone.utc)
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
+    return AdminUserResponse.model_validate(user)

@@ -1,7 +1,8 @@
 """Tests for user profile update and delete endpoints."""
 
-import pytest
 from datetime import datetime, timezone
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -26,25 +27,29 @@ async def user_with_profile(db_session: AsyncSession) -> User:
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
-    
+
     # Add default preferences
     for key, value in DEFAULT_PREFERENCES.items():
         pref = UserPreference(user_id=user.id, pref_key=key, pref_value=value)
         db_session.add(pref)
     await db_session.commit()
-    
+
     return user
 
 
 @pytest.fixture
 def auth_headers(user_with_profile: User) -> dict:
     """Generate auth headers for test user."""
-    token = create_access_token(data={"user_id": user_with_profile.id, "email": user_with_profile.email})
+    token = create_access_token(
+        data={"user_id": user_with_profile.id, "email": user_with_profile.email}
+    )
     return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.mark.asyncio
-async def test_update_profile_success(test_client: TestClient, user_with_profile: User, auth_headers: dict) -> None:
+async def test_update_profile_success(
+    test_client: TestClient, user_with_profile: User, auth_headers: dict
+) -> None:
     """Test PUT /api/users/me updates user profile."""
     payload = {
         "first_name": "Jane",
@@ -52,7 +57,7 @@ async def test_update_profile_success(test_client: TestClient, user_with_profile
         "phone": "+1-555-987-6543",
     }
     response = test_client.put("/api/users/me", json=payload, headers=auth_headers)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["first_name"] == "Jane"
@@ -61,13 +66,15 @@ async def test_update_profile_success(test_client: TestClient, user_with_profile
 
 
 @pytest.mark.asyncio
-async def test_update_profile_partial(test_client: TestClient, user_with_profile: User, auth_headers: dict, db_session: AsyncSession) -> None:
+async def test_update_profile_partial(
+    test_client: TestClient, user_with_profile: User, auth_headers: dict, db_session: AsyncSession
+) -> None:
     """Test PUT /api/users/me with partial fields only updates those fields."""
     payload = {
         "first_name": "Janet",
     }
     response = test_client.put("/api/users/me", json=payload, headers=auth_headers)
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["first_name"] == "Janet"
@@ -76,13 +83,15 @@ async def test_update_profile_partial(test_client: TestClient, user_with_profile
 
 
 @pytest.mark.asyncio
-async def test_update_profile_invalid_phone(test_client: TestClient, user_with_profile: User, auth_headers: dict) -> None:
+async def test_update_profile_invalid_phone(
+    test_client: TestClient, user_with_profile: User, auth_headers: dict
+) -> None:
     """Test PUT /api/users/me with invalid phone returns 422."""
     payload = {
         "phone": "abc",  # Too short and invalid format
     }
     response = test_client.put("/api/users/me", json=payload, headers=auth_headers)
-    
+
     assert response.status_code == 422
 
 
@@ -91,17 +100,19 @@ async def test_update_profile_without_auth(test_client: TestClient) -> None:
     """Test PUT /api/users/me without auth returns 403."""
     payload = {"first_name": "Jane"}
     response = test_client.put("/api/users/me", json=payload)
-    
+
     assert response.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_delete_account_success(test_client: TestClient, user_with_profile: User, auth_headers: dict, db_session: AsyncSession) -> None:
+async def test_delete_account_success(
+    test_client: TestClient, user_with_profile: User, auth_headers: dict, db_session: AsyncSession
+) -> None:
     """Test DELETE /api/users/me soft-deletes user."""
     response = test_client.delete("/api/users/me", headers=auth_headers)
-    
+
     assert response.status_code == 204
-    
+
     # Verify user is soft-deleted in database
     result = await db_session.execute(select(User).where(User.id == user_with_profile.id))
     user = result.scalar_one()
@@ -113,7 +124,7 @@ async def test_delete_account_success(test_client: TestClient, user_with_profile
 async def test_delete_account_without_auth(test_client: TestClient) -> None:
     """Test DELETE /api/users/me without auth returns 403."""
     response = test_client.delete("/api/users/me")
-    
+
     assert response.status_code == 403
 
 
@@ -129,10 +140,10 @@ async def test_deleted_user_cannot_login(test_client: TestClient, db_session: As
     )
     db_session.add(user)
     await db_session.commit()
-    
+
     # Try to login
     payload = {"email": "deleted@example.com", "password": "TestPassword123"}
     response = test_client.post("/api/auth/login", json=payload)
-    
+
     assert response.status_code == 403
     assert "inactive" in response.json()["detail"].lower()

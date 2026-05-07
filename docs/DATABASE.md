@@ -202,21 +202,35 @@ async def list_products(session: AsyncSession = Depends(get_db_session)):
 ## Entity Relationship Diagram (ERD)
 
 ```
-┌──────────────────┐
-│      users       │
-├──────────────────┤
-│ id (PK)          │
-│ email (UNIQUE)   │
-│ hashed_password  │
-│ is_active        │
-│ created_at       │
-│ updated_at       │
-└────────┬─────────┘
-         │
-         │ 1:N
-         │
-    ┌────▼──────────┐
-    │    orders      │
+┌──────────────────────────┐
+│         users            │
+├──────────────────────────┤
+│ id (PK)                  │
+│ email (UNIQUE)           │
+│ hashed_password          │
+│ is_active                │
+│ role (default: "user")   │
+│ first_name (nullable)    │
+│ last_name (nullable)     │
+│ phone (nullable)         │
+│ deleted_at (nullable)    │
+│ created_at               │
+│ updated_at               │
+└────┬─────────┬───────────┘
+     │         │
+     │ 1:1     │ 1:N
+     │         │
+┌────▼────┐  ┌▼────────────────┐
+│user_pref│  │    orders       │
+│erences  │  ├─────────────────┤
+├─────────┤  │ id (PK)         │
+│ id (PK) │  │ user_id (FK)    │
+│user_id  │  │ status (ENUM)   │
+│pref_key │  │ total_amount    │
+│pref_val │  │ created_at      │
+│created  │  │ updated_at      │
+│updated  │  └───┬──────────┬──┘
+└─────────┘      │ 1:N      │
     ├────────────────┤
     │ id (PK)        │
     │ user_id (FK)   │
@@ -265,6 +279,30 @@ async def list_products(session: AsyncSession = Depends(get_db_session)):
 
 - `users.email` (case-sensitive)
 - `categories.name` (case-sensitive)
+- `user_preferences (user_id, pref_key)` — unique per user per preference
+
+### Indexes
+
+Indexes are created on frequently-queried columns:
+
+```sql
+CREATE INDEX idx_users_email ON users (email);
+CREATE INDEX idx_users_is_active ON users (is_active);
+CREATE INDEX idx_users_role ON users (role);
+CREATE INDEX idx_users_is_active_created_at ON users (is_active, created_at);
+CREATE INDEX idx_products_name ON products (name);
+CREATE INDEX idx_orders_user_id ON orders (user_id);
+```
+
+All foreign keys are automatically indexed.
+
+### Performance Tuning
+
+#### User Query Optimization
+
+- Admin user listing uses the composite index `(is_active, created_at)` for efficient pagination
+- Profile queries by `id` use the primary key index
+- Preference lookups use the composite index `(user_id, pref_key)` for O(1) lookups
 
 ### Check Constraints (application-enforced)
 
@@ -307,18 +345,6 @@ Tests verify:
 4. Unique constraint enforcement
 
 ## Performance Tuning
-
-### Indexes
-
-Indexes are created on frequently-queried columns:
-
-```sql
-CREATE INDEX idx_users_email ON users (email);
-CREATE INDEX idx_products_name ON products (name);
-CREATE INDEX idx_orders_user_id ON orders (user_id);
-```
-
-All foreign keys are automatically indexed.
 
 ### Connection Pooling
 

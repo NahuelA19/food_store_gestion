@@ -21,9 +21,7 @@ class TestAuthMiddleware:
     ):
         """Protected route accepts valid JWT token."""
         # Generate token for test user
-        token = create_access_token(
-            data={"user_id": test_user.id, "email": test_user.email}
-        )
+        token = create_access_token(data={"user_id": test_user.id, "email": test_user.email})
 
         response = await async_client.get(
             "/api/health/protected/test",
@@ -80,9 +78,7 @@ class TestAuthMiddleware:
     async def test_protected_route_with_nonexistent_user(self, async_client: AsyncClient):
         """Protected route rejects token with non-existent user."""
         # Create token for non-existent user
-        token = create_access_token(
-            data={"user_id": 99999, "email": "nonexistent@example.com"}
-        )
+        token = create_access_token(data={"user_id": 99999, "email": "nonexistent@example.com"})
 
         response = await async_client.get(
             "/api/health/protected/test",
@@ -137,9 +133,7 @@ class TestAuthMiddleware:
         test_user: User,
     ):
         """Public route works with or without token."""
-        token = create_access_token(
-            data={"user_id": test_user.id, "email": test_user.email}
-        )
+        token = create_access_token(data={"user_id": test_user.id, "email": test_user.email})
 
         response = await async_client.get(
             "/api/health/public/test",

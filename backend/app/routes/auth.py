@@ -1,14 +1,15 @@
 """Authentication routes for user registration and login."""
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
 from app.models.auth import AuthResponse, LoginRequest, RegisterRequest
 from app.models.user import User, UserPreference
 from app.security.jwt import create_access_token
 from app.security.password import get_password_hash, validate_password_strength, verify_password
 from app.validation import DEFAULT_PREFERENCES
 from database.session import get_db_session
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -40,9 +41,7 @@ async def register(
         )
 
     # Check if email already exists
-    result = await session.execute(
-        select(User).where(User.email == body.email.lower())
-    )
+    result = await session.execute(select(User).where(User.email == body.email.lower()))
     existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(
@@ -75,9 +74,7 @@ async def register(
     await session.commit()
 
     # Generate JWT token
-    access_token = create_access_token(
-        data={"user_id": new_user.id, "email": new_user.email}
-    )
+    access_token = create_access_token(data={"user_id": new_user.id, "email": new_user.email})
 
     return AuthResponse(
         id=new_user.id,
@@ -109,9 +106,7 @@ async def login(
         HTTPException 403: Account is inactive
     """
     # Find user by email
-    result = await session.execute(
-        select(User).where(User.email == body.email.lower())
-    )
+    result = await session.execute(select(User).where(User.email == body.email.lower()))
     user = result.scalar_one_or_none()
 
     # Check if user exists and password is correct
@@ -130,9 +125,7 @@ async def login(
         )
 
     # Generate JWT token
-    access_token = create_access_token(
-        data={"user_id": user.id, "email": user.email}
-    )
+    access_token = create_access_token(data={"user_id": user.id, "email": user.email})
 
     return AuthResponse(
         id=user.id,
