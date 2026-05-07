@@ -7,7 +7,7 @@ Complete roadmap of planned changes for Food Store e-commerce platform. This doc
 **Total Changes**: 23 planned
 **Phases**: 6 (from scratch to production)
 **Timeline**: 2-3 months (estimated)
-**Status**: Phase 1 complete ✅, Phase 2 in progress (Change 4 proposed, ready to implement)
+**Status**: Phase 1 complete ✅, Phase 2 in progress (Change 4 implementing, ~60/77 tasks done)
 
 ## Phase 1: Foundation (Weeks 1-2)
 
@@ -58,14 +58,17 @@ Core infrastructure and project setup.
 
 Core business entities and operations.
 
-### Change 4: **create-user-service** (PROPOSED)
-- **Status**: Artifacts complete, ready for implementation
+### Change 4: **create-user-service** (IN PROGRESS)
+- **Status**: Implementation partial — backend + frontend code complete, admin endpoints pending, documentation pending
 - **Duration**: 3-4 days
 - **Description**: User CRUD, profiles, preferences
 - **Dependencies**: Change 3 ✅
 - **API Endpoints**: 5-7
 - **Artifacts**: proposal.md, design.md, specs (5 files), tasks.md (77 tasks) ✓
-- **Proposed**: 2026-05-07
+- **Progress**: ~60/77 tasks completed ✓ (sections 1-8, 10-11, 13-17 done)
+- **Pending**: Section 9 (admin endpoints), 12 (code quality), 18 (preferences UI), 19 (docs), 20 (integration), 21 (git)
+- **Implemented**: 2026-05-07
+- **Commit**: `7469729` - feat(users): implement user service with profiles, preferences, and frontend
 
 ### Change 5: **create-product-service** (PENDING)
 - **Duration**: 4-5 days
