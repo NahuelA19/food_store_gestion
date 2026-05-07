@@ -268,15 +268,18 @@ setup-project-structure (1)
 
 1. ✅ **Complete Change 1** (setup-project-structure) — DONE
 2. ✅ **Complete Change 2** (add-database-layer) — DONE
-3. ✅ **Complete Change 3** (implement-authentication) — DONE
-4. ➜ **Propose Change 4** (create-user-service) — Next in Phase 2
+3. ✅ **Complete Change 3** (implement-authentication) — DONE (verification pending)
+4. ➜ **Propose Change 4** (create-user-service) — NEXT (starting 2026-05-07)
 5. ➜ Continue with Phase 2 changes (5, 6, 7)
 
 ### Pending verification for Change 3 (requires PostgreSQL)
-- Run `mypy backend/ --strict`
-- Manual curl verification of auth endpoints
-- Integration testing E2E with both dev servers running
-- Full test suite with `npm run test`
+See `docs/CHANGE3-PENDING-TASKS.md` for details on:
+- 7.3: mypy type checking
+- 7.4: Manual curl verification
+- 12.1-12.3: Integration testing
+- 14.1-14.3: Full QA
+
+See `docs/GLOBAL-PENDING-TASKS.md` for project-wide pending task tracking.
 
 See archived tasks at `openspec/changes/archive/2026-05-06-implement-authentication/tasks.md`
 
