@@ -62,28 +62,34 @@ This document tracks ALL pending tasks across the entire project that are blocki
 
 ---
 
-### Change 4: create-user-service 📋 NOT STARTED
+### Change 4: create-user-service 📋 PROPOSED (77 tasks)
 
-**Status**: Ready to propose  
+**Status**: All artifacts complete (proposal, design, specs, tasks)  
+**Ready to**: Start implementation  
 **Dependencies**: Change 3 ✅ (code complete, verification pending)
 
-#### Planning Tasks (to be completed during propose phase)
+#### Proposed Artifacts (2026-05-07)
 
-| Task | Type | Priority | PG Required | Est. Time | Status |
-|------|------|----------|-------------|-----------|--------|
-| 4.1: Propose change with full artifacts | Planning | HIGH | ❌ No | 1 hour | 📝 Ready |
-| 4.2: Design data model (User extensions) | Design | HIGH | ❌ No | 1 hour | 📝 Ready |
-| 4.3: Create specifications (tasks.md) | Design | HIGH | ❌ No | 1-2 hrs | 📝 Ready |
+| Artifact | Status | Description |
+|----------|--------|-------------|
+| proposal.md | ✅ Done | Why user service, what changes, capabilities, impact |
+| design.md | ✅ Done | Technical decisions, database design, migration plan |
+| specs/ (5 files) | ✅ Done | user-profiles, user-preferences, user-management-api, user-validation, user-auth (delta) |
+| tasks.md | ✅ Done | 77 implementation tasks in 21 sections |
 
-#### Implementation Tasks (estimated 15-20 tasks)
+#### Implementation Tasks Breakdown
 
-| Task | Type | Priority | PG Required | Est. Time | Status |
-|------|------|----------|-------------|-----------|--------|
-| 4.4-4.20: Backend CRUD endpoints + tests | Implementation | HIGH | ✅ Yes | 2-3 days | 📝 Not started |
-| 4.21-4.30: Frontend user management UI + tests | Implementation | HIGH | ✅ Yes | 1-2 days | 📝 Not started |
+| Phase | Count | Est. Time |
+|-------|-------|-----------|
+| Database + ORM | 12 | 4 hours |
+| Backend Routes | 36 | 8 hours |
+| Frontend | 16 | 6 hours |
+| Testing | 11 | 4 hours |
+| Docs + Verification | 2 | 2 hours |
 
-**Total estimated for Change 4**: 20-25 tasks, 3-5 days  
-**Start date**: 2026-05-07 (ready to propose)
+**Total implementation time**: 3-4 days  
+**PostgreSQL required**: YES (all tasks require PostgreSQL for testing)  
+**Can start now**: ✅ YES
 
 ---
 
@@ -157,22 +163,23 @@ This document tracks ALL pending tasks across the entire project that are blocki
 | Metric | Value | Trend |
 |--------|-------|-------|
 | **Changes completed** | 3/23 | ✅ On track |
+| **Changes proposed** | 4/23 | ✅ Next: implement |
 | **Tasks completed (cumulative)** | 154/700 | ✅ 22% |
 | **Pending verification tasks** | 11 | ✅ Isolated to Change 3 |
+| **Pending implementation tasks** | 77 | 🟢 Change 4 ready |
 | **No-blocker tasks pending** | ✅ YES | 🟢 Can proceed |
-| **Phase 2 progress** | Change 4 ready | 🟢 Ready to start |
+| **Phase 2 progress** | Change 4 proposed | 🟢 Ready to implement |
 
 ---
 
 ## 💡 Decision Log
 
-**2026-05-07**: Deferred Change 3 verification tasks pending PostgreSQL setup  
-- Reason: All implementation complete, no code blockers
-- Impact: Allows Change 4 to proceed immediately
-- Risk: Change 3 may need rework if verification reveals issues
-- Mitigation: Run verification tasks ASAP once PostgreSQL available
+**2026-05-07 (latest)**: Completed Change 4 proposal with all artifacts
+- Reason: Follow OPSX workflow: propose → design → apply → archive
+- Artifacts: proposal.md (Why), design.md (How), specs (5 files - What), tasks.md (77 implementation tasks)
+- Ready: for immediate implementation
 
-**2026-05-07**: Deferred useAuth hook tests (11.1) to technical debt  
+**2026-05-07**: Deferred Change 3 verification tasks pending PostgreSQL setup  
 - Reason: Complex async mocking, not critical for functionality
 - Reason: Form tests already cover UI layer (11.2)
 - Risk: Hook edge cases may be missed

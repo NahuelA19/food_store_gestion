@@ -7,7 +7,7 @@ Complete roadmap of planned changes for Food Store e-commerce platform. This doc
 **Total Changes**: 23 planned
 **Phases**: 6 (from scratch to production)
 **Timeline**: 2-3 months (estimated)
-**Status**: Phase 1 complete ✅, Phase 2 in progress (Change 3 - Authentication ✅ COMPLETED)
+**Status**: Phase 1 complete ✅, Phase 2 in progress (Change 4 proposed, ready to implement)
 
 ## Phase 1: Foundation (Weeks 1-2)
 
@@ -58,11 +58,14 @@ Core infrastructure and project setup.
 
 Core business entities and operations.
 
-### Change 4: **create-user-service** (PENDING)
+### Change 4: **create-user-service** (PROPOSED)
+- **Status**: Artifacts complete, ready for implementation
 - **Duration**: 3-4 days
 - **Description**: User CRUD, profiles, preferences
 - **Dependencies**: Change 3 ✅
 - **API Endpoints**: 5-7
+- **Artifacts**: proposal.md, design.md, specs (5 files), tasks.md (77 tasks) ✓
+- **Proposed**: 2026-05-07
 
 ### Change 5: **create-product-service** (PENDING)
 - **Duration**: 4-5 days
@@ -269,8 +272,9 @@ setup-project-structure (1)
 1. ✅ **Complete Change 1** (setup-project-structure) — DONE
 2. ✅ **Complete Change 2** (add-database-layer) — DONE
 3. ✅ **Complete Change 3** (implement-authentication) — DONE (verification pending)
-4. ➜ **Propose Change 4** (create-user-service) — NEXT (starting 2026-05-07)
-5. ➜ Continue with Phase 2 changes (5, 6, 7)
+4. 📋 **Propose Change 4** (create-user-service) — DONE (2026-05-07)
+5. ➜ **Implement Change 4** — NEXT (starting 2026-05-07)
+6. ➜ Continue with Phase 2 changes (5, 6, 7)
 
 ### Pending verification for Change 3 (requires PostgreSQL)
 See `docs/CHANGE3-PENDING-TASKS.md` for details on:
