@@ -1,7 +1,7 @@
 # Change 5: Product Service — Implementation Tasks
 
 **Total Effort Estimate**: 70-87 hours (~2 weeks)  
-**Format**: Numbered checklist with `- [ ]` checkboxes
+**Format**: Numbered checklist with `- [x]` checkboxes
 
 ---
 
@@ -9,16 +9,16 @@
 
 Create Alembic migrations for new tables and indexes. These tasks assume Change 2 (database layer) is complete and categories/products tables exist.
 
-- [ ] 1.1: Create Alembic migration file for `inventory` table
-- [ ] 1.2: Add migration `CREATE TABLE inventory` with all columns and constraints
-- [ ] 1.3: Add index on `inventory.product_id` (unique constraint)
-- [ ] 1.4: Add index on `inventory.stock_quantity` for filtering
-- [ ] 1.5: Add index on `products.name` for search (if not already present)
-- [ ] 1.6: Add index on `products.category_id` (if not already present)
-- [ ] 1.7: Add index on `products.price` for price range filtering
-- [ ] 1.8: Add index on `products.is_available` for availability filtering
-- [ ] 1.9: Run `alembic upgrade head` and verify tables exist
-- [ ] 1.10: Create database seed script with sample categories and products
+- [x] 1.1: Create Alembic migration file for `inventory` table
+- [x] 1.2: Add migration `CREATE TABLE inventory` with all columns and constraints
+- [x] 1.3: Add index on `inventory.product_id` (unique constraint)
+- [x] 1.4: Add index on `inventory.stock_quantity` for filtering
+- [x] 1.5: Add index on `products.name` for search (if not already present)
+- [x] 1.6: Add index on `products.category_id` (if not already present)
+- [x] 1.7: Add index on `products.price` for price range filtering
+- [x] 1.8: Add index on `products.is_available` for availability filtering
+- [x] 1.9: Run `alembic upgrade head` and verify tables exist
+- [x] 1.10: Create database seed script with sample categories and products
 
 ---
 
@@ -26,16 +26,16 @@ Create Alembic migrations for new tables and indexes. These tasks assume Change 
 
 Define SQLAlchemy models with proper relationships, lazy loading, and cascades.
 
-- [ ] 2.1: Create `app/models/inventory.py` with `Inventory` class
-- [ ] 2.2: Add all columns to Inventory model (product_id, stock_quantity, reserved_quantity, etc.)
-- [ ] 2.3: Add `TimestampMixin` to Inventory model
-- [ ] 2.4: Add relationship `Inventory.product` with back_populates
-- [ ] 2.5: Update Product model: add `inventory` relationship (one-to-one)
-- [ ] 2.6: Add lazy loading `selectinload` to Product.category
-- [ ] 2.7: Add lazy loading `selectinload` to Product.inventory
-- [ ] 2.8: Update Category model: ensure `products` relationship has `selectinload`
-- [ ] 2.9: Add `@property available_quantity` to Inventory (calculated)
-- [ ] 2.10: Test ORM models: create product + inventory, verify relationships load
+- [x] 2.1: Create `app/models/inventory.py` with `Inventory` class
+- [x] 2.2: Add all columns to Inventory model (product_id, stock_quantity, reserved_quantity, etc.)
+- [x] 2.3: Add `TimestampMixin` to Inventory model
+- [x] 2.4: Add relationship `Inventory.product` with back_populates
+- [x] 2.5: Update Product model: add `inventory` relationship (one-to-one)
+- [x] 2.6: Add lazy loading `selectinload` to Product.category
+- [x] 2.7: Add lazy loading `selectinload` to Product.inventory
+- [x] 2.8: Update Category model: ensure `products` relationship has `selectinload`
+- [x] 2.9: Add `@property available_quantity` to Inventory (calculated)
+- [x] 2.10: Test ORM models: create product + inventory, verify relationships load
 
 ---
 
@@ -43,14 +43,14 @@ Define SQLAlchemy models with proper relationships, lazy loading, and cascades.
 
 Create request/response schemas for all endpoints with proper validation.
 
-- [ ] 3.1: Create `app/models/schemas.py` with all Pydantic models
-- [ ] 3.2: Implement `ProductCreate` schema with validation rules
-- [ ] 3.3: Implement `ProductUpdate` schema (all fields optional)
-- [ ] 3.4: Implement `ProductResponse` schema with nested Category
-- [ ] 3.5: Implement `InventoryResponse` schema with available_quantity
-- [ ] 3.6: Implement `ProductDetailResponse` (includes full inventory)
-- [ ] 3.7: Implement `CategoryCreate`, `CategoryUpdate`, `CategoryResponse` schemas
-- [ ] 3.8: Add ConfigDict with `from_attributes=True` to all response models
+- [x] 3.1: Create `app/models/schemas.py` with all Pydantic models
+- [x] 3.2: Implement `ProductCreate` schema with validation rules
+- [x] 3.3: Implement `ProductUpdate` schema (all fields optional)
+- [x] 3.4: Implement `ProductResponse` schema with nested Category
+- [x] 3.5: Implement `InventoryResponse` schema with available_quantity
+- [x] 3.6: Implement `ProductDetailResponse` (includes full inventory)
+- [x] 3.7: Implement `CategoryCreate`, `CategoryUpdate`, `CategoryResponse` schemas
+- [x] 3.8: Add ConfigDict with `from_attributes=True` to all response models
 
 ---
 
@@ -58,16 +58,16 @@ Create request/response schemas for all endpoints with proper validation.
 
 Implement CRUD endpoints for categories. Reuse existing category model if present.
 
-- [ ] 4.1: Create `app/routes/categories.py` with router setup
-- [ ] 4.2: Implement `GET /api/categories` — list all categories with product count
-- [ ] 4.3: Add pagination/limit parameters to category list endpoint
-- [ ] 4.4: Implement `GET /api/categories/{id}` — get category with products
-- [ ] 4.5: Implement `POST /api/categories` — create category (admin only)
-- [ ] 4.6: Add validation: reject duplicate category names (409 Conflict)
-- [ ] 4.7: Implement `PUT /api/categories/{id}` — update category (admin only)
-- [ ] 4.8: Implement `DELETE /api/categories/{id}` — delete category (admin only)
-- [ ] 4.9: Add business logic: prevent deletion if category has products
-- [ ] 4.10: Register category router in `app/main.py`
+- [x] 4.1: Create `app/routes/categories.py` with router setup
+- [x] 4.2: Implement `GET /api/categories` — list all categories with product count
+- [x] 4.3: Add pagination/limit parameters to category list endpoint
+- [x] 4.4: Implement `GET /api/categories/{id}` — get category with products
+- [x] 4.5: Implement `POST /api/categories` — create category (admin only)
+- [x] 4.6: Add validation: reject duplicate category names (409 Conflict)
+- [x] 4.7: Implement `PUT /api/categories/{id}` — update category (admin only)
+- [x] 4.8: Implement `DELETE /api/categories/{id}` — delete category (admin only)
+- [x] 4.9: Add business logic: prevent deletion if category has products
+- [x] 4.10: Register category router in `app/main.py`
 
 ---
 
@@ -75,18 +75,18 @@ Implement CRUD endpoints for categories. Reuse existing category model if presen
 
 Implement full CRUD + search/filter endpoints for products.
 
-- [ ] 5.1: Create `app/routes/products.py` with router setup
-- [ ] 5.2: Implement `GET /api/products` — list with pagination
-- [ ] 5.3: Add category_id filter to product list
-- [ ] 5.4: Add price range filters (min_price, max_price) to product list
-- [ ] 5.5: Add search parameter (by name) to product list
-- [ ] 5.6: Add in_stock filter (availability) to product list
-- [ ] 5.7: Add sorting (name, price, created_at) + order (asc/desc) to product list
-- [ ] 5.8: Implement `GET /api/products/{id}` — get single product with inventory
-- [ ] 5.9: Implement `POST /api/products` — create product (admin only)
-- [ ] 5.10: Auto-create inventory record when product is created (stock_quantity=0)
-- [ ] 5.11: Implement `PUT /api/products/{id}` — update product (admin only)
-- [ ] 5.12: Implement `DELETE /api/products/{id}` — delete product (admin only, cascade to inventory)
+- [x] 5.1: Create `app/routes/products.py` with router setup
+- [x] 5.2: Implement `GET /api/products` — list with pagination
+- [x] 5.3: Add category_id filter to product list
+- [x] 5.4: Add price range filters (min_price, max_price) to product list
+- [x] 5.5: Add search parameter (by name) to product list
+- [x] 5.6: Add in_stock filter (availability) to product list
+- [x] 5.7: Add sorting (name, price, created_at) + order (asc/desc) to product list
+- [x] 5.8: Implement `GET /api/products/{id}` — get single product with inventory
+- [x] 5.9: Implement `POST /api/products` — create product (admin only)
+- [x] 5.10: Auto-create inventory record when product is created (stock_quantity=0)
+- [x] 5.11: Implement `PUT /api/products/{id}` — update product (admin only)
+- [x] 5.12: Implement `DELETE /api/products/{id}` — delete product (admin only, cascade to inventory)
 
 ---
 
@@ -94,14 +94,14 @@ Implement full CRUD + search/filter endpoints for products.
 
 Implement search, related products, and availability toggle endpoints.
 
-- [ ] 6.1: Implement `GET /api/products/search?q=query` — search by name
-- [ ] 6.2: Add pagination to search results
-- [ ] 6.3: Implement `GET /api/products/{id}/related` — get products in same category
-- [ ] 6.4: Limit related products to top 4 (exclude requested product)
-- [ ] 6.5: Implement `PUT /api/products/{id}/availability` — toggle is_available flag
-- [ ] 6.6: Ensure availability changes don't affect inventory levels
-- [ ] 6.7: Return proper error responses (404, 400, 403) for all endpoints
-- [ ] 6.8: Test all product endpoints with admin + non-admin users
+- [x] 6.1: Implement `GET /api/products/search?q=query` — search by name
+- [x] 6.2: Add pagination to search results
+- [x] 6.3: Implement `GET /api/products/{id}/related` — get products in same category
+- [x] 6.4: Limit related products to top 4 (exclude requested product)
+- [x] 6.5: Implement `PUT /api/products/{id}/availability` — toggle is_available flag
+- [x] 6.6: Ensure availability changes don't affect inventory levels
+- [x] 6.7: Return proper error responses (404, 400, 403) for all endpoints
+- [x] 6.8: Test all product endpoints with admin + non-admin users
 
 ---
 
@@ -109,14 +109,14 @@ Implement search, related products, and availability toggle endpoints.
 
 Implement inventory tracking and stock management endpoints.
 
-- [ ] 7.1: Create inventory endpoints in routes or add to products
-- [ ] 7.2: Implement `GET /api/inventory/{product_id}` — get stock levels
-- [ ] 7.3: Implement `PUT /api/inventory/{product_id}` — update stock quantity (admin)
-- [ ] 7.4: Implement `POST /api/inventory/{product_id}/reserve` — reserve stock
-- [ ] 7.5: Add validation: cannot reserve more than available_quantity
-- [ ] 7.6: Add validation: stock_quantity must be >= reserved_quantity
-- [ ] 7.7: Calculate available_quantity = stock_quantity - reserved_quantity
-- [ ] 7.8: Return 400 if trying to set stock below reserved amount
+- [x] 7.1: Create inventory endpoints in routes or add to products
+- [x] 7.2: Implement `GET /api/inventory/{product_id}` — get stock levels
+- [x] 7.3: Implement `PUT /api/inventory/{product_id}` — update stock quantity (admin)
+- [x] 7.4: Implement `POST /api/inventory/{product_id}/reserve` — reserve stock
+- [x] 7.5: Add validation: cannot reserve more than available_quantity
+- [x] 7.6: Add validation: stock_quantity must be >= reserved_quantity
+- [x] 7.7: Calculate available_quantity = stock_quantity - reserved_quantity
+- [x] 7.8: Return 400 if trying to set stock below reserved amount
 
 ---
 
@@ -124,14 +124,14 @@ Implement inventory tracking and stock management endpoints.
 
 Ensure efficient queries with pagination, indexes, and eager loading.
 
-- [ ] 8.1: Use `selectinload()` for Product.category and Product.inventory relationships
-- [ ] 8.2: Add default pagination (page=1, limit=20, max=100)
-- [ ] 8.3: Implement OFFSET/LIMIT in all list endpoints
-- [ ] 8.4: Add query parameter validation (page >= 1, limit 1-100)
-- [ ] 8.5: Test `EXPLAIN ANALYZE` on product list query with filters
-- [ ] 8.6: Verify indexes exist for category_id, is_available, price
-- [ ] 8.7: Test N+1 prevention (ensure one query for products + relationships)
-- [ ] 8.8: Add response pagination metadata (total, page, total_pages, has_next, has_previous)
+- [x] 8.1: Use `selectinload()` for Product.category and Product.inventory relationships
+- [x] 8.2: Add default pagination (page=1, limit=20, max=100)
+- [x] 8.3: Implement OFFSET/LIMIT in all list endpoints
+- [x] 8.4: Add query parameter validation (page >= 1, limit 1-100)
+- [x] 8.5: Test `EXPLAIN ANALYZE` on product list query with filters
+- [x] 8.6: Verify indexes exist for category_id, is_available, price
+- [x] 8.7: Test N+1 prevention (ensure one query for products + relationships)
+- [x] 8.8: Add response pagination metadata (total, page, total_pages, has_next, has_previous)
 
 ---
 
@@ -139,14 +139,14 @@ Ensure efficient queries with pagination, indexes, and eager loading.
 
 Implement consistent error responses and validation.
 
-- [ ] 9.1: Create error response model (detail, error_code, status_code)
-- [ ] 9.2: Handle 404 errors (product/category not found)
-- [ ] 9.3: Handle 400 errors (validation failures)
-- [ ] 9.4: Handle 401 errors (authentication required)
-- [ ] 9.5: Handle 403 errors (admin-only endpoints)
-- [ ] 9.6: Handle 409 errors (business logic violations, duplicate names)
-- [ ] 9.7: Add HTTPException with proper status codes for all error cases
-- [ ] 9.8: Test error response format in all endpoints
+- [x] 9.1: Create error response model (detail, error_code, status_code)
+- [x] 9.2: Handle 404 errors (product/category not found)
+- [x] 9.3: Handle 400 errors (validation failures)
+- [x] 9.4: Handle 401 errors (authentication required)
+- [x] 9.5: Handle 403 errors (admin-only endpoints)
+- [x] 9.6: Handle 409 errors (business logic violations, duplicate names)
+- [x] 9.7: Add HTTPException with proper status codes for all error cases
+- [x] 9.8: Test error response format in all endpoints
 
 ---
 
@@ -154,14 +154,14 @@ Implement consistent error responses and validation.
 
 Write unit tests for Pydantic schemas and model methods.
 
-- [ ] 10.1: Create `backend/tests/test_schemas.py`
-- [ ] 10.2: Test ProductCreate schema validation (valid/invalid inputs)
-- [ ] 10.3: Test ProductUpdate schema (optional fields)
-- [ ] 10.4: Test CategoryCreate schema (unique name validation)
-- [ ] 10.5: Test InventoryResponse schema (available_quantity calculation)
-- [ ] 10.6: Test that invalid prices (negative, >2 decimals) are rejected
-- [ ] 10.7: Test that invalid category_id is rejected
-- [ ] 10.8: Verify schemas serialize correctly with ConfigDict(from_attributes=True)
+- [x] 10.1: Create `backend/tests/test_schemas.py`
+- [x] 10.2: Test ProductCreate schema validation (valid/invalid inputs)
+- [x] 10.3: Test ProductUpdate schema (optional fields)
+- [x] 10.4: Test CategoryCreate schema (unique name validation)
+- [x] 10.5: Test InventoryResponse schema (available_quantity calculation)
+- [x] 10.6: Test that invalid prices (negative, >2 decimals) are rejected
+- [x] 10.7: Test that invalid category_id is rejected
+- [x] 10.8: Verify schemas serialize correctly with ConfigDict(from_attributes=True)
 
 ---
 
@@ -169,21 +169,21 @@ Write unit tests for Pydantic schemas and model methods.
 
 Write integration tests for all endpoints.
 
-- [ ] 11.1: Create `backend/tests/test_categories.py` with fixtures
-- [ ] 11.2: Test GET /api/categories — happy path (returns all categories)
-- [ ] 11.3: Test GET /api/categories/{id} — happy path + 404
-- [ ] 11.4: Test POST /api/categories — create + verify inventory not created
-- [ ] 11.5: Test POST /api/categories — duplicate name returns 409
-- [ ] 11.6: Test POST /api/categories — requires admin role (403 for non-admin)
-- [ ] 11.7: Test PUT /api/categories/{id} — update fields
-- [ ] 11.8: Test DELETE /api/categories/{id} — verify cascade/constraints
-- [ ] 11.9: Create `backend/tests/test_products.py` with fixtures
-- [ ] 11.10: Test GET /api/products — returns paginated list
-- [ ] 11.11: Test GET /api/products?category_id=1 — filter by category
-- [ ] 11.12: Test GET /api/products?min_price=2&max_price=5 — price range
-- [ ] 11.13: Test GET /api/products?in_stock=true — availability filter
-- [ ] 11.14: Test GET /api/products/{id} — includes inventory + category
-- [ ] 11.15: Test POST /api/products — create + auto-create inventory with 0 stock
+- [x] 11.1: Create `backend/tests/test_categories.py` with fixtures
+- [x] 11.2: Test GET /api/categories — happy path (returns all categories)
+- [x] 11.3: Test GET /api/categories/{id} — happy path + 404
+- [x] 11.4: Test POST /api/categories — create + verify inventory not created
+- [x] 11.5: Test POST /api/categories — duplicate name returns 409
+- [x] 11.6: Test POST /api/categories — requires admin role (403 for non-admin)
+- [x] 11.7: Test PUT /api/categories/{id} — update fields
+- [x] 11.8: Test DELETE /api/categories/{id} — verify cascade/constraints
+- [x] 11.9: Create `backend/tests/test_products.py` with fixtures
+- [x] 11.10: Test GET /api/products — returns paginated list
+- [x] 11.11: Test GET /api/products?category_id=1 — filter by category
+- [x] 11.12: Test GET /api/products?min_price=2&max_price=5 — price range
+- [x] 11.13: Test GET /api/products?in_stock=true — availability filter
+- [x] 11.14: Test GET /api/products/{id} — includes inventory + category
+- [x] 11.15: Test POST /api/products — create + auto-create inventory with 0 stock
 
 ---
 
@@ -191,16 +191,16 @@ Write integration tests for all endpoints.
 
 Write tests for search, related products, inventory, and edge cases.
 
-- [ ] 12.1: Test POST /api/products — invalid category_id returns 400
-- [ ] 12.2: Test PUT /api/products/{id} — partial update
-- [ ] 12.3: Test DELETE /api/products/{id} — cascade to inventory
-- [ ] 12.4: Test GET /api/products/search?q=tomato — search functionality
-- [ ] 12.5: Test GET /api/products/{id}/related — returns products in category
-- [ ] 12.6: Test PUT /api/products/{id}/availability — toggle flag
-- [ ] 12.7: Test GET /api/inventory/{product_id} — returns stock levels
-- [ ] 12.8: Test PUT /api/inventory/{product_id} — update stock (admin only)
-- [ ] 12.9: Test POST /api/inventory/{product_id}/reserve — reserve stock
-- [ ] 12.10: Test inventory validation (cannot reserve > available)
+- [x] 12.1: Test POST /api/products — invalid category_id returns 400
+- [x] 12.2: Test PUT /api/products/{id} — partial update
+- [x] 12.3: Test DELETE /api/products/{id} — cascade to inventory
+- [x] 12.4: Test GET /api/products/search?q=tomato — search functionality
+- [x] 12.5: Test GET /api/products/{id}/related — returns products in category
+- [x] 12.6: Test PUT /api/products/{id}/availability — toggle flag
+- [x] 12.7: Test GET /api/inventory/{product_id} — returns stock levels
+- [x] 12.8: Test PUT /api/inventory/{product_id} — update stock (admin only)
+- [x] 12.9: Test POST /api/inventory/{product_id}/reserve — reserve stock
+- [x] 12.10: Test inventory validation (cannot reserve > available)
 
 ---
 
@@ -208,16 +208,16 @@ Write tests for search, related products, inventory, and edge cases.
 
 Build component to display paginated product list.
 
-- [ ] 13.1: Create `src/components/ProductGrid.tsx`
-- [ ] 13.2: Accept props: products[], isLoading, error, onPageChange, currentPage, totalPages
-- [ ] 13.3: Render loading skeleton while fetching
-- [ ] 13.4: Render grid layout (1 col mobile, 2 col tablet, 4 col desktop)
-- [ ] 13.5: Render ProductCard for each product
-- [ ] 13.6: Display error state with retry button if loading fails
-- [ ] 13.7: Render Pagination component below grid
-- [ ] 13.8: Use React.memo() to prevent unnecessary re-renders
-- [ ] 13.9: Add accessibility attributes (role, aria-labels)
-- [ ] 13.10: Test component renders with sample products
+- [x] 13.1: Create `src/components/ProductGrid.tsx`
+- [x] 13.2: Accept props: products[], isLoading, error, onPageChange, currentPage, totalPages
+- [x] 13.3: Render loading skeleton while fetching
+- [x] 13.4: Render grid layout (1 col mobile, 2 col tablet, 4 col desktop)
+- [x] 13.5: Render ProductCard for each product
+- [x] 13.6: Display error state with retry button if loading fails
+- [x] 13.7: Render Pagination component below grid
+- [x] 13.8: Use React.memo() to prevent unnecessary re-renders
+- [x] 13.9: Add accessibility attributes (role, aria-labels)
+- [x] 13.10: Test component renders with sample products
 
 ---
 
@@ -225,14 +225,14 @@ Build component to display paginated product list.
 
 Build component to display single product summary.
 
-- [ ] 14.1: Create `src/components/ProductCard.tsx`
-- [ ] 14.2: Display product image placeholder
-- [ ] 14.3: Display product name, price, category badge
-- [ ] 14.4: Display stock status (in stock / low stock / out of stock)
-- [ ] 14.5: Implement click to navigate to ProductDetailPage
-- [ ] 14.6: Render AddToCartButton (disabled if out of stock)
-- [ ] 14.7: Add hover effect (shadow, scale)
-- [ ] 14.8: Make component responsive
+- [x] 14.1: Create `src/components/ProductCard.tsx`
+- [x] 14.2: Display product image placeholder
+- [x] 14.3: Display product name, price, category badge
+- [x] 14.4: Display stock status (in stock / low stock / out of stock)
+- [x] 14.5: Implement click to navigate to ProductDetailPage
+- [x] 14.6: Render AddToCartButton (disabled if out of stock)
+- [x] 14.7: Add hover effect (shadow, scale)
+- [x] 14.8: Make component responsive
 
 ---
 
@@ -240,16 +240,16 @@ Build component to display single product summary.
 
 Build page for single product view.
 
-- [ ] 15.1: Create `src/pages/ProductDetailPage.tsx`
-- [ ] 15.2: Extract product ID from URL params
-- [ ] 15.3: Implement useProduct hook to fetch single product
-- [ ] 15.4: Display loading spinner while fetching
-- [ ] 15.5: Display product image placeholder
-- [ ] 15.6: Display full product info (name, description, price, category)
-- [ ] 15.7: Display inventory status with progress bar
-- [ ] 15.8: Render AddToCartButton with quantity selector
-- [ ] 15.9: Display related products (same category, limit 4)
-- [ ] 15.10: Handle 404 error (product not found)
+- [x] 15.1: Create `src/pages/ProductDetailPage.tsx`
+- [x] 15.2: Extract product ID from URL params
+- [x] 15.3: Implement useProduct hook to fetch single product
+- [x] 15.4: Display loading spinner while fetching
+- [x] 15.5: Display product image placeholder
+- [x] 15.6: Display full product info (name, description, price, category)
+- [x] 15.7: Display inventory status with progress bar
+- [x] 15.8: Render AddToCartButton with quantity selector
+- [x] 15.9: Display related products (same category, limit 4)
+- [x] 15.10: Handle 404 error (product not found)
 
 ---
 
@@ -257,14 +257,14 @@ Build page for single product view.
 
 Implement custom React hooks for data fetching and state management.
 
-- [ ] 16.1: Create `src/hooks/useProducts.ts` hook
-- [ ] 16.2: Implement fetch with filters (category, search, price range)
-- [ ] 16.3: Add pagination support (page, limit)
-- [ ] 16.4: Add sorting support (field, order)
-- [ ] 16.5: Create `src/hooks/useFilters.ts` for filter state management
-- [ ] 16.6: Create `src/hooks/useProduct.ts` for single product fetch
-- [ ] 16.7: Implement error handling in all hooks
-- [ ] 16.8: Add debouncing to search queries (300ms)
+- [x] 16.1: Create `src/hooks/useProducts.ts` hook
+- [x] 16.2: Implement fetch with filters (category, search, price range)
+- [x] 16.3: Add pagination support (page, limit)
+- [x] 16.4: Add sorting support (field, order)
+- [x] 16.5: Create `src/hooks/useFilters.ts` for filter state management
+- [x] 16.6: Create `src/hooks/useProduct.ts` for single product fetch
+- [x] 16.7: Implement error handling in all hooks
+- [x] 16.8: Add debouncing to search queries (300ms)
 
 ---
 
@@ -272,11 +272,11 @@ Implement custom React hooks for data fetching and state management.
 
 Build filter component for categories.
 
-- [ ] 17.1: Create `src/components/CategoryFilter.tsx`
-- [ ] 17.2: Fetch and display all categories in dropdown
-- [ ] 17.3: Show "All Categories" option (null value)
-- [ ] 17.4: Emit callback on category selection
-- [ ] 17.5: Show product count per category (if available)
+- [x] 17.1: Create `src/components/CategoryFilter.tsx`
+- [x] 17.2: Fetch and display all categories in dropdown
+- [x] 17.3: Show "All Categories" option (null value)
+- [x] 17.4: Emit callback on category selection
+- [x] 17.5: Show product count per category (if available)
 
 ---
 
@@ -284,11 +284,11 @@ Build filter component for categories.
 
 Build search component with debouncing.
 
-- [ ] 18.1: Create `src/components/SearchInput.tsx`
-- [ ] 18.2: Implement text input field
-- [ ] 18.3: Add debounce (300ms) before emitting search
-- [ ] 18.4: Clear button to reset search
-- [ ] 18.5: Accessibility: add aria-label, role=searchbox
+- [x] 18.1: Create `src/components/SearchInput.tsx`
+- [x] 18.2: Implement text input field
+- [x] 18.3: Add debounce (300ms) before emitting search
+- [x] 18.4: Clear button to reset search
+- [x] 18.5: Accessibility: add aria-label, role=searchbox
 
 ---
 
@@ -296,10 +296,10 @@ Build search component with debouncing.
 
 Build pagination controls.
 
-- [ ] 19.1: Create `src/components/Pagination.tsx`
-- [ ] 19.2: Show Previous/Next buttons
-- [ ] 19.3: Display current page and total pages
-- [ ] 19.4: Disable buttons at boundaries (first/last page)
+- [x] 19.1: Create `src/components/Pagination.tsx`
+- [x] 19.2: Show Previous/Next buttons
+- [x] 19.3: Display current page and total pages
+- [x] 19.4: Disable buttons at boundaries (first/last page)
 
 ---
 
@@ -307,12 +307,12 @@ Build pagination controls.
 
 Build supporting components (AddToCart, StockStatus, etc.).
 
-- [ ] 20.1: Create `src/components/AddToCartButton.tsx`
-- [ ] 20.2: Render quantity selector (-, quantity, +)
-- [ ] 20.3: Implement "Add to Cart" button with loading state
-- [ ] 20.4: Create `src/components/StockStatus.tsx`
-- [ ] 20.5: Display stock progress bar and availability badge
-- [ ] 20.6: Create `src/components/ProductCardSkeleton.tsx` for loading state
+- [x] 20.1: Create `src/components/AddToCartButton.tsx`
+- [x] 20.2: Render quantity selector (-, quantity, +)
+- [x] 20.3: Implement "Add to Cart" button with loading state
+- [x] 20.4: Create `src/components/StockStatus.tsx`
+- [x] 20.5: Display stock progress bar and availability badge
+- [x] 20.6: Create `src/components/ProductCardSkeleton.tsx` for loading state
 
 ---
 
@@ -320,14 +320,14 @@ Build supporting components (AddToCart, StockStatus, etc.).
 
 Build main product browsing page with filters and grid.
 
-- [ ] 21.1: Create `src/pages/ProductsPage.tsx`
-- [ ] 21.2: Integrate useProducts hook with pagination
-- [ ] 21.3: Integrate useFilters hook
-- [ ] 21.4: Add SearchInput and connect to filters
-- [ ] 21.5: Add CategoryFilter and connect to filters
-- [ ] 21.6: Render ProductGrid with filter results
-- [ ] 21.7: Sync filters to URL query params for browser history
-- [ ] 21.8: Restore filters from URL on page load
+- [x] 21.1: Create `src/pages/ProductsPage.tsx`
+- [x] 21.2: Integrate useProducts hook with pagination
+- [x] 21.3: Integrate useFilters hook
+- [x] 21.4: Add SearchInput and connect to filters
+- [x] 21.5: Add CategoryFilter and connect to filters
+- [x] 21.6: Render ProductGrid with filter results
+- [x] 21.7: Sync filters to URL query params for browser history
+- [x] 21.8: Restore filters from URL on page load
 
 ---
 
@@ -335,16 +335,16 @@ Build main product browsing page with filters and grid.
 
 Write unit/integration tests for React components.
 
-- [ ] 22.1: Create `src/__tests__/ProductGrid.test.tsx`
-- [ ] 22.2: Test ProductGrid renders products correctly
-- [ ] 22.3: Test ProductGrid shows loading skeleton
-- [ ] 22.4: Test ProductGrid displays error state
-- [ ] 22.5: Test Pagination component
-- [ ] 22.6: Create `src/__tests__/ProductCard.test.tsx`
-- [ ] 22.7: Test ProductCard renders price, name, category
-- [ ] 22.8: Test StockStatus component shows correct badge
-- [ ] 22.9: Create `src/__tests__/ProductsPage.test.tsx`
-- [ ] 22.10: Test ProductsPage integrates filters + grid + pagination
+- [x] 22.1: Create `src/__tests__/ProductGrid.test.tsx`
+- [x] 22.2: Test ProductGrid renders products correctly
+- [x] 22.3: Test ProductGrid shows loading skeleton
+- [x] 22.4: Test ProductGrid displays error state
+- [x] 22.5: Test Pagination component
+- [x] 22.6: Create `src/__tests__/ProductCard.test.tsx`
+- [x] 22.7: Test ProductCard renders price, name, category
+- [x] 22.8: Test StockStatus component shows correct badge
+- [x] 22.9: Create `src/__tests__/ProductsPage.test.tsx`
+- [x] 22.10: Test ProductsPage integrates filters + grid + pagination
 
 ---
 
@@ -352,14 +352,14 @@ Write unit/integration tests for React components.
 
 Write tests for custom hooks.
 
-- [ ] 23.1: Create `src/__tests__/useProducts.test.ts`
-- [ ] 23.2: Test useProducts hook fetches products
-- [ ] 23.3: Test useProducts with filters (category, price, search)
-- [ ] 23.4: Test useProducts error handling
-- [ ] 23.5: Create `src/__tests__/useFilters.test.ts`
-- [ ] 23.6: Test useFilters state management
-- [ ] 23.7: Create `src/__tests__/useProduct.test.ts`
-- [ ] 23.8: Test useProduct single product fetch
+- [x] 23.1: Create `src/__tests__/useProducts.test.ts`
+- [x] 23.2: Test useProducts hook fetches products
+- [x] 23.3: Test useProducts with filters (category, price, search)
+- [x] 23.4: Test useProducts error handling
+- [x] 23.5: Create `src/__tests__/useFilters.test.ts`
+- [x] 23.6: Test useFilters state management
+- [x] 23.7: Create `src/__tests__/useProduct.test.ts`
+- [x] 23.8: Test useProduct single product fetch
 
 ---
 
@@ -367,12 +367,12 @@ Write tests for custom hooks.
 
 Setup API client and mock service for testing.
 
-- [ ] 24.1: Create `src/api/productApi.ts` with fetch functions
-- [ ] 24.2: Implement `getProducts()`, `getProduct()`, `searchProducts()`
-- [ ] 24.3: Implement `createProduct()`, `updateProduct()`, `deleteProduct()`
-- [ ] 24.4: Add proper error handling and type safety
-- [ ] 24.5: Setup Mock Service Worker (MSW) for test mocking
-- [ ] 24.6: Create mock handlers for all product/category endpoints
+- [x] 24.1: Create `src/api/productApi.ts` with fetch functions
+- [x] 24.2: Implement `getProducts()`, `getProduct()`, `searchProducts()`
+- [x] 24.3: Implement `createProduct()`, `updateProduct()`, `deleteProduct()`
+- [x] 24.4: Add proper error handling and type safety
+- [x] 24.5: Setup Mock Service Worker (MSW) for test mocking
+- [x] 24.6: Create mock handlers for all product/category endpoints
 
 ---
 
@@ -380,14 +380,14 @@ Setup API client and mock service for testing.
 
 Document API endpoints and update project docs.
 
-- [ ] 25.1: Update `docs/ARCHITECTURE.md` with product service layer
-- [ ] 25.2: Add database schema diagram to `docs/`
-- [ ] 25.3: Document all API endpoints in `docs/API.md`
-- [ ] 25.4: Add example cURL requests for each endpoint
-- [ ] 25.5: Update `backend/README.md` with product service setup
-- [ ] 25.6: Add TypeScript types/interfaces to `src/types/product.ts`
-- [ ] 25.7: Update `AGENTS.md` with product service patterns
-- [ ] 25.8: Verify OpenAPI/Swagger documentation auto-generated correctly
+- [x] 25.1: Update `docs/ARCHITECTURE.md` with product service layer
+- [x] 25.2: Add database schema diagram to `docs/`
+- [x] 25.3: Document all API endpoints in `docs/API.md`
+- [x] 25.4: Add example cURL requests for each endpoint
+- [x] 25.5: Update `backend/README.md` with product service setup
+- [x] 25.6: Add TypeScript types/interfaces to `src/types/product.ts`
+- [x] 25.7: Update `AGENTS.md` with product service patterns
+- [x] 25.8: Verify OpenAPI/Swagger documentation auto-generated correctly
 
 ---
 
@@ -395,14 +395,14 @@ Document API endpoints and update project docs.
 
 Write end-to-end tests verifying full flow.
 
-- [ ] 26.1: Create `backend/tests/test_e2e_products.py`
-- [ ] 26.2: Test E2E: create product → list → get → update → delete
-- [ ] 26.3: Test E2E: create category → create product in category → filter → delete
-- [ ] 26.4: Test E2E: inventory update on product change
-- [ ] 26.5: Create `src/__tests__/e2e.test.tsx` with Playwright/Cypress
-- [ ] 26.6: Test E2E: user browse products → filter → view detail → add to cart
-- [ ] 26.7: Test E2E: admin create/update/delete product
-- [ ] 26.8: Verify 0 console errors/warnings in frontend
+- [x] 26.1: Create `backend/tests/test_e2e_products.py`
+- [x] 26.2: Test E2E: create product → list → get → update → delete
+- [x] 26.3: Test E2E: create category → create product in category → filter → delete
+- [x] 26.4: Test E2E: inventory update on product change
+- [x] 26.5: Create `src/__tests__/e2e.test.tsx` with Playwright/Cypress
+- [x] 26.6: Test E2E: user browse products → filter → view detail → add to cart
+- [x] 26.7: Test E2E: admin create/update/delete product
+- [x] 26.8: Verify 0 console errors/warnings in frontend
 
 ---
 
@@ -410,14 +410,14 @@ Write end-to-end tests verifying full flow.
 
 Optimize database queries and frontend rendering.
 
-- [ ] 27.1: Run `EXPLAIN ANALYZE` on all product queries
-- [ ] 27.2: Verify indexes are used (no sequential scans)
-- [ ] 27.3: Benchmark: GET /api/products with 1000 items (target <500ms)
-- [ ] 27.4: Measure N+1 queries (should be zero)
-- [ ] 27.5: Profile React component renders (React DevTools Profiler)
-- [ ] 27.6: Measure Lighthouse performance score
-- [ ] 27.7: Optimize: add React.memo() where appropriate
-- [ ] 27.8: Add performance benchmarks to CI
+- [x] 27.1: Run `EXPLAIN ANALYZE` on all product queries
+- [x] 27.2: Verify indexes are used (no sequential scans)
+- [x] 27.3: Benchmark: GET /api/products with 1000 items (target <500ms)
+- [x] 27.4: Measure N+1 queries (should be zero)
+- [x] 27.5: Profile React component renders (React DevTools Profiler)
+- [x] 27.6: Measure Lighthouse performance score
+- [x] 27.7: Optimize: add React.memo() where appropriate
+- [x] 27.8: Add performance benchmarks to CI
 
 ---
 
@@ -425,16 +425,16 @@ Optimize database queries and frontend rendering.
 
 Comprehensive testing before merge.
 
-- [ ] 28.1: Run full backend test suite: `pytest backend/tests/`
-- [ ] 28.2: Run full frontend test suite: `npm run test --workspace frontend`
-- [ ] 28.3: Run linting: `npm run lint` (ESLint + Ruff)
-- [ ] 28.4: Run formatting check: `npm run format` (Prettier + Black)
-- [ ] 28.5: Run type check: `npm run typecheck` (tsc + mypy)
-- [ ] 28.6: Verify test coverage ≥90% backend, ≥85% frontend
-- [ ] 28.7: Manual testing: browse products, filter, search, pagination
-- [ ] 28.8: Manual testing: admin create/update/delete product
-- [ ] 28.9: Verify no TypeScript errors in frontend
-- [ ] 28.10: Test all endpoints with Swagger UI at http://localhost:8000/docs
+- [x] 28.1: Run full backend test suite: `pytest backend/tests/`
+- [x] 28.2: Run full frontend test suite: `npm run test --workspace frontend`
+- [x] 28.3: Run linting: `npm run lint` (ESLint + Ruff)
+- [x] 28.4: Run formatting check: `npm run format` (Prettier + Black)
+- [x] 28.5: Run type check: `npm run typecheck` (tsc + mypy)
+- [x] 28.6: Verify test coverage ≥90% backend, ≥85% frontend
+- [x] 28.7: Manual testing: browse products, filter, search, pagination
+- [x] 28.8: Manual testing: admin create/update/delete product
+- [x] 28.9: Verify no TypeScript errors in frontend
+- [x] 28.10: Test all endpoints with Swagger UI at http://localhost:8000/docs
 
 ---
 
@@ -442,12 +442,12 @@ Comprehensive testing before merge.
 
 Final documentation and merge preparation.
 
-- [ ] 29.1: Update `GETTING-STARTED.md` with product service endpoints
-- [ ] 29.2: Add troubleshooting section for common issues
-- [ ] 29.3: Update `package.json` scripts if needed (dev, test, build)
-- [ ] 29.4: Create CHANGELOG.md entry for this change
-- [ ] 29.5: Review all commits for conventional commit format
-- [ ] 29.6: Verify no hardcoded URLs or secrets in code
+- [x] 29.1: Update `GETTING-STARTED.md` with product service endpoints
+- [x] 29.2: Add troubleshooting section for common issues
+- [x] 29.3: Update `package.json` scripts if needed (dev, test, build)
+- [x] 29.4: Create CHANGELOG.md entry for this change
+- [x] 29.5: Review all commits for conventional commit format
+- [x] 29.6: Verify no hardcoded URLs or secrets in code
 
 ---
 
