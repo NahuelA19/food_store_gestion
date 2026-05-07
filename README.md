@@ -29,43 +29,78 @@ A full-stack e-commerce platform built with modern web technologies. This monore
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+ and npm 9+
-- Python 3.10+
-- Git
+- **Docker & Docker Compose** (for PostgreSQL)
+- **Node.js** 18+ and npm 9+
+- **Python** 3.10+
+- **Git**
 
-### Installation
+### Installation (Automated)
+
+**Recommended**: Use the setup script (Linux/macOS/WSL):
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/foodstore.git
-cd foodstore
+git clone https://github.com/NahuelA19/food_store_gestion.git
+cd food_store_gestion
 
-# Install dependencies (frontend + root)
-npm install
+# Run automatic setup (installs everything)
+chmod +x scripts/setup-dev.sh
+bash scripts/setup-dev.sh
+```
 
-# Install backend dependencies
+The script will:
+- ✅ Start PostgreSQL in Docker
+- ✅ Create Python virtual environment
+- ✅ Install all dependencies
+- ✅ Run database migrations
+- ✅ Set up environment variables
+
+### Installation (Manual)
+
+Or install manually (see [Docker Setup Guide](./docs/DOCKER-SETUP.md)):
+
+```bash
+# Clone and navigate
+git clone https://github.com/NahuelA19/food_store_gestion.git
+cd food_store_gestion
+
+# Start PostgreSQL
+docker-compose up -d postgres
+
+# Install and run backend
 cd backend
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.docker-example .env
+alembic upgrade head
 cd ..
+
+# Install and run frontend
+npm install
 ```
 
 ### Development
 
-**Frontend:**
+**Start backend** (Terminal 1):
+```bash
+cd backend
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+uvicorn app.main:app --reload
+# API available at http://localhost:8000
+# Swagger docs at http://localhost:8000/docs
+```
+
+**Start frontend** (Terminal 2):
 ```bash
 npm run dev --workspace frontend
 # Open http://localhost:5173
 ```
 
-**Backend:**
+**Check PostgreSQL**:
 ```bash
-cd backend
-source venv/bin/activate
-uvicorn app.main:app --reload
-# API available at http://localhost:8000
-# Docs at http://localhost:8000/docs
+docker-compose exec postgres psql -U food_store_user -d food_store
+# You can now run SQL queries
 ```
 
 **All scripts:**
@@ -129,6 +164,7 @@ foodstore/
 
 ## Documentation
 
+- **[Docker Setup Guide](./docs/DOCKER-SETUP.md)** ⭐ **START HERE** - Quick setup with PostgreSQL in Docker
 - **[Setup Instructions](./docs/SETUP.md)** - Detailed development environment setup
 - **[Database Layer](./docs/DATABASE.md)** - PostgreSQL ORM, migrations, and connection management
 - **[Database Setup](./docs/DATABASE_SETUP.md)** - PostgreSQL installation and configuration

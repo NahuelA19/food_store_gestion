@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:18-alpine
+    container_name: food_store_postgres
+    environment:
+      # Root PostgreSQL user
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-food_store}
+      
+      # PostgreSQL configuration for development
+      POSTGRES_INITDB_ARGS: >
+        -c shared_preload_libraries=uuid-ossp
+        -c log_statement=all
+        -c log_duration=on
+        -c log_min_duration_statement=100
+    
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    
+    volumes:
+      # Persistent data volume
+      - postgres_data:/var/lib/postgresql/data
+      
+      # Initialization script to create application user and test database
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+    
+    networks:
+      - food_store_network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-food_store}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    labels:
+      - "com.food_store.service=database"
+      - "com.food_store.description=PostgreSQL database for Food Store application"
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  food_store_network:
+    driver: bridge
