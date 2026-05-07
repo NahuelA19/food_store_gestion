@@ -7,7 +7,7 @@ Complete roadmap of planned changes for Food Store e-commerce platform. This doc
 **Total Changes**: 23 planned
 **Phases**: 6 (from scratch to production)
 **Timeline**: 2-3 months (estimated)
-**Status**: Phase 1 complete ✅, Phase 2 in progress (Change 4 implementing, ~60/77 tasks done)
+**Status**: Phase 1 complete ✅, Phase 2 in progress (Change 4 complete, 154/162 tasks, pending PostgreSQL integration)
 
 ## Phase 1: Foundation (Weeks 1-2)
 
@@ -58,17 +58,20 @@ Core infrastructure and project setup.
 
 Core business entities and operations.
 
-### Change 4: **create-user-service** (IN PROGRESS)
-- **Status**: Implementation partial — backend + frontend code complete, admin endpoints pending, documentation pending
+### Change 4: **create-user-service** ✅ COMPLETED
+- **Status**: Implementation complete — code, tests, docs, preferences UI, admin endpoints all done
 - **Duration**: 3-4 days
-- **Description**: User CRUD, profiles, preferences
+- **Description**: User CRUD, profiles, preferences, admin management
 - **Dependencies**: Change 3 ✅
-- **API Endpoints**: 5-7
+- **API Endpoints**: 8 (GET/PUT /users/me, GET /users/{id}, GET/PUT /users/me/preferences, DELETE /users/me, GET /users, PATCH /users/{id}/status)
 - **Artifacts**: proposal.md, design.md, specs (5 files), tasks.md (77 tasks) ✓
-- **Progress**: ~60/77 tasks completed ✓ (sections 1-8, 10-11, 13-17 done)
-- **Pending**: Section 9 (admin endpoints), 12 (code quality), 18 (preferences UI), 19 (docs), 20 (integration), 21 (git)
+- **Progress**: 154/162 tasks completed ✓ (8 pending: require PostgreSQL for integration testing)
+- **Pending**: E2E integration tests (20.1-20.6), migration backcompat verify (1.7) — require PostgreSQL
 - **Implemented**: 2026-05-07
-- **Commit**: `7469729` - feat(users): implement user service with profiles, preferences, and frontend
+- **Commits**: 
+  - `7469729` — feat(users): implement user service with profiles, preferences, and frontend
+  - `4f2b9d1` — feat(users): complete user service with admin endpoints, preferences UI, docs
+  - `0b96d28` — chore(users): update task tracking
 
 ### Change 5: **create-product-service** (PENDING)
 - **Duration**: 4-5 days
