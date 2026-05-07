@@ -59,7 +59,7 @@ export function UserForm({ user, onSubmit, isLoading }: UserFormProps) {
         newErrors.phone = "Phone must be 7-20 characters";
       }
       // Simple phone format validation
-      const phoneRegex = /^\+?[0-9\-\(\)\s]{7,20}$/;
+      const phoneRegex = /^\+?[0-9\-()\s]{7,20}$/;
       if (!phoneRegex.test(formData.phone)) {
         newErrors.phone = "Phone must contain only +, -, (), space, and digits";
       }

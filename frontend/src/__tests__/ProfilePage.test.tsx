@@ -1,19 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "../context/AuthContext";
 import { ProfilePage } from "../pages/ProfilePage";
 
 // Mock fetch
 global.fetch = vi.fn();
-
-const mockUser = {
-  id: 1,
-  email: "test@example.com",
-  first_name: "John",
-  last_name: "Doe",
-  phone: "+1234567890",
-};
 
 const mockPreferences = {
   language: "en",
