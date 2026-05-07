@@ -1,109 +1,130 @@
-# Food Store — Team Engram Memory Export
+# Food Store Team Memory Export
 
-**Exported**: 2026-05-06 | **Project**: Food Store E-Commerce Platform
-
-This file contains shared architectural decisions, discoveries, and implementation patterns from previous sessions. **Import by committing this file to GitHub and sharing with your team.**
+**Exported**: 2026-05-07  
+**Source**: Engram persistent memory (repositoriobasefoodstore-sdd)  
+**Purpose**: Share accumulated project context and architectural decisions with the team
 
 ---
 
 ## Food Store OPSX Change Map (23 changes, 2-3 months)
 
 - **Type**: architecture
-- **Topic Key**: architecture/food-store-change-map
+- **Topic Key**: architecture/opsx-change-map-foodstore
 - **Date**: 2026-04-25
 
 **What**: Complete mapping of 23 OPSX changes for Food Store development from scratch to production, organized in 6 phases with explicit dependencies.
 
-**Why**: To provide a clear, sequenced roadmap for the entire e-commerce platform development using OPSX workflow. Prevents dead-end decisions and ensures critical blockers are addressed first.
-
-**Where**: `docs/CHANGES.md`, `README.md`, `openspec/` directory structure
-
-**Learned**: 
-- Order creation (order-creation-uow-atomic) is the architectural pivot—everything after depends on it; must be designed perfectly before implementation
-- FSM (order-fsm-state-machine) is complex: 6 states, strict transitions, atomic stock management; plan 3 days minimum
-- Cart is 100% client-side (Zustand + localStorage), completely independent from backend until checkout
-- Payment integration has strict dependency chain: webhooks must happen after orders are created
-- Parallel opportunities exist: infrastructure + error-handling, categories + ingredients, shopping-cart + navigation-layout (40-50% of work)
-- Total project estimation: 45-57 days with 1-2 devs (sequential), 30-40 days with 3+ devs (parallel where possible)
-
----
-
-## OPSX: setup-project-structure — First Change (65 tasks, complete)
-
-- **Type**: architecture
-- **Topic Key**: opsx/setup-project-structure/complete
-- **Date**: 2026-04-27
-
-**What**: Completed 65-task OPSX change establishing complete monorepo foundation with React frontend, FastAPI backend, CI/CD pipelines, dev tools, testing setup, documentation, and initial git commit.
-
-**Why**: Food Store project needed foundational infrastructure before domain development could begin. This was the prerequisite for all subsequent changes.
+**Why**: To provide a clear, sequenced roadmap for the entire e-commerce platform development using OPSX workflow. Prevents dead-end decisions and ensures dependencies are respected.
 
 **Where**: 
-- `openspec/changes/setup-project-structure/` (proposal, design, tasks, specs)
-- `openspec/changes/archive/2026-04-26-setup-project-structure/` (archived)
-- `openspec/specs/` (4 synced specs: project-structure, dev-tooling, build-pipeline, project-documentation)
+- Phase 0 (3 changes): Infrastructure foundation
+- Phase 1 (3 changes): Authentication & RBAC
+- Phase 2 (3 changes): Catalog & Products
+- Phase 3 (3 changes): Client features (addresses, cart, navigation)
+- Phase 4 (5 changes): Orders, Payments, FSM (critical business logic)
+- Phase 5 (3 changes): Admin dashboards & configuration
+- Phase 6 (3 changes): Testing, Deployment, Documentation
 
-**Learned**:
-- GitHub Actions workflows are correctly configured with triggers on `pull_request` events
-- ESLint properly detects violations (unused variables, unnecessary imports, etc.)
-- Pre-commit hooks work as expected before each commit
-- Delta specs sync correctly from change-local to project-global specs
-- Always update `docs/CHANGES.md` after archiving—it's the stakeholder-visible source of truth
-- The project now has solid infrastructure: monorepo with React+TypeScript frontend, FastAPI backend, complete CI/CD, comprehensive documentation, full testing setup
+**Learned**: 
+- Order creation (UoW) is the architectural pivot point; everything after requires it
+- Payment integration depends on orders; must not be done in parallel
+- Cart is 100% client-side (Zustand + localStorage), independent of backend until checkout
+- FSM state machine is COMPLEX; plan 3 days and follow strict design before coding
+- Parallel work possible: infrastructure + error-handling, categories + ingredients, shopping-cart + navigation-layout
+- Total estimation: 45-57 days (2-3 months) with 1-2 devs, 40-50% parallelizable with 3+ devs
+
+**Key dependencies (non-negotiable)**:
+1. infrastructure-setup → everything
+2. database-domain-models → everything data-related
+3. authentication-system → all client-facing features
+4. products-catalog → cart, order creation
+5. order-creation-uow-atomic → payments, FSM
+6. payment-mercadopago-integration → FSM state transitions
 
 ---
 
-## Food Store Architecture — OPSX Workflow Lessons
+## OPSX: setup-project-structure completed (56/65 tasks)
 
-- **Type**: decision
-- **Topic Key**: architecture/opsx-workflow
+- **Type**: architecture
+- **Topic Key**: opsx/setup-project-structure
 - **Date**: 2026-04-26
 
-**What**: Established OPSX workflow conventions for Food Store: use kebab-case for change names, keep changes atomic (hours to days, not weeks), respect SDD layered architecture principles, follow propose → design → apply → archive cycle.
+**What**: Completed setup-project-structure change with 56 of 65 tasks done. Established complete monorepo foundation with React frontend, FastAPI backend, CI/CD pipelines, dev tools, testing setup, documentation, and initial git commit.
 
-**Why**: To ensure all future changes follow a consistent, scalable development methodology. OPSX replaces the legacy SDD phase system with a fluid, CLI-driven workflow.
+**Why**: Food Store project needed foundational infrastructure for e-commerce development. This change establishes structure, conventions, tooling, and automation that all 22 subsequent changes depend on.
 
-**Where**: `AGENTS.md` (project instructions), all OPSX changes in `openspec/changes/`
+**Where**: 
+- Root: .gitignore, package.json, .eslintrc.json, .prettierrc.json, commitlint.config.js, .editorconfig
+- Backend: backend/app/, backend/tests/, backend/requirements.txt, backend/pyproject.toml, backend/pytest.ini
+- Frontend: frontend/src/, frontend/public/, frontend/package.json, frontend/tsconfig.json, frontend/vitest.config.ts
+- CI/CD: .github/workflows/ (lint.yml, test.yml, build.yml, security.yml)
+- Git Hooks: .husky/ (pre-commit, commit-msg)
+- Documentation: README.md, GETTING-STARTED.md, docs/SETUP.md, docs/ARCHITECTURE.md, docs/CONTRIBUTING.md, docs/CHANGES.md, docs/API.md, docs/guides/
 
-**Learned**:
-- OPSX CLI is clean and dependency-aware: each artifact depends on previous ones
-- Task checklist organization matters: breaking tasks into logical groups (10 groups for 65 tasks in setup-project-structure) improves clarity and tracking
-- Rollback is straightforward: delete files/directories as needed if a change needs to restart
-- The workflow is truly fluid—any action can run at any time without rigid phase locks
+**Learned**: 
+- npm workspaces + Python monorepo works well with separate package managers
+- Husky hooks must validate both frontend (ESLint/Prettier) and backend (Ruff/Black) code
+- Test setup requires multiple dependencies (pytest, pytest-asyncio, httpx, pytest-cov, @testing-library packages)
+- Vite needs index.html at workspace root, not in public/
+- Pre-commit hooks validate commit messages with commitlint (requires @commitlint/config-conventional)
+- Full workflow: code → git add → pre-commit hooks (lint/format) → commit-msg validation → push → GitHub Actions
 
 ---
 
-## Next Change: implement-authentication
+## OPSX: setup-project-structure todas las 65 tareas completadas
 
-- **Type**: discovery
-- **Topic Key**: opsx/next-phase
-- **Date**: 2026-05-06
+- **Type**: architecture
+- **Topic Key**: opsx/setup-project-structure/apply
+- **Date**: 2026-04-26
 
-**What**: The next active OPSX change is `implement-authentication` with 14 of 52 tasks completed (in-progress status).
+**What**: Completadas las 2 tareas finales de verificación (10.3 y 10.4), alcanzando 65/65 tareas del apply en setup-project-structure.
 
-**Why**: After establishing the project foundation, authentication is critical infrastructure for user management and access control across the e-commerce platform.
+**Why**: Necesitábamos terminar la implementación de la infraestructura base del proyecto Food Store e-commerce.
 
-**Where**: `openspec/changes/implement-authentication/`
+**Where**: openspec/changes/setup-project-structure/tasks.md (actualizado con checkmarks), git commit a9ee067
 
-**Learned**: This change is currently in-progress and ready to continue in subsequent sessions.
+**Learned**: 
+- GitHub Actions workflows (lint, test, build, security) están correctamente configurados con triggers en pull_request
+- ESLint detecta correctamente violaciones de linting (variables no usadas, imports innecesarios, etc.)
+- La cadena de pre-commit hooks funciona como se espera antes de cada commit
+- El proyecto ahora tiene una base sólida: monorepo con React+TypeScript frontend, FastAPI backend, CI/CD completo, documentación, testing setup
+
+---
+
+## OPSX: docs/CHANGES.md actualizado - Change 1 complete
+
+- **Type**: decision
+- **Topic Key**: opsx/docs-changes-sync
+- **Date**: 2026-04-27
+
+**What**: Actualizado docs/CHANGES.md para reflejar que setup-project-structure está completado (65/65 tasks, archived).
+
+**Why**: Mantener la documentación sincronizada con el estado real del proyecto y el roadmap OPSX.
+
+**Where**: docs/CHANGES.md (actualizado: Change 1 status, Phase 1 overview, Timeline & Milestones, Next Steps), commit 03bc70e
+
+**Learned**: Importante actualizar docs/CHANGES.md como parte del archive workflow — sirve como fuente de verdad para stakeholders sobre el estado general del proyecto.
 
 ---
 
 ## How to Import These Memories
 
-If you are a **new team member** receiving this file:
+If you're a team member receiving this export:
 
-1. Commit this file to your local repo: `git pull`
-2. Read through all entries to understand decisions and patterns
-3. For each entry, the agent will call `mem_save` to import into your Engram
-4. Use `mem_search` to find relevant context when working on related tasks
+1. **Pull the file** from GitHub:
+   ```bash
+   git pull
+   ```
 
-If you are **resuming work on Food Store**:
+2. **Tell the agent to import**:
+   > "Import the team memories from `docs/team-memory/engram-export.md`"
 
-1. Read the relevant section (e.g., "OPSX: setup-project-structure" if continuing that change)
-2. Check the current status with `openspec list --json`
-3. If starting a new change, reference the "Food Store OPSX Change Map" for dependencies
+3. **The agent will**:
+   - Read each `##` section
+   - Call `mem_save` for each entry
+   - Skip duplicates automatically
 
 ---
 
-**Contact**: Ask the team if you have questions about any of these decisions or patterns.
+**Maintained by**: OPSX Orchestrator  
+**Next export**: After each completed OPSX change
