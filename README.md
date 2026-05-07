@@ -278,3 +278,4 @@ MIT
 - 📖 [Documentation](./docs/)
 - 🐛 [Issues](https://github.com/yourusername/foodstore/issues)
 - 💬 [Discussions](https://github.com/yourusername/foodstore/discussions)
+.
