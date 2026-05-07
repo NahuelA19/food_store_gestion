@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # PostgreSQL Database Service
   postgres:
-    image: postgres:18-alpine
+    image: postgres:16-alpine
     container_name: food_store_postgres
     environment:
       # Root PostgreSQL user
@@ -19,10 +19,13 @@ services:
         -c log_min_duration_statement=100
     
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Docker PostgreSQL on 5433 (to avoid conflicts with local PostgreSQL on 5432)
+      # Change to 5432:5432 if you don't have local PostgreSQL
+      - "${DB_PORT:-5433}:5432"
     
     volumes:
       # Persistent data volume
+      # PostgreSQL 18+ requires PGDATA to be a subdirectory of the mount point
       - postgres_data:/var/lib/postgresql/data
       
       # Initialization script to create application user and test database
