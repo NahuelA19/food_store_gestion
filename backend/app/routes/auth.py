@@ -1,14 +1,14 @@
 """Authentication routes for user registration and login."""
 
+from app.models.auth import AuthResponse, LoginRequest, RegisterRequest
+from app.models.user import User, UserPreference
+from app.security.jwt import create_access_token
+from app.security.password import get_password_hash, validate_password_strength, verify_password
+from app.validation import DEFAULT_PREFERENCES
+from database.session import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-
-from app.models.auth import AuthResponse, LoginRequest, RegisterRequest
-from app.models.user import User
-from app.security.jwt import create_access_token
-from app.security.password import get_password_hash, validate_password_strength, verify_password
-from database.session import get_db_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -21,7 +21,7 @@ async def register(
     """Register a new user.
 
     Args:
-        body: Registration request with email and password
+        body: Registration request with email, password, and optional profile fields
         session: Database session
 
     Returns:
@@ -50,16 +50,29 @@ async def register(
             detail="Email already registered",
         )
 
-    # Create new user
+    # Create new user with profile fields
     hashed_password = get_password_hash(body.password)
     new_user = User(
         email=body.email.lower(),
         hashed_password=hashed_password,
         is_active=True,
+        first_name=body.first_name,
+        last_name=body.last_name,
+        phone=body.phone,
     )
     session.add(new_user)
     await session.commit()
     await session.refresh(new_user)
+
+    # Initialize default preferences
+    for pref_key, pref_value in DEFAULT_PREFERENCES.items():
+        pref = UserPreference(
+            user_id=new_user.id,
+            pref_key=pref_key,
+            pref_value=pref_value,
+        )
+        session.add(pref)
+    await session.commit()
 
     # Generate JWT token
     access_token = create_access_token(
@@ -69,6 +82,9 @@ async def register(
     return AuthResponse(
         id=new_user.id,
         email=new_user.email,
+        first_name=new_user.first_name,
+        last_name=new_user.last_name,
+        phone=new_user.phone,
         access_token=access_token,
         token_type="bearer",
     )
@@ -106,8 +122,8 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Check if user is active
-    if not user.is_active:
+    # Check if user is active and not deleted
+    if not user.is_active or user.deleted_at is not None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive",
@@ -121,6 +137,9 @@ async def login(
     return AuthResponse(
         id=user.id,
         email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        phone=user.phone,
         access_token=access_token,
         token_type="bearer",
     )

@@ -18,6 +18,9 @@ export function Navigation() {
         {isAuthenticated ? (
           <>
             <span className="nav-user">{user?.email}</span>
+            <Link to="/profile" className="nav-link">
+              Mi Perfil
+            </Link>
             <button onClick={handleLogout} className="nav-logout">
               Cerrar Sesión
             </button>

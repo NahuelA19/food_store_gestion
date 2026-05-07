@@ -1,0 +1,245 @@
+"""User profile and preferences routes."""
+
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
+from app.dependencies import get_current_user
+from app.models.user import User, UserPreference
+from app.models.user_profile import (
+    UserPreferencesResponse,
+    UserPreferenceUpdate,
+    UserProfileUpdate,
+    UserPublicResponse,
+    UserResponse,
+)
+from app.validation import DEFAULT_PREFERENCES
+from database.session import get_db_session
+
+router = APIRouter(prefix="/users", tags=["users"])
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_profile(
+    current_user: User = Depends(get_current_user),
+) -> UserResponse:
+    """Get current user's full profile.
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        UserResponse with full profile information
+
+    Raises:
+        HTTPException 401: If not authenticated
+    """
+    return UserResponse.model_validate(current_user)
+
+
+@router.get("/{user_id}", response_model=UserPublicResponse)
+async def get_public_profile(
+    user_id: int,
+    session: AsyncSession = Depends(get_db_session),
+) -> UserPublicResponse:
+    """Get public profile of another user (limited fields).
+
+    Args:
+        user_id: ID of user to fetch
+        session: Database session
+
+    Returns:
+        UserPublicResponse with limited profile information
+
+    Raises:
+        HTTPException 404: If user not found or deleted
+    """
+    result = await session.execute(
+        select(User).where(User.id == user_id, User.deleted_at.is_(None))
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    return UserPublicResponse.model_validate(user)
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_profile(
+    body: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> UserResponse:
+    """Update current user's profile.
+
+    Args:
+        body: Profile update request
+        current_user: Current authenticated user
+        session: Database session
+
+    Returns:
+        UserResponse with updated profile
+
+    Raises:
+        HTTPException 401: If not authenticated
+        HTTPException 422: If validation fails
+    """
+    # Update only provided fields
+    if body.first_name is not None:
+        current_user.first_name = body.first_name
+    if body.last_name is not None:
+        current_user.last_name = body.last_name
+    if body.phone is not None:
+        current_user.phone = body.phone
+
+    # Update timestamp
+    current_user.updated_at = datetime.now(timezone.utc)
+
+    session.add(current_user)
+    await session.commit()
+    await session.refresh(current_user)
+
+    return UserResponse.model_validate(current_user)
+
+
+@router.get("/me/preferences", response_model=UserPreferencesResponse)
+async def get_preferences(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> UserPreferencesResponse:
+    """Get current user's preferences.
+
+    Args:
+        current_user: Current authenticated user
+        session: Database session
+
+    Returns:
+        UserPreferencesResponse with all preferences
+
+    Raises:
+        HTTPException 401: If not authenticated
+    """
+    # Fetch preferences from database
+    result = await session.execute(
+        select(UserPreference).where(UserPreference.user_id == current_user.id)
+    )
+    prefs_list = result.scalars().all()
+
+    # Build preferences dict
+    prefs_dict = {}
+    for pref in prefs_list:
+        prefs_dict[pref.pref_key] = pref.pref_value
+
+    # Fill in defaults for missing preferences
+    for key, value in DEFAULT_PREFERENCES.items():
+        if key not in prefs_dict:
+            prefs_dict[key] = value
+
+    return UserPreferencesResponse(
+        language=prefs_dict.get("language", DEFAULT_PREFERENCES["language"]),
+        theme=prefs_dict.get("theme", DEFAULT_PREFERENCES["theme"]),
+        notifications=prefs_dict.get("notifications", DEFAULT_PREFERENCES["notifications"]),
+    )
+
+
+@router.put("/me/preferences", response_model=UserPreferencesResponse)
+async def update_preferences(
+    body: UserPreferenceUpdate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> UserPreferencesResponse:
+    """Update current user's preferences.
+
+    Args:
+        body: Preferences update request
+        current_user: Current authenticated user
+        session: Database session
+
+    Returns:
+        UserPreferencesResponse with all preferences after update
+
+    Raises:
+        HTTPException 401: If not authenticated
+        HTTPException 422: If validation fails
+    """
+    # Update provided preferences
+    now = datetime.now(timezone.utc)
+    preference_fields = {
+        "language": body.language,
+        "theme": body.theme,
+        "notifications": body.notifications,
+    }
+
+    for key, value in preference_fields.items():
+        if value is not None:
+            # Check if preference exists
+            result = await session.execute(
+                select(UserPreference).where(
+                    UserPreference.user_id == current_user.id,
+                    UserPreference.pref_key == key,
+                )
+            )
+            pref = result.scalar_one_or_none()
+
+            if pref:
+                # Update existing
+                pref.pref_value = value
+                pref.updated_at = now
+            else:
+                # Create new
+                pref = UserPreference(
+                    user_id=current_user.id,
+                    pref_key=key,
+                    pref_value=value,
+                )
+                session.add(pref)
+
+    await session.commit()
+
+    # Fetch all preferences and return
+    result = await session.execute(
+        select(UserPreference).where(UserPreference.user_id == current_user.id)
+    )
+    prefs_list = result.scalars().all()
+
+    prefs_dict = {}
+    for pref in prefs_list:
+        prefs_dict[pref.pref_key] = pref.pref_value
+
+    # Fill in defaults
+    for key, value in DEFAULT_PREFERENCES.items():
+        if key not in prefs_dict:
+            prefs_dict[key] = value
+
+    return UserPreferencesResponse(
+        language=prefs_dict.get("language", DEFAULT_PREFERENCES["language"]),
+        theme=prefs_dict.get("theme", DEFAULT_PREFERENCES["theme"]),
+        notifications=prefs_dict.get("notifications", DEFAULT_PREFERENCES["notifications"]),
+    )
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_account(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Delete current user's account (soft delete).
+
+    Args:
+        current_user: Current authenticated user
+        session: Database session
+
+    Raises:
+        HTTPException 401: If not authenticated
+    """
+    current_user.deleted_at = datetime.now(timezone.utc)
+    current_user.is_active = False
+
+    session.add(current_user)
+    await session.commit()

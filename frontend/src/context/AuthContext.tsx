@@ -6,6 +6,21 @@ import { useAuth } from "../hooks/useAuth";
 interface User {
   id: number;
   email: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+}
+
+interface UserPreferences {
+  language: string;
+  theme: string;
+  notifications: string;
+}
+
+interface UserProfileUpdate {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
 }
 
 interface AuthContextType {
@@ -16,6 +31,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateProfile: (profile: UserProfileUpdate) => Promise<void>;
+  updatePreferences: (preferences: Partial<UserPreferences>) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
