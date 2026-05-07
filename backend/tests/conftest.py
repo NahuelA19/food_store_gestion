@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures for Food Store tests."""
 
 import os
+from decimal import Decimal
 from typing import AsyncGenerator, Generator
 
 import pytest
@@ -11,6 +12,9 @@ from sqlalchemy.pool import NullPool
 
 from app.main import app
 from app.models import Base
+from app.models.category import Category
+from app.models.inventory import Inventory
+from app.models.product import Product
 from app.models.user import User
 from app.security.password import get_password_hash
 from database.session import get_db_session
@@ -71,10 +75,10 @@ async def get_test_db_session(test_engine) -> AsyncGenerator[AsyncSession, None]
 
 
 @pytest.fixture
-def override_get_db_session(get_test_db_session) -> Generator[AsyncSession, None, None]:
+def override_get_db_session(get_test_db_session):
     """Override FastAPI dependency for test database session."""
 
-    async def _get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    def _get_db_session():
         yield get_test_db_session
 
     app.dependency_overrides[get_db_session] = _get_db_session
@@ -113,3 +117,46 @@ async def test_user(db_session: AsyncSession) -> User:
     await db_session.commit()
     await db_session.refresh(user)
     return user
+
+
+@pytest.fixture
+async def test_category(db_session: AsyncSession) -> Category:
+    """Create a test category."""
+    category = Category(name="Vegetables", description="Fresh vegetables")
+    db_session.add(category)
+    await db_session.commit()
+    await db_session.refresh(category)
+    return category
+
+
+@pytest.fixture
+async def test_product(db_session: AsyncSession, test_category: Category) -> Product:
+    """Create a test product."""
+    product = Product(
+        name="Tomato",
+        description="Fresh red tomato",
+        price=Decimal("2.50"),
+        category_id=test_category.id,
+        is_available=True,
+    )
+    db_session.add(product)
+    await db_session.flush()
+
+    # Auto-create inventory
+    inventory = Inventory(product_id=product.id, stock_quantity=100)
+    db_session.add(inventory)
+    await db_session.commit()
+    await db_session.refresh(product)
+    await db_session.refresh(inventory)
+    return product
+
+
+@pytest.fixture
+async def test_inventory(db_session: AsyncSession, test_product: Product) -> Inventory:
+    """Get the inventory for the test product."""
+    from sqlalchemy import select
+
+    result = await db_session.execute(
+        select(Inventory).where(Inventory.product_id == test_product.id)
+    )
+    return result.scalar_one()

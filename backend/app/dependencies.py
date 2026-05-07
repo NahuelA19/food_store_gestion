@@ -11,6 +11,9 @@ from database.session import get_db_session
 
 security = HTTPBearer()
 
+# Alias for convenience
+get_db = get_db_session
+
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),

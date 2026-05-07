@@ -3,7 +3,7 @@
 from decimal import Decimal
 
 from sqlalchemy import ForeignKey, Numeric, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 
@@ -26,6 +26,12 @@ class Product(Base, TimestampMixin):
         index=True,
     )
     is_available: Mapped[bool] = mapped_column(default=True, nullable=False, index=True)
+
+    # Relationships
+    category: Mapped["Category"] = relationship("Category", back_populates="products")
+    inventory: Mapped["Inventory"] = relationship(
+        "Inventory", back_populates="product", uselist=False, cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Product(id={self.id}, name={self.name}, price={self.price})>"
