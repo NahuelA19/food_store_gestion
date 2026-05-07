@@ -3,13 +3,13 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from jose import JWTError, jwt
+from jose import JWTError, jwt  # type: ignore[import-untyped]
 from pydantic import ValidationError
 
 from app.config import settings
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     """Generate a JWT access token.
 
     Args:
@@ -19,7 +19,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     Returns:
         Encoded JWT token string
     """
-    to_encode = data.copy()
+    to_encode: dict[str, Any] = data.copy()
 
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -30,7 +30,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
     to_encode.update({"exp": expire})
 
-    encoded_jwt = jwt.encode(
+    encoded_jwt: str = jwt.encode(
         to_encode,
         settings.secret_key,
         algorithm=settings.algorithm,
@@ -52,7 +52,7 @@ def verify_token(token: str) -> dict[str, Any] | None:
         JWTError: If token is malformed or has invalid signature
     """
     try:
-        payload = jwt.decode(
+        payload: dict[str, Any] = jwt.decode(
             token,
             settings.secret_key,
             algorithms=[settings.algorithm],

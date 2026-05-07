@@ -43,13 +43,13 @@ async def get_current_user(
 
     # Extract user ID and email from token
     try:
-        user_id: int = payload.get("user_id")
-        email: str = payload.get("email")
+        user_id_val: int | None = payload.get("user_id")
+        email_val: str | None = payload.get("email")
 
-        if user_id is None or email is None:
+        if user_id_val is None or email_val is None:
             raise ValueError("Missing user claims in token")
 
-        token_data = TokenData(user_id=user_id, email=email)
+        token_data = TokenData(user_id=user_id_val, email=email_val)
     except (KeyError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

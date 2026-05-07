@@ -1,14 +1,14 @@
 """Database session management and dependency injection."""
 
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 # Lazy-loaded session factory
-_async_session_local: Optional[async_sessionmaker] = None
+_async_session_local: async_sessionmaker[AsyncSession] | None = None
 
 
-def get_async_session_local() -> async_sessionmaker:
+def get_async_session_local() -> async_sessionmaker[AsyncSession]:
     """Get or create the async session factory."""
     global _async_session_local
     if _async_session_local is None:

@@ -42,6 +42,7 @@ Set in `.env` file:
 
 import logging
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -54,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> Any:
     """Manage FastAPI lifespan events: startup and shutdown."""
     # Startup
     logger.info("Starting up Food Store API")
@@ -90,7 +91,7 @@ app.include_router(auth_router, prefix="/api")
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     """Root endpoint"""
     return {
         "message": "Welcome to Food Store API",

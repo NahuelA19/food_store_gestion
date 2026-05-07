@@ -1,5 +1,7 @@
 """Application configuration."""
 
+from typing import Any
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,7 +38,7 @@ class Settings(BaseSettings):
     # CORS
     allowed_origins: list[str] | str = "http://localhost:5173,http://localhost:3000"
 
-    def __init__(self, **data):
+    def __init__(self, **data: Any) -> None:
         """Initialize settings with environment variable parsing."""
         super().__init__(**data)
         # Parse ALLOWED_ORIGINS if it's a string
