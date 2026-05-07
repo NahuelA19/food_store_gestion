@@ -18,7 +18,7 @@ from database.session import get_db_session
 # Override DATABASE_URL for testing
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://food_store_user:root@localhost:5432/food_store_test",
+    "postgresql+asyncpg://food_store_user:root@localhost:5433/food_store_test",
 )
 
 

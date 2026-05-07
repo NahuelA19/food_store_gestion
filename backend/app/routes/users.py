@@ -1,7 +1,7 @@
 """User profile and preferences routes."""
 
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -254,7 +254,7 @@ async def list_users(
     limit: int = Query(10, ge=1, le=100, description="Number of users per page"),
     current_user: User = Depends(get_admin_user),
     session: AsyncSession = Depends(get_db_session),
-) -> dict:
+) -> dict[str, Any]:
     """List all users with cursor-based pagination (admin only).
 
     Args:
