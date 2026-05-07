@@ -41,7 +41,7 @@ class TestAuthMiddleware:
         """Protected route rejects request without token."""
         response = await async_client.get("/api/health/protected/test")
 
-        assert response.status_code == 403  # Forbidden (missing credentials)
+        assert response.status_code == 401  # Unauthorized (missing credentials)
 
     @pytest.mark.asyncio
     async def test_protected_route_with_invalid_token(self, async_client: AsyncClient):

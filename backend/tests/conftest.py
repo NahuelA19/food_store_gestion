@@ -19,7 +19,7 @@ from database.session import get_db_session
 # Override DATABASE_URL for testing
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://user:password@localhost/food_store_test",
+    "postgresql+asyncpg://food_store_user:root@localhost:5432/food_store_test",
 )
 
 
@@ -66,6 +66,11 @@ async def get_test_db_session(test_engine) -> AsyncGenerator[AsyncSession, None]
     """Get a test database session."""
     if test_engine is None:
         pytest.skip("Database not available")
+
+    # Clean up all tables before each test
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
 
     async with AsyncSession(test_engine, expire_on_commit=False) as session:
         try:

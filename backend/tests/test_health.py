@@ -7,7 +7,7 @@ client = TestClient(app)
 
 def test_health_check():
     """Test health check endpoint"""
-    response = client.get("/health/")
+    response = client.get("/api/health/")
 
     assert response.status_code == 200
     data = response.json()
@@ -17,7 +17,7 @@ def test_health_check():
 
 def test_liveness():
     """Test liveness probe"""
-    response = client.get("/health/live")
+    response = client.get("/api/health/live")
 
     assert response.status_code == 200
     assert response.json()["status"] == "alive"
@@ -25,7 +25,7 @@ def test_liveness():
 
 def test_readiness():
     """Test readiness probe"""
-    response = client.get("/health/ready")
+    response = client.get("/api/health/ready")
 
     assert response.status_code == 200
     assert response.json()["status"] == "ready"

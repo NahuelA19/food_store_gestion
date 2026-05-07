@@ -4,6 +4,7 @@ import asyncio
 import os
 from logging.config import fileConfig
 
+from dotenv import load_dotenv
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -23,7 +24,8 @@ from app.models import Base  # noqa: E402
 target_metadata = Base.metadata
 
 # Get DATABASE_URL from environment
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/food_store")
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://food_store_user:root@localhost:5432/food_store")
 
 
 def run_migrations_offline() -> None:
