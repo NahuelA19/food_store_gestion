@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
+    # Payment
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_publishable_key: str = ""
+
     # CORS
     allowed_origins: list[str] | str = "http://localhost:5173,http://localhost:3000"
 

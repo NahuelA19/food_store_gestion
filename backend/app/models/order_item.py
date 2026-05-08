@@ -1,9 +1,16 @@
 """OrderItem ORM model."""
 
+from __future__ import annotations
+
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Numeric
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from app.models.order import Order
+    from app.models.product import Product
 
 from app.models.base import Base
 
@@ -29,6 +36,10 @@ class OrderItem(Base):
         Numeric(10, 2),
         nullable=False,
     )
+
+    # Relationships
+    order: Mapped["Order"] = relationship("Order", back_populates="items")
+    product: Mapped["Product"] = relationship("Product")
 
     def __repr__(self) -> str:
         return f"<OrderItem(id={self.id}, order_id={self.order_id}, product_id={self.product_id})>"

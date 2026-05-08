@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.cart import Cart, CartItem
 from app.models.product import Product
+from app.models.user import User
 from app.schemas.cart import (
     CartItemAdd,
     CartItemResponse,
@@ -17,6 +18,8 @@ from app.schemas.cart import (
     CartResponse,
     CheckoutRequest,
 )
+from app.services.order_service import create_order_from_cart
+from app.services.payment_service import create_payment_intent
 
 TAX_RATE = Decimal("0.10")
 
@@ -390,25 +393,27 @@ async def validate_cart_for_checkout(
 
 async def checkout_cart(
     cart_id: int,
-    user_id: int,
+    user: User,
     body: CheckoutRequest,
     db: AsyncSession,
 ) -> dict[str, Any]:
     """Initiate checkout for a cart.
 
+    Creates order, sets up Stripe PaymentIntent, and marks cart as checked out.
+
     Args:
         cart_id: Cart ID
-        user_id: User ID
+        user: Current authenticated user
         body: Checkout details
         db: Database session
 
     Returns:
-        dict: Checkout response
+        dict: Checkout response with client_secret
 
     Raises:
         HTTPException: If checkout validation fails
     """
-    cart = await get_cart_with_items(cart_id, user_id, db)
+    cart = await get_cart_with_items(cart_id, user.id, db)
 
     if not cart:
         raise HTTPException(
@@ -422,6 +427,12 @@ async def checkout_cart(
     # Get cart response with totals
     cart_response = await get_cart_response(cart)
 
+    # Create order with items and reserve inventory
+    order = await create_order_from_cart(cart, body, db)
+
+    # Create Stripe PaymentIntent
+    payment_data = await create_payment_intent(order, user, db)
+
     # Mark cart as checked_out
     cart.status = "checked_out"
     db.add(cart)
@@ -429,8 +440,9 @@ async def checkout_cart(
 
     return {
         "cart_id": cart_id,
-        "order_id": None,  # Will be implemented in Change 8 (order management)
+        "order_id": order.id,
         "status": "checked_out",
         "total": cart_response.total,
+        "client_secret": payment_data["client_secret"],
         "message": "Checkout initiated successfully",
     }

@@ -139,7 +139,7 @@ async def initiate_checkout(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Initiate checkout for the cart. Validates all items are available."""
-    result = await checkout_cart(cart_id, current_user.id, body, db)
+    result = await checkout_cart(cart_id, current_user, body, db)
     logger.info(
         "Checkout initiated: user_id=%s, cart_id=%s",
         current_user.id, cart_id,

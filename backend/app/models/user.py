@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from app.models.cart import Cart
+    from app.models.order import Order
 
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -30,6 +31,9 @@ class User(Base, TimestampMixin):
     last_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
+    # Stripe customer ID for payment processing
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
     # Soft delete
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -39,6 +43,7 @@ class User(Base, TimestampMixin):
     )
     cart: Mapped[list["Cart"]] = relationship("Cart", back_populates="user", uselist=False,  # noqa: F821
                                                cascade="all, delete-orphan")
+    orders: Mapped[list["Order"]] = relationship("Order", back_populates="user")  # noqa: F821
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, first_name={self.first_name}, last_name={self.last_name})>"

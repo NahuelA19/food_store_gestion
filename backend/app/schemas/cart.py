@@ -67,4 +67,5 @@ class CheckoutResponse(BaseModel):
     order_id: int | None = None
     status: str
     total: Decimal
+    client_secret: str | None = None
     message: str = "Checkout initiated successfully"
