@@ -12,7 +12,6 @@ export function ProductsPage() {
   const {
     query,
     filters,
-    page,
     items,
     pagination,
     loading,

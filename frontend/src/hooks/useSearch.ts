@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { debounce } from 'lodash';
 
@@ -136,11 +136,7 @@ export function useSearch(): UseSearchReturn {
   }, [query, filters, page, setSearchParams]);
 
   // Fetch results whenever query/filters/page change
-  useEffect(() => {
-    fetchResults();
-  }, [query, filters, page]);
-
-  async function fetchResults() {
+  const fetchResults = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -167,15 +163,22 @@ export function useSearch(): UseSearchReturn {
     } finally {
       setLoading(false);
     }
-  }
+  }, [query, filters, page]);
 
-  const handleSetQuery = useCallback(
+  useEffect(() => {
+    fetchResults();
+  }, [fetchResults]);
+
+  const debouncedSetQueryRef = useRef(
     debounce((newQuery: string) => {
       setQueryState(newQuery);
       setPageState(1);
-    }, 300),
-    []
+    }, 300)
   );
+
+  const handleSetQuery = useCallback((newQuery: string) => {
+    debouncedSetQueryRef.current(newQuery);
+  }, []);
 
   function handleSetFilters(newFilters: Filters) {
     setFiltersState(newFilters);

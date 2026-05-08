@@ -41,7 +41,6 @@ Set in `.env` file:
 """
 
 import logging
-from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
@@ -59,27 +58,30 @@ from database.client import dispose_engine, init_engine
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> Any:
-    """Manage FastAPI lifespan events: startup and shutdown."""
-    # Startup
-    logger.info("Starting up Food Store API")
-    await init_engine()
-    logger.info("Database engine initialized")
-    yield
-    # Shutdown
-    logger.info("Shutting down Food Store API")
-    await dispose_engine()
-    logger.info("Database engine disposed")
-
-
 # Create FastAPI app
 app = FastAPI(
     title="Food Store API",
     description="Modern E-commerce API for Food Store",
     version="0.1.0",
-    lifespan=lifespan,
 )
+
+
+# Startup event
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Initialize database engine on app startup."""
+    logger.info("Starting up Food Store API")
+    await init_engine()
+    logger.info("Database engine initialized")
+
+
+# Shutdown event
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    """Dispose database engine on app shutdown."""
+    logger.info("Shutting down Food Store API")
+    await dispose_engine()
+    logger.info("Database engine disposed")
 
 # Configure CORS
 app.add_middleware(

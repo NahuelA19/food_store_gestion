@@ -1,6 +1,5 @@
 """Database connection and engine configuration."""
 
-import os
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import (
@@ -9,14 +8,17 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import NullPool
 
+from app.config import settings
+
 
 def get_database_url() -> str:
-    """Get database URL from environment."""
-    db_url = os.getenv("DATABASE_URL")
-    if not db_url:
-        # Fallback for development
-        db_url = "postgresql+asyncpg://postgres:postgres@localhost:5432/food_store_dev"
-    return db_url
+    """Get database URL from environment.
+    
+    Uses Pydantic settings to ensure .env is loaded at the right time.
+    This avoids the import-time timing issue where os.getenv() runs
+    before .env is parsed by Pydantic.
+    """
+    return settings.database_url
 
 
 # Global engine instance (initialized in app startup)
@@ -29,7 +31,7 @@ def create_engine() -> AsyncEngine:
 
     engine: AsyncEngine = create_async_engine(
         db_url,
-        echo=os.getenv("DATABASE_ECHO", "False").lower() == "true",
+        echo=getattr(settings, "database_echo", False),
         poolclass=NullPool,
         connect_args={"server_settings": {"application_name": "food_store"}},
     )

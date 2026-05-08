@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, ChangeEvent, FC } from 'react';
+import { useState, useEffect, useRef, ChangeEvent, FC } from 'react';
 import { debounce } from 'lodash';
 import '../styles/SearchBar.css';
 
@@ -20,24 +20,22 @@ export const SearchBar: FC<SearchBarProps> = ({
   autoFocus = true,
 }) => {
   const [localValue, setLocalValue] = useState(value);
+  const debouncedRef = useRef(debounce(onChange, 300));
+
+  // Update debounced function when onChange changes
+  useEffect(() => {
+    debouncedRef.current = debounce(onChange, 300);
+  }, [onChange]);
 
   // Sync local value with prop
   useEffect(() => {
     setLocalValue(value);
   }, [value]);
 
-  // Debounce the onChange callback
-  const debouncedOnChange = useCallback(
-    debounce((newValue: string) => {
-      onChange(newValue);
-    }, 300),
-    [onChange]
-  );
-
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const newValue = e.target.value;
     setLocalValue(newValue);
-    debouncedOnChange(newValue);
+    debouncedRef.current(newValue);
   }
 
   function handleClear() {
