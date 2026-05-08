@@ -3,15 +3,19 @@
 from decimal import Decimal
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, update, delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.cart import Cart, CartItem
 from app.models.product import Product
-from app.models.user import User
-from app.schemas.cart import CartItemAdd, CartItemUpdate, CheckoutRequest, CartResponse, CartItemResponse
-
+from app.schemas.cart import (
+    CartItemAdd,
+    CartItemResponse,
+    CartItemUpdate,
+    CartResponse,
+    CheckoutRequest,
+)
 
 TAX_RATE = Decimal("0.10")
 

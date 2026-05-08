@@ -1,17 +1,16 @@
 """Tests for search service functions."""
 
-import pytest
 from decimal import Decimal
-from sqlalchemy import select
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.product import Product
 from app.services.search_service import (
-    validate_search_params,
     build_search_filters,
     build_sort_order,
     calculate_pagination_info,
     search_products,
+    validate_search_params,
 )
 
 

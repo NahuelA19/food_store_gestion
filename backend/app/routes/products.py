@@ -1,9 +1,9 @@
 """Product API routes for the Food Store."""
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.dependencies import get_db
 from app.models.category import Category
@@ -15,7 +15,6 @@ from app.schemas.product import (
     ProductResponse,
     ProductUpdate,
 )
-from app.schemas.inventory import InventoryResponse
 
 router = APIRouter(prefix="/products", tags=["products"])
 

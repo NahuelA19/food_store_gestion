@@ -41,7 +41,6 @@ Set in `.env` file:
 """
 
 import logging
-from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

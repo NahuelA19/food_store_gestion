@@ -1,5 +1,7 @@
 """User ORM model."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Optional
 
@@ -29,10 +31,10 @@ class User(Base, TimestampMixin):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    preferences: Mapped[list["UserPreference"]] = relationship(
+    preferences: Mapped[list["UserPreference"]] = relationship(  # noqa: F821
         "UserPreference", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
-    cart: Mapped[list["Cart"]] = relationship("Cart", back_populates="user", uselist=False,
+    cart: Mapped[list["Cart"]] = relationship("Cart", back_populates="user", uselist=False,  # noqa: F821
                                                cascade="all, delete-orphan")
 
     def __repr__(self) -> str:

@@ -1,5 +1,7 @@
 """Category ORM model."""
 
+from __future__ import annotations
+
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,7 +18,7 @@ class Category(Base, TimestampMixin):
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     # Relationships
-    products: Mapped[list["Product"]] = relationship(
+    products: Mapped[list["Product"]] = relationship(  # noqa: F821
         "Product", back_populates="category", lazy="selectin"
     )
 

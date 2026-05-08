@@ -13,7 +13,7 @@ from app.config import settings
 
 def get_database_url() -> str:
     """Get database URL from environment.
-    
+
     Uses Pydantic settings to ensure .env is loaded at the right time.
     This avoids the import-time timing issue where os.getenv() runs
     before .env is parsed by Pydantic.

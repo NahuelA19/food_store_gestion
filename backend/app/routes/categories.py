@@ -1,8 +1,8 @@
 """Category API routes for the Food Store."""
 
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_db
 from app.models.category import Category

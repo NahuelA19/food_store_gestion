@@ -25,10 +25,10 @@ def upgrade() -> None:
     op.add_column('users', sa.Column('last_name', sa.String(50), nullable=True))
     op.add_column('users', sa.Column('phone', sa.String(20), nullable=True))
     op.add_column('users', sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True))
-    
+
     # Create composite index on (is_active, created_at) for admin user listing
     op.create_index('ix_users_is_active_created_at', 'users', ['is_active', 'created_at'], unique=False)
-    
+
     # Create user_preferences table
     op.create_table(
         'user_preferences',
@@ -52,10 +52,10 @@ def downgrade() -> None:
     op.drop_index('ix_user_preferences_user_pref_key', table_name='user_preferences')
     op.drop_index(op.f('ix_user_preferences_user_id'), table_name='user_preferences')
     op.drop_table('user_preferences')
-    
+
     # Drop index from users table
     op.drop_index('ix_users_is_active_created_at', table_name='users')
-    
+
     # Drop columns from users table
     op.drop_column('users', 'deleted_at')
     op.drop_column('users', 'phone')

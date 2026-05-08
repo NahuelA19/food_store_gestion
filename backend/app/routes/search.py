@@ -7,9 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
 from app.schemas.product import ProductDetailResponse
-from app.schemas.search import SearchParams, SearchResponse
+from app.schemas.search import SearchResponse
 from app.services.search_service import (
-    calculate_pagination_info,
     search_products,
     validate_search_params,
 )

@@ -1,5 +1,7 @@
 """Inventory ORM model for stock management."""
 
+from __future__ import annotations
+
 from sqlalchemy import ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,7 +25,7 @@ class Inventory(Base, TimestampMixin):
     reserved_quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Relationships
-    product: Mapped["Product"] = relationship("Product", back_populates="inventory")
+    product: Mapped["Product"] = relationship("Product", back_populates="inventory")  # noqa: F821
 
     @property
     def available_quantity(self) -> int:

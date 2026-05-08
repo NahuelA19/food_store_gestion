@@ -1,8 +1,6 @@
 """Tests for category API endpoints."""
 
-import pytest
 from fastapi.testclient import TestClient
-from decimal import Decimal
 
 
 def test_list_categories_empty(test_client: TestClient):

@@ -1,13 +1,8 @@
 """Tests for cart API endpoints."""
 
-from decimal import Decimal
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.models.cart import Cart
-from app.models.user import User
 
 
 @pytest.mark.asyncio

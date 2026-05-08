@@ -6,8 +6,8 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.product import Product
 from app.models.inventory import Inventory
+from app.models.product import Product
 from app.schemas.search import PaginationInfo
 
 

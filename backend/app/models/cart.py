@@ -1,5 +1,7 @@
 """Cart ORM model."""
 
+from __future__ import annotations
+
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -25,8 +27,8 @@ class Cart(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="cart")
-    items: Mapped[list["CartItem"]] = relationship(
+    user: Mapped["User"] = relationship("User", back_populates="cart")  # noqa: F821
+    items: Mapped[list["CartItem"]] = relationship(  # noqa: F821
         "CartItem", back_populates="cart", cascade="all, delete-orphan"
     )
 
@@ -61,8 +63,8 @@ class CartItem(Base):
     )
 
     # Relationships
-    cart: Mapped["Cart"] = relationship("Cart", back_populates="items")
-    product: Mapped["Product"] = relationship("Product")
+    cart: Mapped["Cart"] = relationship("Cart", back_populates="items")  # noqa: F821
+    product: Mapped["Product"] = relationship("Product")  # noqa: F821
 
     def __repr__(self) -> str:
         return f"<CartItem(id={self.id}, cart_id={self.cart_id}, product_id={self.product_id}, qty={self.quantity})>"

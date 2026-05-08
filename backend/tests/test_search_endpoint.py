@@ -1,7 +1,7 @@
 """Tests for the search endpoint."""
 
+
 import pytest
-from decimal import Decimal
 from httpx import AsyncClient
 
 from app.main import app

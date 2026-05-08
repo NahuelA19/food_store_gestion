@@ -1,5 +1,7 @@
 """Product ORM model."""
 
+from __future__ import annotations
+
 from decimal import Decimal
 
 from sqlalchemy import ForeignKey, Numeric, String
@@ -30,8 +32,8 @@ class Product(Base, TimestampMixin):
     search_vector: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True)
 
     # Relationships
-    category: Mapped["Category"] = relationship("Category", back_populates="products")
-    inventory: Mapped["Inventory"] = relationship(
+    category: Mapped["Category"] = relationship("Category", back_populates="products")  # noqa: F821
+    inventory: Mapped["Inventory"] = relationship(  # noqa: F821
         "Inventory", back_populates="product", uselist=False, cascade="all, delete-orphan"
     )
 
