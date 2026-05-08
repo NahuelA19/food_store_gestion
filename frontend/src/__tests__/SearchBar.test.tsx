@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SearchBar } from '../components/SearchBar';
 
 describe('SearchBar component', () => {
@@ -139,7 +139,7 @@ describe('SearchBar component', () => {
     expect(searchBar?.textContent).toContain('🔍');
   });
 
-  it('should have autoFocus when specified', () => {
+  it('should have autoFocus when specified', async () => {
     const mockOnChange = vi.fn();
     const mockOnClear = vi.fn();
 
@@ -152,7 +152,11 @@ describe('SearchBar component', () => {
       />
     );
 
+    // React's autoFocus prop focuses the element imperatively,
+    // it doesn't set the HTML autofocus attribute
     const input = screen.getByRole('textbox');
-    expect(input).toHaveAttribute('autofocus');
+    await waitFor(() => {
+      expect(input).toHaveFocus();
+    });
   });
 });

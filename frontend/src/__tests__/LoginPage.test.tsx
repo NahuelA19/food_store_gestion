@@ -40,16 +40,16 @@ describe("LoginPage", () => {
   it("renders login form with email and password inputs", () => {
     renderLoginPage();
 
-    expect(screen.getByRole("heading", { name: /iniciar sesión/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /ingresar/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
   });
 
   it("has a link to the registration page", () => {
     renderLoginPage();
 
-    expect(screen.getByRole("link", { name: /registrate acá/i })).toHaveAttribute("href", "/register");
+    expect(screen.getByRole("link", { name: /create one/i })).toHaveAttribute("href", "/register");
   });
 
   it("calls login with correct credentials on submit", async () => {
@@ -57,11 +57,11 @@ describe("LoginPage", () => {
     renderLoginPage();
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/contraseña/i);
+    const passwordInput = screen.getByLabelText(/password/i);
 
     await userEvent.type(emailInput, "test@example.com");
     await userEvent.type(passwordInput, "password123");
-    fireEvent.click(screen.getByRole("button", { name: /ingresar/i }));
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith("test@example.com", "password123");
@@ -73,11 +73,11 @@ describe("LoginPage", () => {
     renderLoginPage();
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/contraseña/i);
+    const passwordInput = screen.getByLabelText(/password/i);
 
     await userEvent.type(emailInput, "test@example.com");
     await userEvent.type(passwordInput, "wrongpass");
-    await userEvent.click(screen.getByRole("button", { name: /ingresar/i }));
+    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe("LoginPage", () => {
   it("shows loading state while login is in progress", () => {
     renderLoginPage({ isLoading: true });
 
-    expect(screen.getByRole("button", { name: /ingresando\.\.\./i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /signing in\.\.\./i })).toBeDisabled();
   });
 
   it("shows error from context when present", async () => {
@@ -99,11 +99,11 @@ describe("LoginPage", () => {
     renderLoginPage({ error: "Session expired" });
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/contraseña/i);
+    const passwordInput = screen.getByLabelText(/password/i);
 
     await userEvent.type(emailInput, "test@example.com");
     await userEvent.type(passwordInput, "wrongpass");
-    await userEvent.click(screen.getByRole("button", { name: /ingresar/i }));
+    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Session expired")).toBeInTheDocument();
@@ -114,7 +114,7 @@ describe("LoginPage", () => {
     renderLoginPage();
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/contraseña/i);
+    const passwordInput = screen.getByLabelText(/password/i);
 
     expect(emailInput).toBeRequired();
     expect(passwordInput).toBeRequired();
@@ -129,6 +129,6 @@ describe("LoginPage", () => {
   it("password input has correct type", () => {
     renderLoginPage();
 
-    expect(screen.getByLabelText(/contraseña/i)).toHaveAttribute("type", "password");
+    expect(screen.getByLabelText(/password/i)).toHaveAttribute("type", "password");
   });
 });

@@ -16,6 +16,28 @@ vi.mock('../hooks/useAuth', () => ({
   }),
 }));
 
+// Mock CartContext — Navigation renders CartBadge which uses useCartContext
+vi.mock('../context/CartContext', () => ({
+  useCartContext: () => ({
+    cart: null,
+    items: [],
+    itemCount: 0,
+    subtotal: 0,
+    tax: 0,
+    total: 0,
+    isLoading: false,
+    error: null,
+    fetchCart: vi.fn(),
+    addItem: vi.fn(),
+    updateQuantity: vi.fn(),
+    removeItem: vi.fn(),
+    clearCart: vi.fn(),
+    checkout: vi.fn(),
+  }),
+  CartContext: {},
+  CartProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 describe('App', () => {
   it('renders navigation with logo', () => {
     render(<App />);
