@@ -52,6 +52,7 @@ from app.routes.categories import router as categories_router
 from app.routes.health import router as health_router
 from app.routes.inventory import router as inventory_router
 from app.routes.products import router as products_router
+from app.routes.search import router as search_router
 from app.routes.users import router as users_router
 from database.client import dispose_engine, init_engine
 
@@ -95,6 +96,7 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 app.include_router(categories_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
+app.include_router(search_router, prefix="/api/v1")
 app.include_router(inventory_router, prefix="/api")
 
 
