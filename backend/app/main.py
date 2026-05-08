@@ -41,13 +41,13 @@ Set in `.env` file:
 """
 
 import logging
-from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.auth import router as auth_router
+from app.routes.cart import router as cart_router
 from app.routes.categories import router as categories_router
 from app.routes.health import router as health_router
 from app.routes.inventory import router as inventory_router
@@ -59,27 +59,30 @@ from database.client import dispose_engine, init_engine
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> Any:
-    """Manage FastAPI lifespan events: startup and shutdown."""
-    # Startup
-    logger.info("Starting up Food Store API")
-    await init_engine()
-    logger.info("Database engine initialized")
-    yield
-    # Shutdown
-    logger.info("Shutting down Food Store API")
-    await dispose_engine()
-    logger.info("Database engine disposed")
-
-
 # Create FastAPI app
 app = FastAPI(
     title="Food Store API",
     description="Modern E-commerce API for Food Store",
     version="0.1.0",
-    lifespan=lifespan,
 )
+
+
+# Startup event
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Initialize database engine on app startup."""
+    logger.info("Starting up Food Store API")
+    await init_engine()
+    logger.info("Database engine initialized")
+
+
+# Shutdown event
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    """Dispose database engine on app shutdown."""
+    logger.info("Shutting down Food Store API")
+    await dispose_engine()
+    logger.info("Database engine disposed")
 
 # Configure CORS
 app.add_middleware(
@@ -98,6 +101,7 @@ app.include_router(categories_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
 app.include_router(search_router, prefix="/api/v1")
 app.include_router(inventory_router, prefix="/api")
+app.include_router(cart_router, prefix="/api")
 
 
 @app.get("/")

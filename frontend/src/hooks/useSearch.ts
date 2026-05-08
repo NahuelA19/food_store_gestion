@@ -175,8 +175,7 @@ export function useSearch(): UseSearchReturn {
     debounce((newQuery: string) => {
       setQueryState(newQuery);
       setPageState(1);
-    }, 300),
-    []
+    }, 300)
   );
 
   function handleSetFilters(newFilters: Filters) {

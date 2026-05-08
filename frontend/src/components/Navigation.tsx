@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuthContext } from "../context/AuthContext";
+import { CartBadge } from "./Cart/CartBadge";
 
 export function Navigation() {
   const { isAuthenticated, user, logout } = useAuthContext();
@@ -14,18 +15,22 @@ export function Navigation() {
       <Link to="/" className="nav-logo">
         🍕 Food Store
       </Link>
-      <div className="nav-links">
-        {isAuthenticated ? (
-          <>
-            <span className="nav-user">{user?.email}</span>
-            <Link to="/profile" className="nav-link">
-              Mi Perfil
-            </Link>
-            <button onClick={handleLogout} className="nav-logout">
-              Cerrar Sesión
-            </button>
-          </>
-        ) : (
+       <div className="nav-links">
+         {isAuthenticated ? (
+           <>
+             <Link to="/products" className="nav-link">
+               Productos
+             </Link>
+             <CartBadge />
+             <span className="nav-user">{user?.email}</span>
+             <Link to="/profile" className="nav-link">
+               Mi Perfil
+             </Link>
+             <button onClick={handleLogout} className="nav-logout">
+               Cerrar Sesión
+             </button>
+           </>
+         ) : (
           <>
             <Link to="/login" className="nav-link">
               Iniciar Sesión

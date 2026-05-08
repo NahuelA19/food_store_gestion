@@ -34,8 +34,12 @@ export const ProductDetailPage: React.FC = () => {
   if (error) {
     return (
       <div className="error-container">
-        <p>Product not found: {error}</p>
-        <button onClick={() => navigate("/products")}>Back to Products</button>
+        <div className="error-icon">⚠️</div>
+        <h2>Product not found</h2>
+        <p>{error}</p>
+        <button onClick={() => navigate("/products")} className="btn btn-primary">
+          Back to Products
+        </button>
       </div>
     );
   }
@@ -43,7 +47,8 @@ export const ProductDetailPage: React.FC = () => {
   if (isLoading || !product) {
     return (
       <div className="loading-container">
-        <p>Loading product...</p>
+        <div className="spinner-icon">⏳</div>
+        <p>Loading product details...</p>
       </div>
     );
   }
@@ -56,7 +61,7 @@ export const ProductDetailPage: React.FC = () => {
 
   return (
     <div className="product-detail-page">
-      <button className="back-button" onClick={() => navigate("/products")}>
+      <button className="back-button" onClick={() => navigate("/products")} type="button">
         ← Back to Products
       </button>
 
@@ -65,14 +70,20 @@ export const ProductDetailPage: React.FC = () => {
         <div className="product-main">
           {/* Product Image */}
           <div className="product-image-large">
-            <div style={{ fontSize: "120px", textAlign: "center" }}>🥕</div>
+            <div className="emoji-large">🥕</div>
           </div>
 
           {/* Product Details */}
           <div className="product-details">
             <h1>{product.name}</h1>
-            <p className="category">{product.category?.name}</p>
-            <p className="description">{product.description}</p>
+            
+            {product.category && (
+              <p className="category">{product.category.name}</p>
+            )}
+            
+            {product.description && (
+              <p className="description">{product.description}</p>
+            )}
 
             {/* Price */}
             <div className="price-section">
@@ -81,14 +92,16 @@ export const ProductDetailPage: React.FC = () => {
 
             {/* Stock Info */}
             <div className="stock-section">
-              {isOutOfStock && <div className="badge-danger">Out of Stock</div>}
+              {isOutOfStock && (
+                <span className="badge badge-alert" role="status">Out of Stock</span>
+              )}
               {isLowStock && (
-                <div className="badge-warning">
+                <span className="badge badge-warning" role="status">
                   Low Stock ({product.inventory?.available_quantity} left)
-                </div>
+                </span>
               )}
               {!isOutOfStock && !isLowStock && (
-                <div className="badge-success">In Stock</div>
+                <span className="badge badge-success" role="status">In Stock</span>
               )}
             </div>
 
@@ -108,8 +121,7 @@ export const ProductDetailPage: React.FC = () => {
                   ></div>
                 </div>
                 <p className="progress-text">
-                  {product.inventory.available_quantity} of{" "}
-                  {product.inventory.stock_quantity} available
+                  {product.inventory.available_quantity} of {product.inventory.stock_quantity} available
                 </p>
               </div>
             )}
@@ -120,8 +132,11 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="quantity-selector">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="qty-btn"
+                    type="button"
+                    aria-label="Decrease quantity"
                   >
-                    -
+                    −
                   </button>
                   <input
                     type="number"
@@ -129,6 +144,8 @@ export const ProductDetailPage: React.FC = () => {
                     onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                     min="1"
                     max={product.inventory?.available_quantity || 1}
+                    className="qty-input"
+                    aria-label="Quantity"
                   />
                   <button
                     onClick={() =>
@@ -139,11 +156,14 @@ export const ProductDetailPage: React.FC = () => {
                         )
                       )
                     }
+                    className="qty-btn"
+                    type="button"
+                    aria-label="Increase quantity"
                   >
                     +
                   </button>
                 </div>
-                <button className="btn-add-to-cart">Add to Cart</button>
+                <button className="btn-add-to-cart" type="button">Add to Cart</button>
               </div>
             )}
           </div>
@@ -170,216 +190,354 @@ export const ProductDetailPage: React.FC = () => {
         .product-detail-page {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 20px;
+          padding: var(--space-xl);
+          animation: fadeIn 0.3s ease-out;
         }
 
         .back-button {
-          background: none;
+          background: transparent;
           border: none;
-          color: #2c3e50;
+          color: var(--primary);
           cursor: pointer;
-          font-size: 16px;
-          margin-bottom: 20px;
-          text-decoration: underline;
+          font-size: var(--text-base);
+          margin-bottom: var(--space-xl);
+          text-decoration: none;
+          font-weight: var(--font-semibold);
+          transition: var(--transition-base);
+          padding: var(--space-sm) var(--space-md);
+          border-radius: var(--radius-lg);
+          min-height: 44px;
+        }
+
+        .back-button:hover {
+          background: var(--primary-50);
+          color: var(--primary-dark);
+        }
+
+        .back-button:focus {
+          outline: 2px solid var(--primary);
+          outline-offset: 2px;
+        }
+
+        .error-container {
+          text-align: center;
+          padding: var(--space-3xl);
+          background: var(--alert-light);
+          border: 2px solid var(--alert);
+          border-radius: var(--radius-lg);
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        .error-icon, .spinner-icon {
+          font-size: 3rem;
+          margin-bottom: var(--space-lg);
+          display: block;
+        }
+
+        .error-container h2 {
+          color: var(--alert-dark);
+          margin-bottom: var(--space-md);
+        }
+
+        .error-container p {
+          color: var(--alert);
+          margin-bottom: var(--space-xl);
+        }
+
+        .loading-container {
+          text-align: center;
+          padding: var(--space-3xl);
+        }
+
+        .loading-container p {
+          color: var(--text-muted);
+          font-size: var(--text-lg);
         }
 
         .product-detail-container {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 40px;
-          margin-bottom: 40px;
+          gap: var(--space-3xl);
+          margin-bottom: var(--space-3xl);
+          background: var(--bg-card);
+          border: 2px solid var(--border-light);
+          border-radius: var(--radius-lg);
+          padding: var(--space-2xl);
+          box-shadow: var(--shadow-lg);
         }
 
         .product-image-large {
-          background: #f5f5f5;
-          border-radius: 8px;
+          background: linear-gradient(135deg, var(--primary-50), var(--accent));
+          border-radius: var(--radius-lg);
           display: flex;
           align-items: center;
           justify-content: center;
-          min-height: 400px;
+          min-height: 450px;
+          border: 2px solid var(--border-light);
+        }
+
+        .emoji-large {
+          font-size: 8rem;
+          text-align: center;
         }
 
         .product-main h1 {
-          margin: 0 0 8px;
-          font-size: 28px;
+          margin: 0 0 var(--space-sm) 0;
+          font-size: var(--text-4xl);
+          color: var(--primary);
         }
 
         .category {
-          margin: 0 0 16px;
-          color: #666;
-          font-size: 14px;
+          margin: 0 0 var(--space-lg) 0;
+          color: var(--text-muted);
+          font-size: var(--text-base);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          font-weight: var(--font-semibold);
         }
 
         .description {
-          margin: 0 0 24px;
-          color: #666;
-          line-height: 1.6;
-          font-size: 15px;
+          margin: 0 0 var(--space-xl) 0;
+          color: var(--text-secondary);
+          line-height: var(--leading-relaxed);
+          font-size: var(--text-lg);
         }
 
         .price-section {
-          margin-bottom: 24px;
+          margin-bottom: var(--space-xl);
+          padding-bottom: var(--space-lg);
+          border-bottom: 2px solid var(--border-light);
         }
 
         .price {
-          font-size: 32px;
-          font-weight: 700;
-          color: #2c3e50;
+          font-size: var(--text-5xl);
+          font-weight: var(--font-black);
+          color: var(--primary);
         }
 
         .stock-section {
-          margin-bottom: 16px;
+          margin-bottom: var(--space-lg);
+          display: flex;
+          gap: var(--space-sm);
         }
 
-        .badge-success,
-        .badge-warning,
-        .badge-danger {
+        .badge {
           display: inline-block;
-          padding: 8px 16px;
-          border-radius: 4px;
+          padding: 0.5rem var(--space-md);
+          border-radius: var(--radius-full);
           color: white;
-          font-weight: 600;
-          font-size: 13px;
+          font-weight: var(--font-bold);
+          font-size: var(--text-sm);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
 
         .badge-success {
-          background: #4caf50;
+          background: var(--success);
         }
 
         .badge-warning {
-          background: #ff9800;
+          background: var(--warning);
         }
 
-        .badge-danger {
-          background: #f44336;
+        .badge-alert {
+          background: var(--alert);
         }
 
         .stock-progress {
-          margin-bottom: 24px;
+          margin-bottom: var(--space-xl);
         }
 
         .progress-bar {
-          height: 8px;
-          background: #e0e0e0;
-          border-radius: 4px;
+          height: 10px;
+          background: var(--border-light);
+          border-radius: var(--radius-full);
           overflow: hidden;
-          margin-bottom: 8px;
+          margin-bottom: var(--space-md);
         }
 
         .progress-fill {
           height: 100%;
-          background: #4caf50;
-          transition: width 0.3s;
+          background: linear-gradient(90deg, var(--primary), var(--primary-light));
+          transition: width 0.4s ease-out;
+          border-radius: var(--radius-full);
         }
 
         .progress-text {
           margin: 0;
-          font-size: 12px;
-          color: #666;
+          font-size: var(--text-sm);
+          color: var(--text-muted);
+          font-weight: var(--font-semibold);
         }
 
         .add-to-cart-section {
           display: flex;
-          gap: 12px;
+          gap: var(--space-lg);
+          margin-top: var(--space-xl);
         }
 
         .quantity-selector {
           display: flex;
-          gap: 4px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
+          gap: 0;
+          border: 2px solid var(--border-light);
+          border-radius: var(--radius-lg);
           overflow: hidden;
+          background: var(--neutral-100);
+          flex: 0 0 auto;
         }
 
-        .quantity-selector button {
-          flex: 1;
-          padding: 8px 12px;
+        .qty-btn {
+          width: 3.5rem;
+          padding: var(--space-md);
           border: none;
-          background: #f5f5f5;
+          background: transparent;
           cursor: pointer;
-          font-weight: 600;
+          font-weight: var(--font-bold);
+          font-size: var(--text-xl);
+          color: var(--primary);
+          transition: var(--transition-fast);
+          min-height: 44px;
         }
 
-        .quantity-selector button:hover {
-          background: #efefef;
+        .qty-btn:hover {
+          background: var(--primary-50);
         }
 
-        .quantity-selector input {
-          flex: 1;
+        .qty-btn:active {
+          background: var(--primary);
+          color: white;
+        }
+
+        .qty-input {
+          width: 4rem;
           border: none;
           text-align: center;
-          font-weight: 600;
-          width: 60px;
+          font-weight: var(--font-bold);
+          font-size: var(--text-lg);
+          background: transparent;
+          color: var(--text-main);
+          min-height: 44px;
+        }
+
+        .qty-input:focus {
+          outline: none;
+          background: var(--primary-50);
         }
 
         .btn-add-to-cart {
           flex: 1;
-          background: #2c3e50;
+          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
           color: white;
           border: none;
-          padding: 8px 16px;
-          border-radius: 4px;
+          padding: var(--space-md);
+          border-radius: var(--radius-lg);
           cursor: pointer;
-          font-weight: 600;
-          font-size: 14px;
-          transition: background 0.2s;
+          font-weight: var(--font-bold);
+          font-size: var(--text-lg);
+          transition: var(--transition-base);
+          min-height: 44px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
 
         .btn-add-to-cart:hover {
-          background: #1a252f;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(46, 76, 140, 0.3);
+        }
+
+        .btn-add-to-cart:active {
+          transform: translateY(0);
         }
 
         .related-products {
-          border-top: 2px solid #f0f0f0;
-          padding-top: 40px;
+          border-top: 2px solid var(--border-light);
+          padding-top: var(--space-2xl);
         }
 
         .related-products h2 {
-          margin-bottom: 24px;
+          color: var(--primary);
+          margin-bottom: var(--space-xl);
         }
 
         .related-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: 20px;
-        }
-
-        .error-container,
-        .loading-container {
-          text-align: center;
-          padding: 40px;
-        }
-
-        .error-container button {
-          margin-top: 16px;
-          padding: 8px 16px;
-          background: #2c3e50;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: var(--space-xl);
         }
 
         @media (max-width: 768px) {
+          .product-detail-page {
+            padding: var(--space-lg);
+          }
+
           .product-detail-container {
             grid-template-columns: 1fr;
-            gap: 24px;
+            gap: var(--space-xl);
+            padding: var(--space-lg);
           }
 
           .product-image-large {
-            min-height: 300px;
+            min-height: 350px;
+          }
+
+          .emoji-large {
+            font-size: 6rem;
           }
 
           .product-main h1 {
-            font-size: 22px;
+            font-size: var(--text-3xl);
           }
 
           .price {
-            font-size: 24px;
+            font-size: var(--text-3xl);
+          }
+
+          .add-to-cart-section {
+            flex-direction: column;
+          }
+
+          .quantity-selector {
+            width: 100%;
+          }
+
+          .qty-btn {
+            width: auto;
+            flex: 1;
+          }
+
+          .qty-input {
+            width: auto;
+            flex: 1;
           }
 
           .related-grid {
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          }
+        }
+
+        @media (max-width: 480px) {
+          .product-detail-container {
+            padding: var(--space-md);
+          }
+
+          .product-image-large {
+            min-height: 280px;
+          }
+
+          .emoji-large {
+            font-size: 5rem;
+          }
+
+          .product-main h1 {
+            font-size: var(--text-2xl);
+          }
+
+          .price {
+            font-size: var(--text-2xl);
+          }
+
+          .related-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
           }
         }
       `}</style>
