@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 from sqlalchemy import ForeignKey, Numeric, String
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -26,6 +27,7 @@ class Product(Base, TimestampMixin):
         index=True,
     )
     is_available: Mapped[bool] = mapped_column(default=True, nullable=False, index=True)
+    search_vector: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True)
 
     # Relationships
     category: Mapped["Category"] = relationship("Category", back_populates="products")
