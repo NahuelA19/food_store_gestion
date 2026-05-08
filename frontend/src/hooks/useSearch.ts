@@ -170,13 +170,10 @@ export function useSearch(): UseSearchReturn {
     fetchResults();
   }, [fetchResults]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const handleSetQuery = useCallback(
-    debounce((newQuery: string) => {
-      setQueryState(newQuery);
-      setPageState(1);
-    }, 300)
-  );
+  const handleSetQuery = debounce((newQuery: string) => {
+    setQueryState(newQuery);
+    setPageState(1);
+  }, 300);
 
   function handleSetFilters(newFilters: Filters) {
     setFiltersState(newFilters);

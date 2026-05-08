@@ -22,6 +22,8 @@ describe("LoginPage", () => {
             login: mockLogin,
             register: mockRegister,
             logout: mockLogout,
+            updateProfile: vi.fn(),
+            updatePreferences: vi.fn(),
             ...contextOverrides,
           }}
         >

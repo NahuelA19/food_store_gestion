@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Numeric, String
+
+if TYPE_CHECKING:
+    from app.models.category import Category
+    from app.models.inventory import Inventory
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

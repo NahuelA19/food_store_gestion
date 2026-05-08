@@ -1,6 +1,7 @@
 """Cart business logic service."""
 
 from decimal import Decimal
+from typing import Any, cast
 
 from fastapi import HTTPException, status
 from sqlalchemy import delete, select
@@ -275,7 +276,7 @@ async def update_cart_item_quantity(
 
     # Return updated cart
     result = await db.execute(select(Cart.user_id).where(Cart.id == cart_id))
-    user_id = result.scalar_one()
+    user_id = cast(int, result.scalar_one())
     return await get_cart_with_items(cart_id, user_id, db)
 
 
@@ -312,7 +313,7 @@ async def remove_cart_item(
     await db.commit()
 
     result = await db.execute(select(Cart.user_id).where(Cart.id == cart_id))
-    user_id = result.scalar_one()
+    user_id = cast(int, result.scalar_one())
     return await get_cart_with_items(cart_id, user_id, db)
 
 
@@ -392,7 +393,7 @@ async def checkout_cart(
     user_id: int,
     body: CheckoutRequest,
     db: AsyncSession,
-) -> dict:
+) -> dict[str, Any]:
     """Initiate checkout for a cart.
 
     Args:

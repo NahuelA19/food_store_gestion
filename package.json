@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^20.5.0",
+    "@types/lodash": "^4.17.24",
     "commitlint": "^18.0.0",
     "husky": "^8.0.0",
     "jsdom": "^29.1.1",

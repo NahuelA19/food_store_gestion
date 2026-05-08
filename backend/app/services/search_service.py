@@ -1,10 +1,12 @@
 """Search service for building and executing search queries."""
 
 from decimal import Decimal
+from typing import Any, Sequence
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.expression import ColumnElement
 
 from app.models.inventory import Inventory
 from app.models.product import Product
@@ -45,7 +47,7 @@ def build_search_filters(
     max_price: Decimal | None = None,
     in_stock: bool | None = None,
     min_stock: int | None = None,
-) -> list:
+) -> list[ColumnElement[bool]]:
     """Build WHERE clause filters for search query."""
     filters = []
 
@@ -78,7 +80,7 @@ def build_search_filters(
     return filters
 
 
-def build_sort_order(sort_by: str, order: str, q: str | None = None):
+def build_sort_order(sort_by: str, order: str, q: str | None = None) -> ColumnElement[Any]:
     """Build sort order clause."""
     desc = order == "desc"
 
@@ -125,7 +127,7 @@ async def search_products(
     limit: int = 20,
     sort_by: str = "relevance",
     order: str = "asc",
-) -> tuple[list[Product], PaginationInfo]:
+) -> tuple[Sequence[Product], PaginationInfo]:
     """Execute search query with filters and return results with pagination info."""
 
     # Build filters

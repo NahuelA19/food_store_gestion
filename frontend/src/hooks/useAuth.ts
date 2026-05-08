@@ -1,6 +1,6 @@
 // Custom hook for authentication logic.
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 interface User {
   id: number;
@@ -49,13 +49,10 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize user from localStorage on first load
-  const [initialized, setInitialized] = useState(false);
-  if (!initialized) {
+  // Initialize user from localStorage on mount
+  useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (token) {
-      // Try to verify token by calling a protected endpoint
-      // For now, we'll just restore the user from token if we can decode it
       try {
         const parts = token.split(".");
         if (parts.length === 3) {
@@ -67,8 +64,7 @@ export function useAuth(): UseAuthReturn {
         localStorage.removeItem(TOKEN_KEY);
       }
     }
-    setInitialized(true);
-  }
+  }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<void> => {
     setIsLoading(true);

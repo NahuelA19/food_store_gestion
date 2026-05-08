@@ -17,7 +17,7 @@ const mockPreferences = {
 describe("ProfilePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.getItem.mockReturnValue("fake-token");
+    vi.mocked(localStorage.getItem).mockReturnValue("fake-token");
   });
 
   it("should show loading state initially", () => {
@@ -77,7 +77,7 @@ describe("ProfilePage", () => {
   });
 
   it("should redirect to login if not authenticated", () => {
-    localStorage.getItem.mockReturnValue(null);
+    vi.mocked(localStorage.getItem).mockReturnValue(null);
 
     render(
       <BrowserRouter>

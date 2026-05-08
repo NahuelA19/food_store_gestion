@@ -1,5 +1,7 @@
 """Category API routes for the Food Store."""
 
+from typing import cast
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -146,7 +148,7 @@ async def delete_category(
     result = await db.execute(
         select(func.count(Product.id)).where(Product.category_id == category_id)
     )
-    product_count = result.scalar()
+    product_count = cast(int | None, result.scalar())
     if product_count and product_count > 0:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

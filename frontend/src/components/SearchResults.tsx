@@ -7,7 +7,7 @@ export interface SearchResultsProps {
   items: Product[];
   pagination: PaginationInfo;
   loading: boolean;
-  error?: string;
+  error?: string | null;
   onPageChange: (page: number) => void;
 }
 

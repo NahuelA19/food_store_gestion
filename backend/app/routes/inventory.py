@@ -1,5 +1,7 @@
 """Inventory API routes for the Food Store."""
 
+from typing import cast
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +36,7 @@ async def get_inventory(
     result = await db.execute(
         select(Inventory).where(Inventory.product_id == product_id)
     )
-    inventory = result.scalar_one_or_none()
+    inventory = cast(Inventory | None, result.scalar_one_or_none())
     if not inventory:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -63,7 +65,7 @@ async def update_inventory(
     result = await db.execute(
         select(Inventory).where(Inventory.product_id == product_id)
     )
-    inventory = result.scalar_one_or_none()
+    inventory = cast(Inventory | None, result.scalar_one_or_none())
     if not inventory:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -107,7 +109,7 @@ async def reserve_inventory(
     result = await db.execute(
         select(Inventory).where(Inventory.product_id == product_id)
     )
-    inventory = result.scalar_one_or_none()
+    inventory = cast(Inventory | None, result.scalar_one_or_none())
     if not inventory:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

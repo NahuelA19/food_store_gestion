@@ -1,8 +1,10 @@
 """Search and filtering schemas."""
 
 from decimal import Decimal
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
+from pydantic_core.core_schema import ValidationInfo
 
 
 class PaginationInfo(BaseModel):
@@ -48,7 +50,7 @@ class SearchParams(BaseModel):
 
     @field_validator("max_price")
     @classmethod
-    def validate_price_range(cls, v: Decimal | None, info) -> Decimal | None:
+    def validate_price_range(cls, v: Decimal | None, info: ValidationInfo) -> Decimal | None:
         """Ensure min_price <= max_price if both provided."""
         if v is not None and info.data.get("min_price") is not None:
             if info.data["min_price"] > v:
@@ -59,5 +61,5 @@ class SearchParams(BaseModel):
 class SearchResponse(BaseModel):
     """Search results response."""
 
-    items: list = Field(..., description="List of matching products")
+    items: list[Any] = Field(..., description="List of matching products")
     pagination: PaginationInfo = Field(..., description="Pagination information")

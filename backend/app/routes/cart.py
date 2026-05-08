@@ -1,6 +1,7 @@
 """Cart API routes for the Food Store."""
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -136,7 +137,7 @@ async def initiate_checkout(
     body: CheckoutRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """Initiate checkout for the cart. Validates all items are available."""
     result = await checkout_cart(cart_id, current_user.id, body, db)
     logger.info(

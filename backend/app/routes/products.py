@@ -1,5 +1,7 @@
 """Product API routes for the Food Store."""
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +33,7 @@ async def list_products(
     sort_by: str = Query("created_at", pattern="^(name|price|created_at)$"),
     order: str = Query("desc", pattern="^(asc|desc)$"),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> dict[str, Any]:
     """List products with filtering, searching, and pagination."""
     # Build query
     query = select(Product).options(
