@@ -32,6 +32,8 @@ class User(Base, TimestampMixin):
     preferences: Mapped[list["UserPreference"]] = relationship(
         "UserPreference", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
+    cart: Mapped[list["Cart"]] = relationship("Cart", back_populates="user", uselist=False,
+                                               cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, first_name={self.first_name}, last_name={self.last_name})>"

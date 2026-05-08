@@ -26,8 +26,14 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   if (error) {
     return (
       <div className="error-state">
+        <div className="error-icon">⚠️</div>
+        <h3>Something went wrong</h3>
         <p>{error}</p>
-        {onRetry && <button onClick={onRetry}>Retry</button>}
+        {onRetry && (
+          <button onClick={onRetry} className="btn btn-primary">
+            Try Again
+          </button>
+        )}
       </div>
     );
   }
@@ -48,8 +54,10 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
   if (products.length === 0) {
     return (
-      <div className="no-products">
-        <p>No products found</p>
+      <div className="no-products-state">
+        <div className="empty-icon">🍕</div>
+        <h3>No products found</h3>
+        <p>Try adjusting your filters or search terms</p>
       </div>
     );
   }
@@ -68,79 +76,134 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       <style>{`
         .product-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: 20px;
-          padding: 20px 0;
-        }
-
-        @media (max-width: 768px) {
-          .product-grid {
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 12px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .product-grid {
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 8px;
-          }
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: var(--space-xl);
+          padding: var(--space-lg) 0;
+          animation: fadeIn 0.3s ease-out;
         }
 
         .error-state {
-          padding: 40px;
+          padding: var(--space-3xl) var(--space-xl);
           text-align: center;
-          color: #f44336;
+          background: var(--alert-light);
+          border: 2px solid var(--alert);
+          border-radius: var(--radius-lg);
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        .error-icon {
+          font-size: 3rem;
+          margin-bottom: var(--space-lg);
+        }
+
+        .error-state h3 {
+          color: var(--alert-dark);
+          margin-bottom: var(--space-md);
+        }
+
+        .error-state p {
+          color: var(--alert);
+          margin-bottom: var(--space-lg);
         }
 
         .error-state button {
-          margin-top: 16px;
-          padding: 8px 16px;
-          background: #f44336;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
+          margin-top: var(--space-md);
         }
 
-        .no-products {
-          padding: 40px;
+        .no-products-state {
+          padding: var(--space-3xl) var(--space-xl);
           text-align: center;
-          color: #999;
+          background: linear-gradient(135deg, var(--primary-50), rgba(255, 243, 225, 0.3));
+          border: 2px dashed var(--primary);
+          border-radius: var(--radius-lg);
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        .empty-icon {
+          font-size: 4rem;
+          margin-bottom: var(--space-lg);
+          display: block;
+        }
+
+        .no-products-state h3 {
+          color: var(--primary);
+          margin-bottom: var(--space-md);
+        }
+
+        .no-products-state p {
+          color: var(--text-muted);
         }
 
         .product-skeleton {
-          padding: 12px;
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
+          padding: var(--space-lg);
+          border: 2px solid var(--border-light);
+          border-radius: var(--radius-lg);
+          background: var(--bg-card);
           animation: pulse 2s infinite;
         }
 
         .skeleton-image {
-          height: 120px;
-          background: #f0f0f0;
-          border-radius: 4px;
-          margin-bottom: 12px;
+          height: 160px;
+          background: linear-gradient(90deg, #e5e5e5 25%, #f0f0f0 50%, #e5e5e5 75%);
+          background-size: 200% 100%;
+          animation: shimmer 2s infinite;
+          border-radius: var(--radius-lg);
+          margin-bottom: var(--space-lg);
         }
 
         .skeleton-text {
-          height: 12px;
-          background: #f0f0f0;
-          border-radius: 4px;
-          margin-bottom: 8px;
+          height: 14px;
+          background: linear-gradient(90deg, #e5e5e5 25%, #f0f0f0 50%, #e5e5e5 75%);
+          background-size: 200% 100%;
+          animation: shimmer 2s infinite;
+          border-radius: var(--radius-sm);
+          margin-bottom: var(--space-md);
         }
 
         .skeleton-text.short {
           width: 60%;
         }
 
-        @keyframes pulse {
-          0%,
+        @keyframes shimmer {
+          0% {
+            background-position: 200% 0;
+          }
           100% {
+            background-position: -200% 0;
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
             opacity: 1;
           }
           50% {
-            opacity: 0.5;
+            opacity: 0.7;
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--space-lg);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: var(--space-lg);
+          }
+        }
+
+        @media (max-width: 480px) {
+          .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: var(--space-md);
+          }
+
+          .product-skeleton {
+            padding: var(--space-md);
           }
         }
       `}</style>

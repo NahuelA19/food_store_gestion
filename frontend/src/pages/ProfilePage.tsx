@@ -87,46 +87,210 @@ export function ProfilePage() {
   if (!user) {
     return (
       <div className="profile-container">
-        <p>Please log in to view your profile.</p>
+        <div className="auth-notice">
+          <p>Please log in to view your profile.</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="profile-container">
-      <h1>My Profile</h1>
-
-      {error && <div className="error-message">{error}</div>}
-      {prefsError && <div className="error-message">{prefsError}</div>}
-      {successMessage && <div className="success-message">{successMessage}</div>}
-
-      <div className="profile-section">
-        <h2>Profile Information</h2>
-        {isLoading ? (
-          <p>Loading...</p>
-        ) : (
-          <UserForm
-            user={user}
-            onSubmit={handleProfileUpdate}
-            isLoading={isLoading}
-          />
-        )}
+      <div className="profile-header">
+        <h1>👤 My Profile</h1>
+        <p>Manage your account information and preferences</p>
       </div>
 
-      <div className="preferences-section">
-        <h2>Preferences</h2>
-        {prefsLoading ? (
-          <p>Loading preferences...</p>
-        ) : preferences ? (
-          <PreferencesForm
-            preferences={preferences}
-            onSubmit={handlePreferencesUpdate}
-            isLoading={prefsLoading}
-          />
-        ) : (
-          <p>No preferences found</p>
-        )}
+      {error && <div className="error-message" role="alert">{error}</div>}
+      {prefsError && <div className="error-message" role="alert">{prefsError}</div>}
+      {successMessage && <div className="success-message" role="status">{successMessage}</div>}
+
+      <div className="profile-grid">
+        <div className="profile-section">
+          <div className="section-header">
+            <h2>Profile Information</h2>
+            <span className="section-icon">ℹ️</span>
+          </div>
+          {isLoading ? (
+            <p className="loading-text">Loading...</p>
+          ) : (
+            <UserForm
+              user={user}
+              onSubmit={handleProfileUpdate}
+              isLoading={isLoading}
+            />
+          )}
+        </div>
+
+        <div className="preferences-section">
+          <div className="section-header">
+            <h2>Preferences</h2>
+            <span className="section-icon">⚙️</span>
+          </div>
+          {prefsLoading ? (
+            <p className="loading-text">Loading preferences...</p>
+          ) : preferences ? (
+            <PreferencesForm
+              preferences={preferences}
+              onSubmit={handlePreferencesUpdate}
+              isLoading={prefsLoading}
+            />
+          ) : (
+            <p className="empty-text">No preferences found</p>
+          )}
+        </div>
       </div>
+
+      <style>{`
+        .profile-container {
+          max-width: 1000px;
+          margin: 0 auto;
+          padding: var(--space-xl);
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        .profile-header {
+          text-align: center;
+          margin-bottom: var(--space-3xl);
+          padding-bottom: var(--space-xl);
+          border-bottom: 2px solid var(--primary-50);
+        }
+
+        .profile-header h1 {
+          margin: 0 0 var(--space-sm) 0;
+          color: var(--primary);
+          font-size: var(--text-4xl);
+        }
+
+        .profile-header p {
+          margin: 0;
+          color: var(--text-muted);
+          font-size: var(--text-base);
+        }
+
+        .profile-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+          gap: var(--space-2xl);
+        }
+
+        .profile-section, .preferences-section {
+          background: var(--bg-card);
+          border: 2px solid var(--border-light);
+          border-radius: var(--radius-lg);
+          padding: var(--space-xl);
+          box-shadow: var(--shadow-md);
+          transition: var(--transition-base);
+        }
+
+        .profile-section:hover, .preferences-section:hover {
+          box-shadow: var(--shadow-lg);
+          border-color: var(--primary);
+        }
+
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-lg);
+          padding-bottom: var(--space-lg);
+          border-bottom: 2px solid var(--border-light);
+        }
+
+        .section-header h2 {
+          margin: 0;
+          color: var(--primary);
+          font-size: var(--text-2xl);
+        }
+
+        .section-icon {
+          font-size: var(--text-2xl);
+        }
+
+        .loading-text, .empty-text {
+          color: var(--text-muted);
+          text-align: center;
+          padding: var(--space-lg);
+          font-size: var(--text-base);
+        }
+
+        .error-message {
+          background: var(--alert-light);
+          color: var(--alert-dark);
+          border: 2px solid var(--alert);
+          border-radius: var(--radius-lg);
+          padding: var(--space-lg);
+          margin-bottom: var(--space-xl);
+          animation: slideInDown 0.3s ease-out;
+        }
+
+        .success-message {
+          background: var(--success-light);
+          color: var(--success-dark);
+          border: 2px solid var(--success);
+          border-radius: var(--radius-lg);
+          padding: var(--space-lg);
+          margin-bottom: var(--space-xl);
+          animation: slideInDown 0.3s ease-out;
+          font-weight: var(--font-semibold);
+        }
+
+        .auth-notice {
+          background: linear-gradient(135deg, var(--primary-50), var(--accent));
+          border: 2px dashed var(--primary);
+          border-radius: var(--radius-lg);
+          padding: var(--space-3xl) var(--space-lg);
+          text-align: center;
+        }
+
+        .auth-notice p {
+          color: var(--primary-dark);
+          font-size: var(--text-lg);
+          font-weight: var(--font-semibold);
+        }
+
+        @keyframes slideInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .profile-container {
+            padding: var(--space-lg);
+          }
+
+          .profile-grid {
+            grid-template-columns: 1fr;
+            gap: var(--space-lg);
+          }
+
+          .profile-section, .preferences-section {
+            padding: var(--space-lg);
+          }
+
+          .profile-header h1 {
+            font-size: var(--text-3xl);
+          }
+        }
+
+        @media (max-width: 480px) {
+          .profile-container {
+            padding: var(--space-md);
+          }
+
+          .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--space-sm);
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -170,7 +334,7 @@ function PreferencesForm({ preferences, onSubmit, isLoading }: PreferencesFormPr
   return (
     <form onSubmit={handleSubmit} className="preferences-form">
       <div className="form-group">
-        <label htmlFor="language">Language:</label>
+        <label htmlFor="language">Language</label>
         <select
           id="language"
           name="language"
@@ -178,15 +342,15 @@ function PreferencesForm({ preferences, onSubmit, isLoading }: PreferencesFormPr
           onChange={handleChange}
           disabled={isLoading}
         >
-          <option value="en">English</option>
-          <option value="es">Español</option>
-          <option value="fr">Français</option>
-          <option value="de">Deutsch</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="de">🇩🇪 Deutsch</option>
         </select>
       </div>
 
       <div className="form-group">
-        <label htmlFor="theme">Theme:</label>
+        <label htmlFor="theme">Theme</label>
         <select
           id="theme"
           name="theme"
@@ -194,14 +358,14 @@ function PreferencesForm({ preferences, onSubmit, isLoading }: PreferencesFormPr
           onChange={handleChange}
           disabled={isLoading}
         >
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-          <option value="auto">Auto</option>
+          <option value="light">☀️ Light</option>
+          <option value="dark">🌙 Dark</option>
+          <option value="auto">🔄 Auto</option>
         </select>
       </div>
 
       <div className="form-group">
-        <label htmlFor="notifications">Notifications:</label>
+        <label htmlFor="notifications">Notifications</label>
         <select
           id="notifications"
           name="notifications"
@@ -209,15 +373,86 @@ function PreferencesForm({ preferences, onSubmit, isLoading }: PreferencesFormPr
           onChange={handleChange}
           disabled={isLoading}
         >
-          <option value="email">Email</option>
-          <option value="push">Push</option>
-          <option value="off">Off</option>
+          <option value="email">✉️ Email</option>
+          <option value="push">🔔 Push</option>
+          <option value="off">🔕 Off</option>
         </select>
       </div>
 
-      <button type="submit" disabled={isLoading}>
+      <button type="submit" disabled={isLoading} className="btn btn-primary">
         {isLoading ? "Updating..." : "Update Preferences"}
       </button>
+
+      <style>{`
+        .preferences-form {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-lg);
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-sm);
+        }
+
+        .form-group label {
+          font-weight: var(--font-semibold);
+          color: var(--text-main);
+          font-size: var(--text-sm);
+          text-transform: capitalize;
+        }
+
+        .form-group select {
+          padding: var(--space-md);
+          border: 2px solid var(--border-light);
+          border-radius: var(--radius-lg);
+          font-size: var(--text-base);
+          transition: var(--transition-base);
+          min-height: 44px;
+          background: var(--bg-card);
+        }
+
+        .form-group select:focus {
+          outline: none;
+          border-color: var(--primary);
+          box-shadow: 0 0 0 4px rgba(46, 76, 140, 0.1);
+        }
+
+        .form-group select:disabled {
+          background: var(--neutral-100);
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
+
+        .btn {
+          padding: var(--space-md);
+          border: none;
+          border-radius: var(--radius-lg);
+          font-weight: var(--font-bold);
+          cursor: pointer;
+          transition: var(--transition-base);
+          min-height: 44px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+          color: white;
+          box-shadow: 0 4px 12px rgba(46, 76, 140, 0.2);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(46, 76, 140, 0.3);
+        }
+
+        .btn-primary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      `}</style>
     </form>
   );
 }
