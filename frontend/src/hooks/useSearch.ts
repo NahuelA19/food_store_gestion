@@ -135,12 +135,8 @@ export function useSearch(): UseSearchReturn {
     setSearchParams(params);
   }, [query, filters, page, setSearchParams]);
 
-  // Fetch results whenever query/filters/page change
-  useEffect(() => {
-    fetchResults();
-  }, [query, filters, page]);
-
-  async function fetchResults() {
+  // Memoized fetch to avoid infinite loops
+  const fetchResults = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -167,8 +163,14 @@ export function useSearch(): UseSearchReturn {
     } finally {
       setLoading(false);
     }
-  }
+  }, [query, filters, page]);
 
+  // Fetch results whenever query/filters/page change
+  useEffect(() => {
+    fetchResults();
+  }, [fetchResults]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSetQuery = useCallback(
     debounce((newQuery: string) => {
       setQueryState(newQuery);

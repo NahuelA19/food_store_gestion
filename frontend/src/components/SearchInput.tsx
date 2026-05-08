@@ -14,11 +14,9 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   debounceMs = 300,
 }) => {
   const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedQuery(query);
       onSearch(query);
     }, debounceMs);
 

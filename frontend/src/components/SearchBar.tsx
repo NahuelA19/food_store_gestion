@@ -27,6 +27,7 @@ export const SearchBar: FC<SearchBarProps> = ({
   }, [value]);
 
   // Debounce the onChange callback
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedOnChange = useCallback(
     debounce((newValue: string) => {
       onChange(newValue);
