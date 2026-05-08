@@ -1,102 +1,183 @@
-# Engram Team Memory Export
+# Engram Team Memory Export — Food Store Project
 
-> **Date**: 2026-05-07  
-> **Project**: RepositorioBaseFoodStore-SDD  
-> **Scope**: Food Store e-commerce platform — Phase 1 complete
-
-This file contains persistent memories from team sessions working on the Food Store project. Import these into your local Engram by having the agent read this file.
+**Exported**: 2026-05-08 13:17:00  
+**Project**: food_store_gestion  
+**Scope**: Project-level decisions, architecture, discoveries, and session summaries  
 
 ---
 
-## OPSX: setup-project-structure completed (56/65 tasks)
+## PostgreSQL Setup: Configuration & Permissions
+
+- **Type**: config
+- **Date**: 2026-05-06
+
+**What**: Configured PostgreSQL 18.3 with food_store database, food_store_user with proper permissions, and Alembic migration tracking
+
+**Why**: PostgreSQL was installed but not configured for the project; .env had hardcoded wrong credentials; Alembic needed to track migrations
+
+**Where**:
+- `backend/.env` — DATABASE_URL fixed with correct credentials
+- Alembic migration tracking in PostgreSQL (alembic_version table)
+- `backend/tests/conftest.py` — PostgreSQL connection for test fixtures
+
+**Learned**: Must verify both production and test database names exist and user has correct role grants (CONNECT, CREATE)
+
+---
+
+## OPSX Change 2 COMPLETE: add-database-layer Fully Implemented
 
 - **Type**: architecture
-- **Topic Key**: opsx/setup-project-structure
-- **Date**: 2026-04-26
+- **Topic Key**: opsx/add-database-layer/complete
+- **Date**: 2026-05-06
 
-**What**: Completed setup-project-structure change with 56 of 65 tasks done. Established complete monorepo foundation with React frontend, FastAPI backend, CI/CD pipelines, dev tools, testing setup, documentation, and initial git commit.
+**What**: Completed full implementation of OPSX Change 2 (add-database-layer) — all 48 tasks done, code committed
 
-**Why**: Food Store project needed foundational infrastructure for e-commerce development. This change establishes structure, conventions, tooling, and automation that all 22 subsequent changes depend on.
+**Why**: Change 2 establishes the database foundation needed to unblock Change 3 (authentication) and all Phase 2 features. Was required before any data-driven functionality could be implemented
 
-**Where**: 
-- Root: .gitignore, package.json, .eslintrc.json, .prettierrc.json, commitlint.config.js, .editorconfig
-- Backend: backend/app/, backend/tests/, backend/requirements.txt, backend/pyproject.toml, backend/pytest.ini
-- Frontend: frontend/src/, frontend/public/, frontend/package.json, frontend/tsconfig.json, frontend/vitest.config.ts
-- CI/CD: .github/workflows/ (lint.yml, test.yml, build.yml, security.yml)
-- Git Hooks: .husky/ (pre-commit, commit-msg)
-- Documentation: README.md, GETTING-STARTED.md, docs/SETUP.md, docs/ARCHITECTURE.md, docs/CONTRIBUTING.md, docs/CHANGES.md, docs/API.md, docs/guides/
+**Where**:
+- Backend: backend/database/, backend/app/models/ (5 ORM entities), backend/alembic/
+- Tests: backend/tests/conftest.py, backend/tests/test_database.py
+- Docs: docs/DATABASE.md, docs/DATABASE_SETUP.md
+- Commits: 5f1d749, b957ded
+
+**Key Implementation Details**:
+- SQLAlchemy v2 with async/await (asyncpg driver, NullPool)
+- 5 core ORM entities: User, Category, Product, Order, OrderItem (all with Mapped[] type hints)
+- Alembic auto-generated initial schema with 3 migrations
+- FastAPI async session injection via Depends(get_db_session)
+- Database health endpoint: GET /health/db
+- Test fixtures with transaction rollback per test for isolation
+- PostgreSQL 15 service in GitHub Actions workflow
+
+**Learned**: Module-level engine initialization causes import issues — needed lazy loading. Alembic requires explicit async context in env.py. ORM models separate from Pydantic schemas prevents architecture pollution.
+
+---
+
+## Change 3 Migration Bug: Duplicate CREATE TYPE Orderstatus
+
+- **Type**: bugfix
+- **Date**: 2026-05-07
+
+**What**: Fixed migration initial_schema.py which was creating ENUM orderstatus twice — once with op.execute() and once implicitly via sa.Enum()
+
+**Why**: The duplicate CREATE TYPE statement caused DuplicateObjectError on clean databases, blocking migration execution
+
+**Where**: backend/alembic/versions/1c78cfd1cfce_initial_schema.py
+
+**Learned**: SQLAlchemy's sa.Enum() automatically creates the type if it doesn't exist. Never manually execute CREATE TYPE when using sa.Enum() — the ORM handles it. httpx 0.28.1 requires ASGITransport instead of deprecated AsyncClient(app=...).
+
+---
+
+## Change 4 (create-user-service): PostgreSQL Migration Complete
+
+- **Type**: architecture
+- **Date**: 2026-05-07
+
+**What**: Completed PostgreSQL migration setup for Change 4 — all 3 migrations applied successfully (initial_schema → add_user_profiles → add_role_column). Database verified with 12 tables: users, user_preferences, products, categories, orders, etc.
+
+**Why**: Change 4 requires a fully functional PostgreSQL schema to support user management features. Previous run had duplicate CREATE TYPE bug blocking execution.
+
+**Where**:
+- backend/alembic/versions/ — 3 migrations applied
+- Backend database: food_store (12 tables verified)
+- backend/tests/conftest.py — Fixed for httpx 0.28.1 with ASGITransport
+- Commit: ae2205f
 
 **Learned**: 
-- npm workspaces + Python monorepo works well with separate package managers
-- Husky hooks must validate both frontend (ESLint/Prettier) and backend (Ruff/Black) code
-- Test setup requires multiple dependencies (pytest, pytest-asyncio, httpx, pytest-cov, @testing-library packages)
-- Vite needs index.html at workspace root, not in public/
-- Pre-commit hooks validate commit messages with commitlint (requires @commitlint/config-conventional)
-- Full workflow: code → git add → pre-commit hooks (lint/format) → commit-msg validation → push → GitHub Actions
+- 49 tests pass but 48 tests fail with ScopeMismatch on async fixtures (pytest-asyncio + Python 3.13 issue)
+- Pytest.ini needs `asyncio_default_fixture_loop_scope = session` to work
+- May need per-fixture loop_scope configuration for full compatibility
 
 ---
 
-## OPSX: docs/CHANGES.md actualizado - Change 1 complete
+## Pulled Teammate Changes: Changes 5 & 6 Archived
 
-- **Type**: decision
-- **Topic Key**: opsx/docs-changes-update
-- **Date**: 2026-04-27
+- **Type**: discovery
+- **Date**: 2026-05-08
 
-**What**: Actualizado docs/CHANGES.md para reflejar que setup-project-structure está completado (65/65 tasks, archived).
+**What**: Synced local repo with teammate's pushed changes — Changes 5 (create-product-service, 260 tasks) and 6 (build-search-and-filtering, 330 tasks) both archived with full implementation
 
-**Why**: Mantener la documentación sincronizada con el estado real del proyecto y el roadmap OPSX.
+**Why**: Teammate advanced significantly ahead; code was pushed and ready to sync locally
 
-**Where**: docs/CHANGES.md (actualizado: Change 1 status, Phase 1 overview, Timeline & Milestones, Next Steps), commit 03bc70e
+**Where**: 76 files changed across:
+- Backend: backend/app/routes/products.py, backend/app/routes/categories.py, backend/app/routes/inventory.py, backend/app/routes/search.py
+- Frontend: frontend/src/api/productApi.ts, frontend/src/components/* (ProductCard, ProductGrid, FilterPanel, SearchBar, SearchResults, etc.)
+- Database: backend/alembic/versions/20260507131242_add_inventory_table_and_indexes.py, 20260508003720_add_fts_search_index.py
+- Docker: docker-compose.yml, .dockerignore, backend/.env.docker-example, docker/init-db.sql
+- Docs: docs/DOCKER-SETUP.md, scripts/setup-dev.sh
+- OPSX archives: openspec/changes/archive/2026-05-07-create-product-service/, openspec/changes/archive/2026-05-08-build-search-and-filtering/
 
-**Learned**: Importante actualizar docs/CHANGES.md como parte del archive workflow — sirve como fuente de verdad para stakeholders sobre el estado general del proyecto.
-
----
-
-## Session summary: Phase 1 Complete and Documented
-
-- **Type**: session_summary
-- **Date**: 2026-04-27
-
-**Goal**: Compleatar y archiver la primera OPSX change (setup-project-structure) y actualizar la documentación del roadmap.
-
-**Instructions**:
-- Usar OPSX workflow: propose → design → apply → archive
-- Siempre actualizar docs/CHANGES.md después de archivar un cambio
-- Mantener sincronización entre estado OPSX y documentación de proyecto
-
-**Discoveries**:
-- Importante no olvidar actualizar docs/CHANGES.md como parte del workflow de archive — es la fuente de verdad visible para stakeholders
-- GitHub Actions y pre-commit hooks están funcionando perfectamente
-- ESLint detecta violaciones correctamente
-- Delta specs están sincronizadas a specs principales en openspec/specs/
-
-**Accomplished**:
-- ✅ Completadas 2 tareas finales de verificación (10.3, 10.4) — 65/65 tasks
-- ✅ Cambio archivado: openspec/changes/archive/2026-04-26-setup-project-structure/
-- ✅ Delta specs sincronizadas a openspec/specs/ (4 specs)
-- ✅ docs/CHANGES.md actualizado reflejando completitud de Phase 1
-- ✅ 3 commits: mark-final-tasks + archive-change + update-docs
-
-**Next Steps**:
-- Siguiente cambio: add-database-layer (Change 2) — cuando usuario lo solicite
-- Mantener ciclo: propose → design → apply → archive → update-docs
-
-**Relevant Files**:
-- openspec/changes/archive/2026-04-26-setup-project-structure/ — cambio archivado
-- openspec/specs/ — 4 specs principales sincronizadas
-- docs/CHANGES.md — roadmap actualizado (Phase 1 complete)
-- git commits: 03bc70e (docs), 4140fff (archive), a9ee067 (final-tasks)
+**Learned**: 
+- Change 5 includes backend (products, categories, inventory CRUD endpoints) + frontend UI + 260 implementation tasks
+- Change 6 includes FTS search with database indexes + React UI components (SearchBar, SearchResults, Pagination) + filtering logic + 330 implementation tasks
+- Docker Compose setup available for local dev (PostgreSQL on port 5433)
+- Scripts/setup-dev.sh for automated environment setup
 
 ---
 
-## Key Takeaways for Next Phase
+## OPSX Workflow & Phase Progress
 
-- **OPSX Workflow** is solid: propose → design → apply → archive
-- **Monorepo structure** is in place: ready for database layer and API development
-- **Documentation protocol**: Always update docs/CHANGES.md after archiving
-- **23 planned changes** total — see docs/CHANGES.md for full roadmap
-- **Next change**: add-database-layer (Phase 2) focuses on PostgreSQL schema, connection pooling, and async migrations
+- **Type**: architecture
+- **Topic Key**: opsx/workflow-status
+- **Date**: 2026-05-08
+
+**What**: Food Store is following OPSX (OpenSpec) change management workflow. Completed Changes: 1 (foundation), 2 (database), 3 (authentication), 4 (user-service), 5 (product-service), 6 (search-filtering). Currently all archived — ready for Change 7 or next phase.
+
+**Why**: OPSX provides fluid, CLI-driven artifact management. Each Change has proposal → design → specs → tasks → implementation → archive lifecycle.
+
+**Where**: openspec/changes/, openspec/specs/
+
+**Learned**:
+- OPSX CLI (openspec status, openspec list, openspec new change, etc.) is the source of truth
+- All changes are proposable, designable, appliable, and archivable at any time (no rigid phase gates)
+- Each change is 50-330 tasks depending on scope
+- Finished changes move to openspec/changes/archive/YYYY-MM-DD-<name>/
 
 ---
 
-*Export created by Engram team memory system. For questions, see docs/team-memory/ or docs/CONTRIBUTING.md*
+## Key Technologies & Architecture
+
+- **Type**: architecture
+- **Topic Key**: architecture/tech-stack
+- **Date**: 2026-05-08
+
+**Stack**:
+- Backend: FastAPI (Python 3.10+), SQLAlchemy v2 (async), Pydantic v2, Alembic (migrations), pytest + pytest-asyncio (testing)
+- Frontend: React 18, TypeScript, Vite, Vitest
+- Database: PostgreSQL 16 (asyncpg driver)
+- Infrastructure: Docker Compose, GitHub Actions (CI/CD)
+- Monorepo: npm workspaces + Husky + commitlint
+
+**Key Patterns**:
+- FastAPI: async-first, all routes use `async def`, Pydantic models for validation, HTTPException for errors
+- Frontend: functional components, TypeScript strict mode, custom hooks (useFilters, useProducts, useSearch), container/presentational split
+- Database: SQLAlchemy ORM with Mapped[] type hints, Alembic for versioning, NullPool for test isolation
+- Testing: pytest fixtures with transaction rollback, Vitest for React components
+- Commits: Conventional Commits enforced (feat, fix, docs, test, etc.)
+
+---
+
+## Next Steps & Open Items
+
+- **Type**: discovery
+- **Date**: 2026-05-08
+
+**Current Status**:
+- ✅ Changes 1-6 all archived (foundation → DB → auth → users → products → search/filtering)
+- ⏳ 48 async fixture tests failing on Change 4 due to pytest-asyncio + Python 3.13 compatibility
+- 📋 Next: Propose and implement Change 7 or fix remaining test issues
+
+**Known Issues**:
+- pytest-asyncio ScopeMismatch errors need fixture refactoring (per-fixture loop_scope)
+- httpx 0.28.1 requires ASGITransport (deprecation handled)
+- Docker Compose available but not yet verified in CI/CD
+
+**Recommended Next Actions**:
+1. Fix async fixture issues in backend/tests/conftest.py (affects all 4+ DB tests)
+2. Verify docker-compose.yml works end-to-end
+3. Consider next change: more admin features, reporting, or scaling optimizations
+4. Export this memory periodically to keep team context in sync
+
+---
+
+*Last updated: 2026-05-08 | Exported by OPSX Orchestrator*
