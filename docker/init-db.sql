@@ -6,8 +6,8 @@
 -- Create application-specific user (not using root postgres user)
 CREATE USER food_store_user WITH PASSWORD 'root';
 
--- Create production database
-CREATE DATABASE food_store OWNER food_store_user;
+-- Note: food_store database is created by POSTGRES_DB env var automatically.
+-- We only create the test database here.
 
 -- Create test database (for pytest)
 CREATE DATABASE food_store_test OWNER food_store_user;
