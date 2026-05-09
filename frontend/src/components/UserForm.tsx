@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
+import { User } from "lucide-react";
 
 interface User {
   id: number;
@@ -33,7 +37,6 @@ export function UserForm({ user, onSubmit, isLoading }: UserFormProps) {
       ...prev,
       [name]: value,
     }));
-    // Clear error for this field on change
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -46,11 +49,17 @@ export function UserForm({ user, onSubmit, isLoading }: UserFormProps) {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (formData.first_name && (formData.first_name.length < 1 || formData.first_name.length > 50)) {
+    if (
+      formData.first_name &&
+      (formData.first_name.length < 1 || formData.first_name.length > 50)
+    ) {
       newErrors.first_name = "First name must be 1-50 characters";
     }
 
-    if (formData.last_name && (formData.last_name.length < 1 || formData.last_name.length > 50)) {
+    if (
+      formData.last_name &&
+      (formData.last_name.length < 1 || formData.last_name.length > 50)
+    ) {
       newErrors.last_name = "Last name must be 1-50 characters";
     }
 
@@ -58,10 +67,10 @@ export function UserForm({ user, onSubmit, isLoading }: UserFormProps) {
       if (formData.phone.length < 7 || formData.phone.length > 20) {
         newErrors.phone = "Phone must be 7-20 characters";
       }
-      // Simple phone format validation
       const phoneRegex = /^\+?[0-9\-()\s]{7,20}$/;
       if (!phoneRegex.test(formData.phone)) {
-        newErrors.phone = "Phone must contain only +, -, (), space, and digits";
+        newErrors.phone =
+          "Phone must contain only +, -, (), space, and digits";
       }
     }
 
@@ -98,66 +107,54 @@ export function UserForm({ user, onSubmit, isLoading }: UserFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="user-form">
-      <div className="form-group">
-        <label htmlFor="email">Email:</label>
-        <input
-          type="email"
-          id="email"
-          value={user.email}
-          disabled
-          className="input-disabled"
-        />
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <Input
+        label="Email"
+        type="email"
+        value={user.email}
+        disabled
+      />
 
-      <div className="form-group">
-        <label htmlFor="first_name">First Name:</label>
-        <input
-          type="text"
-          id="first_name"
-          name="first_name"
-          value={formData.first_name}
-          onChange={handleChange}
-          disabled={isLoading}
-          placeholder="Enter your first name"
-          maxLength={50}
-        />
-        {errors.first_name && <span className="error-text">{errors.first_name}</span>}
-      </div>
+      <Input
+        label="First Name"
+        type="text"
+        name="first_name"
+        value={formData.first_name}
+        onChange={handleChange}
+        disabled={isLoading}
+        placeholder="Enter your first name"
+        maxLength={50}
+        error={errors.first_name}
+      />
 
-      <div className="form-group">
-        <label htmlFor="last_name">Last Name:</label>
-        <input
-          type="text"
-          id="last_name"
-          name="last_name"
-          value={formData.last_name}
-          onChange={handleChange}
-          disabled={isLoading}
-          placeholder="Enter your last name"
-          maxLength={50}
-        />
-        {errors.last_name && <span className="error-text">{errors.last_name}</span>}
-      </div>
+      <Input
+        label="Last Name"
+        type="text"
+        name="last_name"
+        value={formData.last_name}
+        onChange={handleChange}
+        disabled={isLoading}
+        placeholder="Enter your last name"
+        maxLength={50}
+        error={errors.last_name}
+      />
 
-      <div className="form-group">
-        <label htmlFor="phone">Phone:</label>
-        <input
-          type="tel"
-          id="phone"
-          name="phone"
-          value={formData.phone}
-          onChange={handleChange}
-          disabled={isLoading}
-          placeholder="Enter your phone number"
-          maxLength={20}
-        />
-        {errors.phone && <span className="error-text">{errors.phone}</span>}
-      </div>
+      <Input
+        label="Phone"
+        type="tel"
+        name="phone"
+        value={formData.phone}
+        onChange={handleChange}
+        disabled={isLoading}
+        placeholder="Enter your phone number"
+        maxLength={20}
+        error={errors.phone}
+      />
 
-      <button type="submit" disabled={isLoading} className="submit-button">
+      <Button type="submit" disabled={isLoading} className="w-full">
+        <Icon icon={User} />
         {isLoading ? "Updating..." : "Update Profile"}
-      </button>
+      </Button>
     </form>
   );
 }

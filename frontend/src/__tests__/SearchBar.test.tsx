@@ -101,8 +101,10 @@ describe('SearchBar component', () => {
       />
     );
 
-    const spinner = screen.getByLabelText('Loading');
-    expect(spinner).toBeInTheDocument();
+    // The spinner is an SVG with aria-hidden="true", so we check for the container
+    const searchBar = screen.getByRole('textbox').parentElement?.parentElement;
+    const svg = searchBar?.querySelector('svg.animate-spin');
+    expect(svg).toBeInTheDocument();
   });
 
   it('should not show loading spinner when isLoading is false', () => {
@@ -118,11 +120,12 @@ describe('SearchBar component', () => {
       />
     );
 
-    const spinner = screen.queryByLabelText('Loading');
-    expect(spinner).not.toBeInTheDocument();
+    const searchBar = screen.getByRole('textbox').parentElement?.parentElement;
+    const svg = searchBar?.querySelector('svg.animate-spin');
+    expect(svg).not.toBeInTheDocument();
   });
 
-  it('should have search icon', () => {
+  it('should render search icon (SVG)', () => {
     const mockOnChange = vi.fn();
     const mockOnClear = vi.fn();
 
@@ -134,9 +137,10 @@ describe('SearchBar component', () => {
       />
     );
 
-    // Search icon is rendered as text content
-    const searchBar = screen.getByRole('textbox').parentElement;
-    expect(searchBar?.textContent).toContain('🔍');
+    // Search icon is now an SVG (lucide Search), not an emoji
+    const searchBar = screen.getByRole('textbox').parentElement?.parentElement;
+    const searchIcon = searchBar?.querySelector('.lucide-search');
+    expect(searchIcon).toBeInTheDocument();
   });
 
   it('should have autoFocus when specified', async () => {
@@ -152,8 +156,6 @@ describe('SearchBar component', () => {
       />
     );
 
-    // React's autoFocus prop focuses the element imperatively,
-    // it doesn't set the HTML autofocus attribute
     const input = screen.getByRole('textbox');
     await waitFor(() => {
       expect(input).toHaveFocus();

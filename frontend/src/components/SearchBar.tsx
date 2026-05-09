@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef, ChangeEvent, FC } from 'react';
-import { debounce } from 'lodash';
-import '../styles/SearchBar.css';
+import { useState, useEffect, useRef, ChangeEvent } from "react";
+import { debounce } from "lodash";
+import { Input } from "@/components/ui/Input";
+import { Icon } from "@/components/ui/Icon";
+import { Search, X, Loader2 } from "lucide-react";
 
 export interface SearchBarProps {
   value: string;
@@ -11,23 +13,21 @@ export interface SearchBarProps {
   autoFocus?: boolean;
 }
 
-export const SearchBar: FC<SearchBarProps> = ({
+export function SearchBar({
   value,
   onChange,
   onClear,
   isLoading = false,
-  placeholder = 'Search products...',
+  placeholder = "Search products...",
   autoFocus = true,
-}) => {
+}: SearchBarProps) {
   const [localValue, setLocalValue] = useState(value);
   const debouncedRef = useRef(debounce(onChange, 300));
 
-  // Update debounced function when onChange changes
   useEffect(() => {
     debouncedRef.current = debounce(onChange, 300);
   }, [onChange]);
 
-  // Sync local value with prop
   useEffect(() => {
     setLocalValue(value);
   }, [value]);
@@ -39,33 +39,39 @@ export const SearchBar: FC<SearchBarProps> = ({
   }
 
   function handleClear() {
-    setLocalValue('');
+    setLocalValue("");
     onClear();
   }
 
   return (
-    <div className="search-bar">
-      <span className="search-icon">🔍</span>
-      <input
+    <div className="relative">
+      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+        <Icon icon={Search} className="text-text-muted" />
+      </div>
+      <Input
         type="text"
         value={localValue}
         onChange={handleChange}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="search-input"
+        className="pl-10 pr-10"
         aria-label="Search products"
       />
-      {localValue && (
+      {localValue && !isLoading && (
         <button
           onClick={handleClear}
           aria-label="Clear search"
-          className="clear-btn"
+          className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-text-muted hover:text-text-primary transition-colors"
           type="button"
         >
-          ✕
+          <Icon icon={X} />
         </button>
       )}
-      {isLoading && <span className="spinner" aria-label="Loading" />}
+      {isLoading && (
+        <div className="absolute inset-y-0 right-0 flex items-center pr-3.5">
+          <Icon icon={Loader2} className="animate-spin text-text-muted" />
+        </div>
+      )}
     </div>
   );
-};
+}

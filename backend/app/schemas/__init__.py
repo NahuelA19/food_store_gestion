@@ -1,10 +1,19 @@
 """Pydantic schemas for Food Store API."""
 
+from app.schemas.branch import (
+    BranchCreate,
+    BranchListResponse,
+    BranchResponse,
+    BranchUpdate,
+)
 from app.schemas.category import (
     CategoryCreate,
     CategoryResponse,
     CategoryUpdate,
     CategoryWithProductsResponse,
+)
+from app.schemas.dashboard import (
+    DashboardStatsResponse,
 )
 from app.schemas.inventory import (
     InventoryReserveRequest,
@@ -29,11 +38,18 @@ from app.schemas.product import (
 )
 
 __all__ = [
+    # Branch
+    "BranchCreate",
+    "BranchUpdate",
+    "BranchResponse",
+    "BranchListResponse",
     # Category
     "CategoryCreate",
     "CategoryUpdate",
     "CategoryResponse",
     "CategoryWithProductsResponse",
+    # Dashboard
+    "DashboardStatsResponse",
     # Product
     "ProductCreate",
     "ProductUpdate",

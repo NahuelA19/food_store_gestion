@@ -1,12 +1,7 @@
-/**
- * ProductsPage - Main product browsing page with full-text search and advanced filters
- */
-
 import { useSearch } from '../hooks/useSearch';
 import { SearchBar } from '../components/SearchBar';
 import { FilterPanel } from '../components/FilterPanel';
 import { SearchResults } from '../components/SearchResults';
-import '../styles/ProductsPage.css';
 
 export function ProductsPage() {
   const {
@@ -25,13 +20,13 @@ export function ProductsPage() {
   } = useSearch();
 
   return (
-    <div className="products-page">
-      <header className="page-header">
-        <h1>Products</h1>
-        <p>Browse our collection of fresh food products</p>
+    <div className="mx-auto max-w-7xl px-4 py-8">
+      <header className="mb-8">
+        <h1 className="font-display text-3xl font-bold text-text-primary">Products</h1>
+        <p className="mt-1 text-text-secondary">Browse our collection of fresh food products</p>
       </header>
 
-      <div className="search-section">
+      <div className="mb-8">
         <SearchBar
           value={query}
           onChange={setQuery}
@@ -40,8 +35,8 @@ export function ProductsPage() {
         />
       </div>
 
-      <div className="content">
-        <aside className="sidebar">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
+        <aside>
           <FilterPanel
             filters={filters}
             onFilterChange={setFilters}
@@ -51,7 +46,7 @@ export function ProductsPage() {
           />
         </aside>
 
-        <main className="results">
+        <main>
           <SearchResults
             items={items}
             pagination={pagination}

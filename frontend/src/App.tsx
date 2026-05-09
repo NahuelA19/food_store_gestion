@@ -1,33 +1,34 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import { Navigation } from "./components/Navigation";
+import { DashboardLayout } from "./components/layout/DashboardLayout";
+import { HomePage } from "./pages/HomePage";
 import { CartPage } from "./pages/CartPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
+import { OrdersPage } from "./pages/OrdersPage";
+import { OrderDetailPage } from "./pages/OrderDetailPage";
+import { BranchesPage } from "./pages/BranchesPage";
+import { BranchDetailPage } from "./pages/BranchDetailPage";
+import { EmployeesPage } from "./pages/EmployeesPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-
-function HomePage() {
-  return (
-    <div className="home-page">
-      <h1>Bienvenido a Food Store</h1>
-      <p>Tu tienda de comida favorita</p>
-    </div>
-  );
-}
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Navigation />
-        <main>
+        <DashboardLayout>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/:id" element={<ProductDetailPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/branches" element={<BranchesPage />} />
+            <Route path="/branches/:id" element={<BranchDetailPage />} />
+            <Route path="/employees" element={<EmployeesPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route
@@ -46,19 +47,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/protected"
-              element={
-                <ProtectedRoute>
-                  <div className="protected-page">
-                    <h2>Contenido Protegido</h2>
-                    <p>Solo usuarios autenticados pueden ver esto.</p>
-                  </div>
-                </ProtectedRoute>
-              }
-            />
           </Routes>
-        </main>
+        </DashboardLayout>
       </AuthProvider>
     </BrowserRouter>
   );

@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
+import { Globe, Moon, Bell, Save } from "lucide-react";
 
 interface UserPreferences {
   language: string;
@@ -10,6 +13,53 @@ interface PreferencesPanelProps {
   preferences: UserPreferences;
   onSubmit: (preferences: Partial<UserPreferences>) => Promise<void>;
   isLoading: boolean;
+}
+
+interface SelectFieldProps {
+  label: string;
+  name: string;
+  value: string;
+  icon: React.ComponentType;
+  options: { value: string; label: string }[];
+  disabled?: boolean;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+}
+
+function SelectField({
+  label,
+  name,
+  value,
+  icon,
+  options,
+  disabled,
+  onChange,
+}: SelectFieldProps) {
+  const fieldId = `panel-${name}`;
+  return (
+    <div className="space-y-1.5">
+      <label
+        htmlFor={fieldId}
+        className="flex items-center gap-2 text-sm font-semibold text-text-primary"
+      >
+        <Icon icon={icon} />
+        {label}
+      </label>
+      <select
+        id={fieldId}
+        name={name}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className="flex h-11 w-full rounded-lg border-2 border-border bg-surface-card px-3.5 py-2.5 text-sm text-text-primary transition-all duration-200 hover:border-brand-300 focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-surface-alt"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 }
 
 const LANGUAGE_OPTIONS = [
@@ -31,7 +81,11 @@ const NOTIFICATION_OPTIONS = [
   { value: "off", label: "Off" },
 ];
 
-export function PreferencesPanel({ preferences, onSubmit, isLoading }: PreferencesPanelProps) {
+export function PreferencesPanel({
+  preferences,
+  onSubmit,
+  isLoading,
+}: PreferencesPanelProps) {
   const [formData, setFormData] = useState<UserPreferences>(preferences);
 
   const hasChanges =
@@ -49,69 +103,56 @@ export function PreferencesPanel({ preferences, onSubmit, isLoading }: Preferenc
     if (!hasChanges) return;
 
     const changes: Partial<UserPreferences> = {};
-    if (formData.language !== preferences.language) changes.language = formData.language;
-    if (formData.theme !== preferences.theme) changes.theme = formData.theme;
-    if (formData.notifications !== preferences.notifications) changes.notifications = formData.notifications;
+    if (formData.language !== preferences.language)
+      changes.language = formData.language;
+    if (formData.theme !== preferences.theme)
+      changes.theme = formData.theme;
+    if (formData.notifications !== preferences.notifications)
+      changes.notifications = formData.notifications;
 
     await onSubmit(changes);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="preferences-panel">
-      <div className="form-group">
-        <label htmlFor="panel-language">Language</label>
-        <select
-          id="panel-language"
-          name="language"
-          value={formData.language}
-          onChange={handleChange}
-          disabled={isLoading}
-        >
-          {LANGUAGE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <SelectField
+        label="Language"
+        name="language"
+        value={formData.language}
+        icon={Globe}
+        options={LANGUAGE_OPTIONS}
+        disabled={isLoading}
+        onChange={handleChange}
+      />
 
-      <div className="form-group">
-        <label htmlFor="panel-theme">Theme</label>
-        <select
-          id="panel-theme"
-          name="theme"
-          value={formData.theme}
-          onChange={handleChange}
-          disabled={isLoading}
-        >
-          {THEME_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Theme"
+        name="theme"
+        value={formData.theme}
+        icon={Moon}
+        options={THEME_OPTIONS}
+        disabled={isLoading}
+        onChange={handleChange}
+      />
 
-      <div className="form-group">
-        <label htmlFor="panel-notifications">Notifications</label>
-        <select
-          id="panel-notifications"
-          name="notifications"
-          value={formData.notifications}
-          onChange={handleChange}
-          disabled={isLoading}
-        >
-          {NOTIFICATION_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Notifications"
+        name="notifications"
+        value={formData.notifications}
+        icon={Bell}
+        options={NOTIFICATION_OPTIONS}
+        disabled={isLoading}
+        onChange={handleChange}
+      />
 
-      <button type="submit" disabled={isLoading || !hasChanges} className="submit-button">
+      <Button
+        type="submit"
+        disabled={isLoading || !hasChanges}
+        className="w-full"
+      >
+        <Icon icon={Save} />
         {isLoading ? "Updating..." : "Save Preferences"}
-      </button>
+      </Button>
     </form>
   );
 }

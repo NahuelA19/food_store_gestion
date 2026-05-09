@@ -1,8 +1,6 @@
-/**
- * Pagination component - Navigate between product pages
- */
-
-import React from "react";
+import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaginationProps {
   currentPage: number;
@@ -12,83 +10,40 @@ interface PaginationProps {
   hasPrevious: boolean;
 }
 
-export const Pagination: React.FC<PaginationProps> = ({
+export function Pagination({
   currentPage,
   totalPages,
   onPageChange,
   hasNext,
   hasPrevious,
-}) => {
+}: PaginationProps) {
   return (
-    <div className="pagination">
-      <button
+    <div className="flex items-center justify-center gap-4 py-6">
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={!hasPrevious}
         aria-label="Previous page"
       >
-        ← Previous
-      </button>
+        <Icon icon={ChevronLeft} />
+        Previous
+      </Button>
 
-      <div className="page-info">
+      <span className="min-w-[140px] text-center text-sm text-text-secondary">
         Page {currentPage} of {totalPages}
-      </div>
+      </span>
 
-      <button
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={!hasNext}
         aria-label="Next page"
       >
-        Next →
-      </button>
-
-      <style>{`
-        .pagination {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          margin-top: 24px;
-          padding: 16px 0;
-        }
-
-        .pagination button {
-          padding: 8px 16px;
-          background: #2c3e50;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-weight: 600;
-          transition: background 0.2s;
-        }
-
-        .pagination button:hover:not(:disabled) {
-          background: #1a252f;
-        }
-
-        .pagination button:disabled {
-          background: #ccc;
-          cursor: not-allowed;
-        }
-
-        .page-info {
-          font-size: 14px;
-          color: #666;
-          min-width: 150px;
-          text-align: center;
-        }
-
-        @media (max-width: 480px) {
-          .pagination {
-            flex-direction: column;
-            gap: 8px;
-          }
-
-          .pagination button {
-            width: 100%;
-          }
-        }
-      `}</style>
+        Next
+        <Icon icon={ChevronRight} />
+      </Button>
     </div>
   );
-};
+}

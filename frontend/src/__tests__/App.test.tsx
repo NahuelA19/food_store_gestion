@@ -3,6 +3,17 @@ import { describe, it, expect, vi } from 'vitest';
 import App from '../App';
 import '@testing-library/jest-dom';
 
+// Mock ThemeContext
+vi.mock('../context/ThemeContext', () => ({
+  useTheme: () => ({
+    theme: 'light',
+    toggleTheme: vi.fn(),
+    setTheme: vi.fn(),
+    isDark: false,
+  }),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 // Mock localStorage to return a valid token for authenticated state
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
@@ -41,11 +52,11 @@ vi.mock('../context/CartContext', () => ({
 describe('App', () => {
   it('renders navigation with logo', () => {
     render(<App />);
-    expect(screen.getByText('🍕 Food Store')).toBeInTheDocument();
+    expect(screen.getByText('Food Store')).toBeInTheDocument();
   });
 
-  it('renders home page content', () => {
+  it('renders home page content', async () => {
     render(<App />);
-    expect(screen.getByText('Bienvenido a Food Store')).toBeInTheDocument();
+    expect(await screen.findByText('Panel de Control')).toBeInTheDocument();
   });
 });
