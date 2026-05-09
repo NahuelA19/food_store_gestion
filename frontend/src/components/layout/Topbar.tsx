@@ -9,6 +9,8 @@ import { Link } from "react-router-dom";
 import { Icon } from "../ui/Icon";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "../../hooks/useWishlist";
+import { useNotifications } from "../../hooks/useNotifications";
+import { NotificationDropdown } from "../notifications/NotificationDropdown";
 import {
   Sun,
   Moon,
@@ -39,8 +41,11 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
   const [branchOpen, setBranchOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const branchRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const { unreadCount } = useNotifications();
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -53,6 +58,12 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
         !userMenuRef.current.contains(e.target as Node)
       ) {
         setUserMenuOpen(false);
+      }
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(e.target as Node)
+      ) {
+        setNotificationOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -116,11 +127,28 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
 
       {/* Right side actions */}
       <div className="flex items-center gap-1">
-        {/* Notifications (placeholder) */}
-        <button className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-alt hover:text-text-primary transition-all duration-200 relative">
-          <Icon icon={Bell} size={20} />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-brand-500 ring-2 ring-surface" />
-        </button>
+        {/* Notifications */}
+        {isAuthenticated && (
+          <div ref={notifRef} className="relative">
+            <button
+              onClick={() => setNotificationOpen(!notificationOpen)}
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-alt hover:text-text-primary transition-all duration-200 relative"
+              aria-label={`Notifications (${unreadCount} unread)`}
+            >
+              <Icon icon={Bell} size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+            {notificationOpen && (
+              <NotificationDropdown
+                onClose={() => setNotificationOpen(false)}
+              />
+            )}
+          </div>
+        )}
 
         {/* Wishlist */}
         {isAuthenticated && (

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from app.models.cart import Cart
+    from app.models.notification import Notification
     from app.models.order import Order
     from app.models.review import Review
     from app.models.wishlist import WishlistItem
@@ -54,6 +55,9 @@ class User(Base, TimestampMixin):
     )
     wishlist_items: Mapped[list["WishlistItem"]] = relationship(  # noqa: F821
         "WishlistItem", back_populates="user", cascade="all, delete-orphan"
+    )
+    notifications: Mapped[list["Notification"]] = relationship(  # noqa: F821
+        "Notification", back_populates="user", cascade="all, delete-orphan"
     )
 
     @property

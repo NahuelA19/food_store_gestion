@@ -53,13 +53,14 @@ from app.routes.cart import router as cart_router
 from app.routes.categories import router as categories_router
 from app.routes.health import router as health_router
 from app.routes.inventory import router as inventory_router
+from app.routes.notifications import router as notifications_router
 from app.routes.orders import router as orders_router
 from app.routes.payments import router as payments_router
 from app.routes.products import router as products_router
 from app.routes.reviews import router as reviews_router
 from app.routes.search import router as search_router
-from app.routes.wishlist import router as wishlist_router
 from app.routes.users import router as users_router
+from app.routes.wishlist import router as wishlist_router
 from database.client import dispose_engine, init_engine
 
 logger = logging.getLogger(__name__)
@@ -107,6 +108,7 @@ app.include_router(categories_router, prefix="/api")
 app.include_router(cart_router, prefix="/api")
 app.include_router(health_router, prefix="/api")
 app.include_router(inventory_router, prefix="/api")
+app.include_router(notifications_router, prefix="/api")
 app.include_router(orders_router, prefix="/api")
 app.include_router(payments_router, prefix="/api")
 app.include_router(products_router, prefix="/api")

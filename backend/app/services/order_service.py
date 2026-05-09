@@ -1,5 +1,6 @@
 """Order business logic service."""
 
+import logging
 from datetime import datetime, timezone
 from decimal import Decimal
 from math import ceil
@@ -21,6 +22,9 @@ from app.schemas.order import (
     OrderListResponse,
     OrderResponse,
 )
+from app.services.notification_service import create_order_notification
+
+logger = logging.getLogger(__name__)
 
 # Valid status transitions for admin updates
 VALID_TRANSITIONS: dict[OrderStatus, list[OrderStatus]] = {
@@ -311,69 +315,18 @@ async def cancel_order(
     db.add(order)
     await db.commit()
     await db.refresh(order)
-    return order
 
-
-async def update_order_status(
-    order_id: int,
-    new_status: OrderStatus,
-    admin_id: int,
-    db: AsyncSession,
-) -> Order:
-    """Update order status (admin only). Validates the status transition.
-
-    Args:
-        order_id: Order ID
-        new_status: New status to transition to
-        admin_id: Admin user ID performing the update
-        db: Database session
-
-    Returns:
-        Order: Updated order
-
-    Raises:
-        HTTPException 400: Invalid status transition
-        HTTPException 404: Order not found
-    """
-    result = await db.execute(
-        select(Order)
-        .where(Order.id == order_id)
-        .options(selectinload(Order.items))
-    )
-    order = result.scalar_one_or_none()
-
-    if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Order with id {order_id} not found",
+    # Trigger notification (fire-and-forget — never fail the request)
+    try:
+        await create_order_notification(
+            db=db,
+            order_id=order.id,
+            user_id=order.user_id,
+            new_status=OrderStatus.CANCELLED,
         )
+    except Exception as e:
+        logger.error("Failed to create notification for order %d: %s", order.id, e)
 
-    current_status = order.status
-    if new_status not in VALID_TRANSITIONS.get(current_status, []):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid status transition from '{current_status.value}' to '{new_status.value}'",
-        )
-
-    # Handle cancellation — release reserved inventory if payment hadn't succeeded
-    if new_status == OrderStatus.CANCELLED and current_status == OrderStatus.PAYMENT_PENDING:
-        await _release_inventory_for_order(order, db)
-
-    # Track status change
-    history_entry = {
-        "from": current_status.value,
-        "to": new_status.value,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "by": admin_id,
-    }
-    if order.status_history is None:
-        order.status_history = []
-    order.status_history.append(history_entry)  # type: ignore[union-attr]
-
-    order.status = new_status
-    db.add(order)
-    await db.commit()
-    await db.refresh(order)
     return order
 
 

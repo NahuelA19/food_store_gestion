@@ -7,12 +7,13 @@ from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, Enum as SQLEnum
-from sqlalchemy import ForeignKey, Numeric, String
+from sqlalchemy import DateTime, ForeignKey, Numeric, String
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
+    from app.models.notification import Notification
     from app.models.order_item import OrderItem
     from app.models.user import User
 
@@ -95,6 +96,9 @@ class Order(Base, TimestampMixin):
     user: Mapped["User"] = relationship("User", back_populates="orders")
     items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem", back_populates="order", cascade="all, delete-orphan"
+    )
+    notifications: Mapped[list["Notification"]] = relationship(  # noqa: F821
+        "Notification", back_populates="order", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
