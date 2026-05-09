@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from app.models.cart import Cart
     from app.models.order import Order
+    from app.models.review import Review
+    from app.models.wishlist import WishlistItem
 
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -44,6 +46,22 @@ class User(Base, TimestampMixin):
     cart: Mapped[list["Cart"]] = relationship("Cart", back_populates="user", uselist=False,  # noqa: F821
                                                cascade="all, delete-orphan")
     orders: Mapped[list["Order"]] = relationship("Order", back_populates="user")  # noqa: F821
+    reviews: Mapped[list["Review"]] = relationship(  # noqa: F821
+        "Review", foreign_keys="Review.user_id", back_populates="user", cascade="all, delete-orphan"
+    )
+    moderated_reviews: Mapped[list["Review"]] = relationship(  # noqa: F821
+        "Review", foreign_keys="Review.moderated_by", back_populates="moderator"
+    )
+    wishlist_items: Mapped[list["WishlistItem"]] = relationship(  # noqa: F821
+        "WishlistItem", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    @property
+    def name(self) -> str:
+        """Get the user's display name."""
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        return self.first_name or self.email
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, first_name={self.first_name}, last_name={self.last_name})>"

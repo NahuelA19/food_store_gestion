@@ -4,6 +4,9 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import { useAuthContext } from "../context/AuthContext";
+import { useWishlist } from "../hooks/useWishlist";
+import { FavoriteButton } from "./wishlist/FavoriteButton";
 import { ShoppingCart, Plus, Minus, Package } from "lucide-react";
 
 interface ProductCardProps {
@@ -18,6 +21,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onClick,
 }) => {
   const [quantity, setQuantity] = React.useState(1);
+  const { isAuthenticated } = useAuthContext();
+  const { isWishlisted, toggle } = useWishlist();
 
   const handleAddToCart = () => {
     if (onAddToCart) {
@@ -42,10 +47,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       aria-label={`Product: ${product.name}`}
     >
       <div
-        className="flex h-40 items-center justify-center bg-gradient-to-br from-brand-50 to-amber-50"
+        className="relative flex h-40 items-center justify-center bg-gradient-to-br from-brand-50 to-amber-50"
         aria-label={`${product.name} image`}
       >
         <Icon icon={Package} size={48} className="text-brand-300" />
+        {isAuthenticated && (
+          <div className="absolute right-2 top-2">
+            <FavoriteButton
+              isWishlisted={isWishlisted(product.id)}
+              onToggle={() => toggle(product.id)}
+              size="sm"
+            />
+          </div>
+        )}
       </div>
 
       <CardContent className="flex flex-col gap-2">

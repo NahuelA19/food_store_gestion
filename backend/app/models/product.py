@@ -10,6 +10,8 @@ from sqlalchemy import ForeignKey, Numeric, String
 if TYPE_CHECKING:
     from app.models.category import Category
     from app.models.inventory import Inventory
+    from app.models.review import Review
+    from app.models.wishlist import WishlistItem
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -40,6 +42,12 @@ class Product(Base, TimestampMixin):
     category: Mapped["Category"] = relationship("Category", back_populates="products")  # noqa: F821
     inventory: Mapped["Inventory"] = relationship(  # noqa: F821
         "Inventory", back_populates="product", uselist=False, cascade="all, delete-orphan"
+    )
+    reviews: Mapped[list["Review"]] = relationship(  # noqa: F821
+        "Review", back_populates="product", cascade="all, delete-orphan"
+    )
+    wishlist_items: Mapped[list["WishlistItem"]] = relationship(  # noqa: F821
+        "WishlistItem", back_populates="product", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:

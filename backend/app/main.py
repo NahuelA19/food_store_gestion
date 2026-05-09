@@ -46,6 +46,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.admin import router as admin_router
+from app.routes.admin_reviews import router as admin_reviews_router
 from app.routes.auth import router as auth_router
 from app.routes.branches import router as branches_router
 from app.routes.cart import router as cart_router
@@ -55,7 +56,9 @@ from app.routes.inventory import router as inventory_router
 from app.routes.orders import router as orders_router
 from app.routes.payments import router as payments_router
 from app.routes.products import router as products_router
+from app.routes.reviews import router as reviews_router
 from app.routes.search import router as search_router
+from app.routes.wishlist import router as wishlist_router
 from app.routes.users import router as users_router
 from database.client import dispose_engine, init_engine
 
@@ -107,7 +110,10 @@ app.include_router(inventory_router, prefix="/api")
 app.include_router(orders_router, prefix="/api")
 app.include_router(payments_router, prefix="/api")
 app.include_router(products_router, prefix="/api")
+app.include_router(admin_reviews_router, prefix="/api")
+app.include_router(reviews_router, prefix="/api")
 app.include_router(search_router, prefix="/api/v1")
+app.include_router(wishlist_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
 
 

@@ -1,10 +1,6 @@
-## Purpose
+## MODIFIED Requirements
 
-Define the layout structure for the Food Store admin dashboard, including sidebar navigation, topbar, breadcrumbs, responsive behavior, and consistent page layout containers.
-
-## Requirements
-
-### Requirement: Responsive top navigation bar with admin navigation
+### Requirement: Responsive top navigation bar
 The system SHALL provide a sticky top navigation bar with logo, admin navigation links, and user menu. On mobile (<768px) it SHALL collapse to a hamburger menu with a slide-out drawer. The navigation links SHALL be organized in 2 sidebar sections focused on restaurant management.
 
 #### Scenario: Desktop sidebar shows admin nav links
@@ -19,16 +15,7 @@ The system SHALL provide a sticky top navigation bar with logo, admin navigation
 - **WHEN** on the orders page (/orders)
 - **THEN** the "Pedidos" nav link SHALL have an active indicator (brand color background/text)
 
-### Requirement: Page layout with consistent structure
-Every page SHALL follow a consistent layout structure: `<main>` with max-width container, appropriate padding, and responsive gutters.
-
-#### Scenario: Pages have consistent max-width
-- **WHEN** viewing any page on desktop
-- **THEN** the content SHALL be constrained to a max-width container (1280px) centered horizontally
-
-#### Scenario: Mobile has appropriate padding
-- **WHEN** viewing any page on a mobile viewport
-- **THEN** content SHALL have at least 16px horizontal padding from viewport edges
+## ADDED Requirements
 
 ### Requirement: Sidebar with 2 management sections
 The system SHALL provide a sidebar with exactly 2 navigation sections. Section 1 ("Panel") SHALL contain: Dashboard, Productos, Pedidos. Section 2 ("Gestión") SHALL contain: Sucursales, Empleados, Configuración.

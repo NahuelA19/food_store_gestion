@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Card, CardTitle, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -7,7 +7,13 @@ import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { productApi } from "../api/productApi";
 import { ProductCard } from "../components/ProductCard";
+import { ReviewList } from "../components/reviews/ReviewList";
+import { ReviewForm } from "../components/reviews/ReviewForm";
+import { FavoriteButton } from "../components/wishlist/FavoriteButton";
 import { useProduct } from "../hooks/useProduct";
+import { useProductReviews } from "../hooks/useReviews";
+import { useWishlist } from "../hooks/useWishlist";
+import { useAuthContext } from "../context/AuthContext";
 import { Product } from "../types/product";
 import {
   AlertTriangle,
@@ -17,6 +23,8 @@ import {
   Plus,
   Minus,
   CheckCircle,
+  MessageSquare,
+  Star,
 } from "lucide-react";
 
 export const ProductDetailPage: React.FC = () => {
@@ -26,6 +34,17 @@ export const ProductDetailPage: React.FC = () => {
   const { product, isLoading, error } = useProduct(productId);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const { isAuthenticated } = useAuthContext();
+  const { isWishlisted, toggle } = useWishlist();
+  const {
+    reviews,
+    summary,
+    isLoading: reviewsLoading,
+    page: reviewPage,
+    setPage: setReviewPage,
+    refetch: refetchReviews,
+  } = useProductReviews(productId);
 
   useEffect(() => {
     if (product) {
@@ -109,14 +128,23 @@ export const ProductDetailPage: React.FC = () => {
           </div>
 
           <CardContent className="flex flex-col gap-6">
-            <div>
-              <h1 className="font-display text-3xl font-bold text-text-primary lg:text-4xl">
-                {product.name}
-              </h1>
-              {product.category && (
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  {product.category.name}
-                </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="font-display text-3xl font-bold text-text-primary lg:text-4xl">
+                  {product.name}
+                </h1>
+                {product.category && (
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                    {product.category.name}
+                  </p>
+                )}
+              </div>
+              {isAuthenticated && (
+                <FavoriteButton
+                  isWishlisted={isWishlisted(product.id)}
+                  onToggle={() => toggle(product.id)}
+                  size="lg"
+                />
               )}
             </div>
 
@@ -232,6 +260,62 @@ export const ProductDetailPage: React.FC = () => {
           </div>
         </section>
       )}
+
+      {/* Reviews Section */}
+      <section className="mt-12 border-t border-border-light pt-10">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <ReviewList
+              reviews={reviews}
+              summary={summary}
+              isLoading={reviewsLoading}
+              page={reviewPage}
+              totalPages={Math.max(1, Math.ceil(summary.total_count / 10))}
+              onPageChange={setReviewPage}
+            />
+          </div>
+
+          <div>
+            <div className="sticky top-24 rounded-xl border border-border-light bg-surface-alt p-6 dark:border-border-dark dark:bg-surface">
+              <h3 className="mb-4 font-display text-lg font-bold text-text-primary">
+                Write a Review
+              </h3>
+              {isAuthenticated ? (
+                showReviewForm ? (
+                  <ReviewForm
+                    productId={product.id}
+                    onSubmit={() => {
+                      setShowReviewForm(false);
+                      refetchReviews();
+                    }}
+                  />
+                ) : (
+                  <Button
+                    variant="default"
+                    className="w-full"
+                    onClick={() => setShowReviewForm(true)}
+                  >
+                    <Icon icon={Star} size={16} />
+                    Write a Review
+                  </Button>
+                )
+              ) : (
+                <div className="text-center">
+                  <p className="mb-3 text-sm text-text-muted">
+                    Log in to share your experience with this product.
+                  </p>
+                  <Link to="/login">
+                    <Button variant="outline" className="w-full">
+                      <Icon icon={MessageSquare} size={16} />
+                      Log in to Review
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

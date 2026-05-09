@@ -7,7 +7,9 @@ from app.models.inventory import Inventory
 from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.product import Product
+from app.models.review import Review
 from app.models.user import User
+from app.models.wishlist import WishlistItem
 
 __all__ = [
     "Base",
@@ -15,6 +17,8 @@ __all__ = [
     "User",
     "Category",
     "Product",
+    "Review",
+    "WishlistItem",
     "Inventory",
     "Order",
     "OrderItem",

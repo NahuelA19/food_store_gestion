@@ -8,12 +8,14 @@ import { useAuthContext } from "../../context/AuthContext";
 import { Link } from "react-router-dom";
 import { Icon } from "../ui/Icon";
 import { cn } from "@/lib/utils";
+import { useWishlist } from "../../hooks/useWishlist";
 import {
   Sun,
   Moon,
   ChevronDown,
   Building2,
   Bell,
+  Heart,
   User,
   LogOut,
   HelpCircle,
@@ -33,6 +35,7 @@ const BRANCHES = [
 export function Topbar({ sidebarCollapsed }: TopbarProps) {
   const { isDark, toggleTheme } = useTheme();
   const { isAuthenticated, user, logout } = useAuthContext();
+  const { count: wishlistCount } = useWishlist();
   const [branchOpen, setBranchOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -118,6 +121,22 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
           <Icon icon={Bell} size={20} />
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-brand-500 ring-2 ring-surface" />
         </button>
+
+        {/* Wishlist */}
+        {isAuthenticated && (
+          <Link
+            to="/wishlist"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-alt hover:text-text-primary transition-all duration-200 relative"
+            aria-label={`Wishlist (${wishlistCount} items)`}
+          >
+            <Icon icon={Heart} size={20} />
+            {wishlistCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface">
+                {wishlistCount > 9 ? "9+" : wishlistCount}
+              </span>
+            )}
+          </Link>
+        )}
 
         {/* Theme toggle */}
         <button

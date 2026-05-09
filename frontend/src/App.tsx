@@ -8,6 +8,7 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
+import { WishlistPage } from "./pages/WishlistPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { OrderDetailPage } from "./pages/OrderDetailPage";
 import { BranchesPage } from "./pages/BranchesPage";
@@ -29,6 +30,14 @@ function App() {
             <Route path="/branches" element={<BranchesPage />} />
             <Route path="/branches/:id" element={<BranchDetailPage />} />
             <Route path="/employees" element={<EmployeesPage />} />
+            <Route
+              path="/wishlist"
+              element={
+                <ProtectedRoute>
+                  <WishlistPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route

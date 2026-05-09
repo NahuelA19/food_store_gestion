@@ -11,6 +11,7 @@ from app.dependencies import get_db
 from app.models.category import Category
 from app.models.inventory import Inventory
 from app.models.product import Product
+from app.services.review_service import get_review_summary
 from app.schemas.product import (
     ProductCreate,
     ProductDetailResponse,
@@ -103,7 +104,7 @@ async def get_product(
     product_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> ProductDetailResponse:
-    """Get a single product with full details."""
+    """Get a single product with full details and review summary."""
     result = await db.execute(
         select(Product)
         .where(Product.id == product_id)
@@ -118,7 +119,10 @@ async def get_product(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Product with id {product_id} not found",
         )
-    return ProductDetailResponse.model_validate(product)
+
+    response = ProductDetailResponse.model_validate(product)
+    response.reviews = await get_review_summary(db, product_id)
+    return response
 
 
 @router.post("/", response_model=ProductDetailResponse, status_code=status.HTTP_201_CREATED)

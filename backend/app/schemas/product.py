@@ -2,8 +2,11 @@
 
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.schemas.review import ReviewSummary
 
 
 class CategoryResponse(BaseModel):
@@ -70,7 +73,7 @@ class ProductResponse(BaseModel):
 
 
 class ProductDetailResponse(BaseModel):
-    """Product detail response including inventory information."""
+    """Product detail response including inventory and review information."""
 
     id: int
     name: str
@@ -80,6 +83,7 @@ class ProductDetailResponse(BaseModel):
     category: CategoryResponse
     is_available: bool
     inventory: InventoryResponse | None = None
+    reviews: ReviewSummary | None = None
     created_at: datetime
     updated_at: datetime
 
