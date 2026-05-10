@@ -72,6 +72,19 @@ class ProductResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TrendingProductResponse(ProductResponse):
+    """Product response with trending/popularity data.
+
+    Extends ProductResponse with optional avg_rating and purchase_count
+    for trending/recommendation endpoints.
+    """
+
+    avg_rating: float | None = None
+    purchase_count: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ProductDetailResponse(BaseModel):
     """Product detail response including inventory and review information."""
 

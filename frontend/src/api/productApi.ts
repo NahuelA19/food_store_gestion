@@ -134,6 +134,24 @@ export const productApi = {
     return response.json();
   },
 
+  async getRecommendations(limit = 8): Promise<Product[]> {
+    const response = await fetch(`${API_BASE_URL}/products/recommendations?limit=${limit}`);
+    if (!response.ok) throw new Error("Failed to fetch recommendations");
+    return response.json();
+  },
+
+  async getTrending(limit = 8): Promise<Product[]> {
+    const response = await fetch(`${API_BASE_URL}/products/trending?limit=${limit}`);
+    if (!response.ok) throw new Error("Failed to fetch trending products");
+    return response.json();
+  },
+
+  async getFrequentlyBoughtTogether(id: number, limit = 4): Promise<Product[]> {
+    const response = await fetch(`${API_BASE_URL}/products/${id}/frequently-bought?limit=${limit}`);
+    if (!response.ok) throw new Error("Failed to fetch frequently bought together");
+    return response.json();
+  },
+
   // Inventory
   async getInventory(productId: number): Promise<Inventory> {
     const response = await fetch(`${API_BASE_URL}/inventory/${productId}`);

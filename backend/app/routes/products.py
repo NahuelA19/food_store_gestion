@@ -7,16 +7,22 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.dependencies import get_db
+from app.dependencies import get_current_user_optional, get_db
 from app.models.category import Category
 from app.models.inventory import Inventory
 from app.models.product import Product
+from app.models.user import User
+from app.services.recommendation_service import (
+    RecommendationService,
+    get_recommendation_service,
+)
 from app.services.review_service import get_review_summary
 from app.schemas.product import (
     ProductCreate,
     ProductDetailResponse,
     ProductResponse,
     ProductUpdate,
+    TrendingProductResponse,
 )
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -222,6 +228,76 @@ async def delete_product(
 
     await db.delete(product)
     await db.commit()
+
+
+@router.get("/recommendations", response_model=list[TrendingProductResponse])
+async def get_recommendations(
+    limit: int = Query(8, ge=1, le=20),
+    db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+    service: RecommendationService = Depends(get_recommendation_service),
+) -> list[TrendingProductResponse]:
+    """Get personalized product recommendations for the current user.
+
+    When authenticated, returns recommendations based on order history.
+    Falls back to trending products when unauthenticated or no history.
+    """
+    if current_user is not None:
+        products = await service.get_personalized(db, current_user.id, limit)
+    else:
+        products = await service.get_trending(db, limit)
+
+    return [
+        TrendingProductResponse(
+            **ProductResponse.model_validate(p).model_dump(),
+            avg_rating=rating,
+            purchase_count=count,
+        )
+        for p, rating, count in products
+    ]
+
+
+@router.get("/trending", response_model=list[TrendingProductResponse])
+async def get_trending_products(
+    limit: int = Query(8, ge=1, le=20),
+    db: AsyncSession = Depends(get_db),
+    service: RecommendationService = Depends(get_recommendation_service),
+) -> list[TrendingProductResponse]:
+    """Get trending/popular products.
+
+    Uses weighted scoring: purchase_count * 0.6 + avg_rating * 0.4.
+    Only returns available products.
+    """
+    products = await service.get_trending(db, limit)
+    return [
+        TrendingProductResponse(
+            **ProductResponse.model_validate(p).model_dump(),
+            avg_rating=rating,
+            purchase_count=count,
+        )
+        for p, rating, count in products
+    ]
+
+
+@router.get("/{product_id}/frequently-bought-together", response_model=list[ProductResponse])
+async def get_frequently_bought_together(
+    product_id: int,
+    limit: int = Query(4, ge=1, le=10),
+    db: AsyncSession = Depends(get_db),
+    service: RecommendationService = Depends(get_recommendation_service),
+) -> list[ProductResponse]:
+    """Get products frequently bought together with this product."""
+    # Verify product exists
+    result = await db.execute(select(Product).where(Product.id == product_id))
+    product = result.scalar_one_or_none()
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with id {product_id} not found",
+        )
+
+    products = await service.get_frequently_bought_together(db, product_id, limit)
+    return [ProductResponse.model_validate(p) for p in products]
 
 
 @router.get("/{product_id}/related", response_model=list[ProductResponse])

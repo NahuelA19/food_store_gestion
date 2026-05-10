@@ -1,5 +1,7 @@
 """FastAPI dependency functions."""
 
+from typing import Optional
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -91,3 +93,42 @@ async def get_admin_user(
             detail="Admin privileges required",
         )
     return current_user
+
+
+async def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(
+        HTTPBearer(auto_error=False)
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> User | None:
+    """Get the currently authenticated user or None if not authenticated.
+
+    Unlike get_current_user, this does NOT raise 401 if no token is provided.
+    Useful for endpoints that personalize results but work without auth.
+
+    Args:
+        credentials: Optional HTTP Bearer credentials
+        session: Database session
+
+    Returns:
+        User object or None if not authenticated
+    """
+    if credentials is None:
+        return None
+
+    token = credentials.credentials
+    payload = verify_token(token)
+    if payload is None:
+        return None
+
+    user_id = payload.get("user_id")
+    if user_id is None:
+        return None
+
+    result = await session.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user or user.deleted_at is not None:
+        return None
+
+    return user

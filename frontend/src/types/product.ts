@@ -31,6 +31,8 @@ export interface Product {
   category: Category;
   is_available: boolean;
   inventory?: Inventory;
+  avg_rating?: number;
+  purchase_count?: number;
   created_at: string;
   updated_at: string;
 }

@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Card, CardTitle, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { productApi } from "../api/productApi";
 import { ProductCard } from "../components/ProductCard";
 import { ReviewList } from "../components/reviews/ReviewList";
 import { ReviewForm } from "../components/reviews/ReviewForm";
@@ -14,7 +13,7 @@ import { useProduct } from "../hooks/useProduct";
 import { useProductReviews } from "../hooks/useReviews";
 import { useWishlist } from "../hooks/useWishlist";
 import { useAuthContext } from "../context/AuthContext";
-import { Product } from "../types/product";
+import { useFrequentlyBoughtTogether } from "../hooks/useRecommendations";
 import {
   AlertTriangle,
   Package,
@@ -32,7 +31,6 @@ export const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const productId = id ? parseInt(id) : undefined;
   const { product, isLoading, error } = useProduct(productId);
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const { isAuthenticated } = useAuthContext();
@@ -45,20 +43,7 @@ export const ProductDetailPage: React.FC = () => {
     setPage: setReviewPage,
     refetch: refetchReviews,
   } = useProductReviews(productId);
-
-  useEffect(() => {
-    if (product) {
-      const fetchRelated = async () => {
-        try {
-          const related = await productApi.getRelatedProducts(product.id, 4);
-          setRelatedProducts(related);
-        } catch (err) {
-          console.error("Failed to fetch related products:", err);
-        }
-      };
-      fetchRelated();
-    }
-  }, [product]);
+  const { products: frequentlyBought, loading: fbLoading } = useFrequentlyBoughtTogether(product?.id ?? 0);
 
   if (error) {
     return (
@@ -244,13 +229,16 @@ export const ProductDetailPage: React.FC = () => {
         </div>
       </Card>
 
-      {relatedProducts.length > 0 && (
+      {frequentlyBought.length > 0 && !fbLoading && (
         <section className="mt-12 border-t border-border-light pt-10">
           <h2 className="mb-6 font-display text-2xl font-bold text-primary">
-            Related Products
+            Frequently Bought Together
           </h2>
+          <p className="mb-6 text-sm text-text-muted">
+            Customers who purchased this also bought these items.
+          </p>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {relatedProducts.map((p) => (
+            {frequentlyBought.map((p) => (
               <ProductCard
                 key={p.id}
                 product={p}

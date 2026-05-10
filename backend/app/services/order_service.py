@@ -23,6 +23,7 @@ from app.schemas.order import (
     OrderResponse,
 )
 from app.services.notification_service import create_order_notification
+from app.services.recommendation_service import recommendation_service
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +121,10 @@ async def create_order_from_cart(
 
     await db.flush()
     await db.refresh(order)
+
+    # Invalidate recommendation caches — orders changed
+    recommendation_service.invalidate_all()
+
     return order
 
 
@@ -316,6 +321,9 @@ async def cancel_order(
     await db.commit()
     await db.refresh(order)
 
+    # Invalidate recommendation caches
+    recommendation_service.invalidate_all()
+
     # Trigger notification (fire-and-forget — never fail the request)
     try:
         await create_order_notification(
@@ -326,6 +334,73 @@ async def cancel_order(
         )
     except Exception as e:
         logger.error("Failed to create notification for order %d: %s", order.id, e)
+
+    return order
+
+
+async def update_order_status(
+    order_id: int,
+    new_status: OrderStatus,
+    admin_id: int,
+    db: AsyncSession,
+) -> Order:
+    """Update order status with transition validation (admin only).
+
+    Args:
+        order_id: Order ID
+        new_status: Target status
+        admin_id: Admin user ID
+        db: Database session
+
+    Returns:
+        Order: The updated order
+
+    Raises:
+        HTTPException 400: Invalid status transition
+        HTTPException 404: Order not found
+    """
+    result = await db.execute(
+        select(Order)
+        .where(Order.id == order_id)
+        .options(selectinload(Order.items))
+    )
+    order = result.scalar_one_or_none()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order with id {order_id} not found",
+        )
+
+    old_status = order.status
+
+    # Validate transition
+    allowed = VALID_TRANSITIONS.get(old_status, [])
+    if new_status not in allowed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot transition from '{old_status.value}' to '{new_status.value}'",
+        )
+
+    order.status = new_status
+
+    # Track status change
+    history_entry = {
+        "from": old_status.value,
+        "to": new_status.value,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "by": admin_id,
+    }
+    if order.status_history is None:
+        order.status_history = []
+    order.status_history.append(history_entry)
+
+    db.add(order)
+    await db.commit()
+    await db.refresh(order)
+
+    # Invalidate recommendation caches
+    recommendation_service.invalidate_all()
 
     return order
 
