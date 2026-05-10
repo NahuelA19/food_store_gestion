@@ -1,6 +1,6 @@
-"""
-Health check endpoints for Food Store API
-"""
+"""Health check endpoints for Food Store API"""
+
+import time
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -13,12 +13,17 @@ from database.session import get_db_session
 
 router = APIRouter(prefix="/health", tags=["health"])
 
+startup_time: float = time.time()
+
 
 class HealthResponse(BaseModel):
     """Health check response model."""
 
     status: str
     service: str
+    version: str = "0.1.0"
+    uptime: int = 0
+    database: str = "unknown"
 
 
 class DatabaseHealthResponse(BaseModel):
@@ -30,9 +35,23 @@ class DatabaseHealthResponse(BaseModel):
 
 
 @router.get("/", response_model=HealthResponse)
-async def health_check() -> HealthResponse:
-    """Basic health check endpoint"""
-    return HealthResponse(status="ok", service="food-store-api")
+async def health_check(
+    session: AsyncSession = Depends(get_db_session),
+) -> HealthResponse:
+    """Enhanced health check endpoint with database connectivity check."""
+    db_status = "ok"
+    try:
+        await session.execute(text("SELECT 1"))
+    except Exception:
+        db_status = "error"
+
+    return HealthResponse(
+        status="ok",
+        service="food-store-api",
+        version="0.1.0",
+        uptime=int(time.time() - startup_time),
+        database=db_status,
+    )
 
 
 @router.get("/live", response_model=HealthResponse)
@@ -53,7 +72,6 @@ async def database_health(
 ) -> DatabaseHealthResponse:
     """Database connectivity check"""
     try:
-        # Perform a simple query to check database connectivity
         await session.execute(text("SELECT 1"))
         return DatabaseHealthResponse(
             status="ok",

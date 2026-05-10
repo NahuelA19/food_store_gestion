@@ -18,9 +18,13 @@ This API uses **JWT (JSON Web Tokens)** for authentication:
 - Automatic OpenAPI/Swagger documentation at /docs
 - CORS configured for frontend development
 - Database migrations with Alembic
+- Structured logging with structlog
+- Prometheus metrics at /api/metrics
+- Sentry error tracking (optional, requires SENTRY_DSN)
 
 ## Routes
 - `GET /api/health` - Health check endpoint
+- `GET /api/metrics` - Prometheus metrics
 - `GET /api/protected/test` - Protected route (requires authentication)
 - `GET /api/public/test` - Public route (no authentication required)
 - `POST /api/auth/register` - User registration
@@ -32,6 +36,8 @@ Set in `.env` file:
 - `SECRET_KEY` - JWT signing secret
 - `ALGORITHM` - JWT algorithm (default: HS256)
 - `ACCESS_TOKEN_EXPIRE_MINUTES` - Token expiration time
+- `SENTRY_DSN` - Sentry DSN (optional)
+- `LOG_LEVEL` - Logging level (default: DEBUG in dev, INFO in prod)
 
 ## Documentation
 - API docs: http://localhost:8000/docs
@@ -41,10 +47,13 @@ Set in `.env` file:
 """
 
 import logging
+import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.middleware.metrics import MetricsMiddleware
 from app.routes.admin import router as admin_router
 from app.routes.admin_reviews import router as admin_reviews_router
 from app.routes.auth import router as auth_router
@@ -53,6 +62,7 @@ from app.routes.cart import router as cart_router
 from app.routes.categories import router as categories_router
 from app.routes.health import router as health_router
 from app.routes.inventory import router as inventory_router
+from app.routes.metrics import router as metrics_router
 from app.routes.notifications import router as notifications_router
 from app.routes.orders import router as orders_router
 from app.routes.payments import router as payments_router
@@ -61,9 +71,65 @@ from app.routes.reviews import router as reviews_router
 from app.routes.search import router as search_router
 from app.routes.users import router as users_router
 from app.routes.wishlist import router as wishlist_router
+from app.services.logging_service import RequestLoggingMiddleware, configure_logging
 from database.client import dispose_engine, init_engine
 
 logger = logging.getLogger(__name__)
+
+
+def init_sentry() -> None:
+    """Initialize Sentry SDK if DSN is configured."""
+    dsn = os.getenv("SENTRY_DSN")
+    if not dsn:
+        logger.info("Sentry DSN not configured -- skipping Sentry initialization")
+        return
+
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.asyncio import AsyncioIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+        from sentry_sdk.integrations.logging import LoggingIntegration
+    except ImportError:
+        logger.warning("sentry-sdk not installed -- skipping Sentry initialization")
+        return
+
+    environment = os.getenv("SENTRY_ENVIRONMENT", os.getenv("ENVIRONMENT", "development"))
+
+    sentry_sdk.init(
+        dsn=dsn,
+        environment=environment,
+        integrations=[
+            FastApiIntegration(),
+            AsyncioIntegration(),
+            SqlalchemyIntegration(),
+            LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
+        ],
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+    )
+    logger.info("Sentry initialized (environment: %s)", environment)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan: startup and shutdown."""
+    environment = os.getenv("ENVIRONMENT", "development")
+    configure_logging(environment=environment)
+    logger.info("Starting up Food Store API")
+    init_sentry()
+    await init_engine()
+    logger.info("Database engine initialized")
+    yield
+    logger.info("Shutting down Food Store API")
+    await dispose_engine()
+    try:
+        import sentry_sdk
+
+        sentry_sdk.flush()
+    except ImportError:
+        pass
+    logger.info("Database engine disposed")
 
 
 # Create FastAPI app
@@ -71,25 +137,8 @@ app = FastAPI(
     title="Food Store API",
     description="Modern E-commerce API for Food Store",
     version="0.1.0",
+    lifespan=lifespan,
 )
-
-
-# Startup event
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Initialize database engine on app startup."""
-    logger.info("Starting up Food Store API")
-    await init_engine()
-    logger.info("Database engine initialized")
-
-
-# Shutdown event
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
-    """Dispose database engine on app shutdown."""
-    logger.info("Shutting down Food Store API")
-    await dispose_engine()
-    logger.info("Database engine disposed")
 
 # Configure CORS
 app.add_middleware(
@@ -100,6 +149,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Monitoring middleware
+app.add_middleware(MetricsMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+
 # Include routes
 app.include_router(admin_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
@@ -108,6 +161,7 @@ app.include_router(categories_router, prefix="/api")
 app.include_router(cart_router, prefix="/api")
 app.include_router(health_router, prefix="/api")
 app.include_router(inventory_router, prefix="/api")
+app.include_router(metrics_router, prefix="/api")
 app.include_router(notifications_router, prefix="/api")
 app.include_router(orders_router, prefix="/api")
 app.include_router(payments_router, prefix="/api")
