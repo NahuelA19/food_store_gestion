@@ -1,9 +1,11 @@
+import { useNavigate } from 'react-router-dom';
 import { useSearch } from '../hooks/useSearch';
 import { SearchBar } from '../components/SearchBar';
 import { FilterPanel } from '../components/FilterPanel';
 import { SearchResults } from '../components/SearchResults';
 
 export function ProductsPage() {
+  const navigate = useNavigate();
   const {
     query,
     filters,
@@ -53,6 +55,7 @@ export function ProductsPage() {
             loading={loading}
             error={error}
             onPageChange={setPage}
+            onProductClick={(id) => navigate(`/products/${id}`)}
           />
         </main>
       </div>

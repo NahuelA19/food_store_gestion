@@ -30,6 +30,7 @@ export const ProductDetailPage: React.FC = () => {
   const productId = id ? parseInt(id) : undefined;
   const { product, isLoading, error } = useProduct(productId);
   const [quantity, setQuantity] = useState(1);
+  const [imgError, setImgError] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { isWishlisted, toggle } = useWishlist();
@@ -105,8 +106,17 @@ export const ProductDetailPage: React.FC = () => {
 
       <Card className="overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
-          <div className="flex min-h-[450px] items-center justify-center bg-gradient-to-br from-brand-50 to-amber-50">
-            <Icon icon={Package} size={96} className="text-brand-300" />
+          <div className="flex min-h-[450px] items-center justify-center overflow-hidden bg-gradient-to-br from-brand-50 to-amber-50">
+            {product.image_url && !imgError ? (
+              <img
+                src={product.image_url}
+                alt={product.name}
+                className="h-full w-full object-cover"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <Icon icon={Package} size={96} className="text-brand-300" />
+            )}
           </div>
 
           <CardContent className="flex flex-col gap-6">

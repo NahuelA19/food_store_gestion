@@ -30,6 +30,7 @@ export interface Product {
   category_id: number;
   category: Category;
   is_available: boolean;
+  image_url?: string;
   inventory?: Inventory;
   avg_rating?: number;
   purchase_count?: number;
@@ -53,6 +54,7 @@ export interface CreateProductPayload {
   price: number;
   category_id: number;
   is_available?: boolean;
+  image_url?: string;
 }
 
 export interface UpdateProductPayload {
@@ -61,6 +63,7 @@ export interface UpdateProductPayload {
   price?: number;
   category_id?: number;
   is_available?: boolean;
+  image_url?: string | null;
 }
 
 export interface CreateCategoryPayload {

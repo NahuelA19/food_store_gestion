@@ -2,9 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { debounce } from 'lodash';
 
-// Base URL for API calls. Categories use /api, search uses /api/v1.
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-const API_V1_URL = `${API_BASE_URL}/v1`;
+// Base URL for API calls. VITE_API_URL already includes /api/v1 prefix.
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 export interface Filters {
   category_id: number | null;
@@ -37,6 +36,7 @@ export interface Product {
     updated_at: string;
   };
   is_available: boolean;
+  image_url?: string | null;
   inventory: {
     id: number;
     product_id: number;
@@ -113,7 +113,7 @@ export function useSearch(): UseSearchReturn {
 
   async function fetchCategories() {
     try {
-      const res = await fetch(`${API_BASE_URL}/categories`);
+      const res = await fetch(`${API_BASE_URL}/categories/`);
       if (res.ok) {
         const data = await res.json();
         setCategories(data.items || data);
@@ -153,7 +153,7 @@ export function useSearch(): UseSearchReturn {
       params.set('page', page.toString());
       params.set('limit', '20');
 
-      const res = await fetch(`${API_V1_URL}/products/search?${params}`);
+      const res = await fetch(`${API_BASE_URL}/products/search?${params}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();

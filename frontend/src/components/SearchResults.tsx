@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -12,20 +13,32 @@ export interface SearchResultsProps {
   loading: boolean;
   error?: string | null;
   onPageChange: (page: number) => void;
+  onProductClick: (productId: number) => void;
 }
 
-function ProductCardItem({ product }: { product: Product }) {
+function ProductCardItem({ product, onClick }: { product: Product; onClick: () => void }) {
+  const [imgError, setImgError] = useState(false);
   const inStock =
     product.inventory &&
     product.inventory.stock_quantity > product.inventory.low_stock_threshold;
+  const hasImage = product.image_url && !imgError;
 
   return (
-    <Card variant="interactive">
+    <Card variant="interactive" onClick={onClick}>
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-alt">
-            <Icon icon={Package} className="text-text-secondary" />
-          </div>
+          {hasImage ? (
+            <img
+              src={product.image_url!}
+              alt={product.name}
+              className="h-16 w-16 shrink-0 rounded-lg object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-surface-alt">
+              <Icon icon={Package} className="text-text-secondary" />
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <h3 className="truncate font-display text-base font-semibold text-text-primary">
               {product.name}
@@ -60,6 +73,7 @@ export function SearchResults({
   loading,
   error,
   onPageChange,
+  onProductClick,
 }: SearchResultsProps) {
   if (error) {
     return (
@@ -106,7 +120,11 @@ export function SearchResults({
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((product) => (
-          <ProductCardItem key={product.id} product={product} />
+          <ProductCardItem
+            key={product.id}
+            product={product}
+            onClick={() => onProductClick(product.id)}
+          />
         ))}
       </div>
 

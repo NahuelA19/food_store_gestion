@@ -22,6 +22,7 @@ import {
   Building2,
   TrendingUp,
   PlusCircle,
+  FolderPlus,
   ListOrdered,
   Store,
 } from "lucide-react";
@@ -330,6 +331,12 @@ export function HomePage() {
           <Button variant="default" className="gap-2">
             <PlusCircle size={16} />
             Nuevo Producto
+          </Button>
+        </Link>
+        <Link to="/categories/new">
+          <Button variant="default" className="gap-2">
+            <FolderPlus size={16} />
+            Nueva Categoría
           </Button>
         </Link>
         <Link to="/orders">

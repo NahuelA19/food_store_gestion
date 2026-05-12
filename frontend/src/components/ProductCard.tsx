@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Product } from "../types/product";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -21,6 +21,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onClick,
 }) => {
   const [quantity, setQuantity] = React.useState(1);
+  const [imgError, setImgError] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { isWishlisted, toggle } = useWishlist();
 
@@ -47,10 +48,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       aria-label={`Product: ${product.name}`}
     >
       <div
-        className="relative flex h-40 items-center justify-center bg-gradient-to-br from-brand-50 to-amber-50"
+        className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br from-brand-50 to-amber-50"
         aria-label={`${product.name} image`}
       >
-        <Icon icon={Package} size={48} className="text-brand-300" />
+        {product.image_url && !imgError ? (
+          <img
+            src={product.image_url}
+            alt={product.name}
+            className="h-full w-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <Icon icon={Package} size={48} className="text-brand-300" />
+        )}
         {isAuthenticated && (
           <div className="absolute right-2 top-2">
             <FavoriteButton

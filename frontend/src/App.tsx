@@ -6,6 +6,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ProductsPage } from "./pages/ProductsPage";
+import { CreateProductPage } from "./pages/CreateProductPage";
+import { CreateCategoryPage } from "./pages/CreateCategoryPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { WishlistPage } from "./pages/WishlistPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
@@ -25,6 +27,22 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/products" element={<ProductsPage />} />
+            <Route
+              path="/categories/new"
+              element={
+                <ProtectedRoute>
+                  <CreateCategoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products/new"
+              element={
+                <ProtectedRoute>
+                  <CreateProductPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/products/:id" element={<ProductDetailPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
