@@ -4,10 +4,10 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.dependencies import get_admin_user, get_current_user
+from app.core.uow import UnitOfWork
+from app.dependencies import get_admin_user, get_current_user, get_uow
 from app.models.user import User, UserPreference
 from app.models.user_profile import (
     AdminUserResponse,
@@ -19,7 +19,6 @@ from app.models.user_profile import (
     UserStatusUpdate,
 )
 from app.validation import DEFAULT_PREFERENCES
-from database.session import get_db_session
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -45,13 +44,13 @@ async def get_current_profile(
 @router.get("/{user_id}", response_model=UserPublicResponse)
 async def get_public_profile(
     user_id: int,
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> UserPublicResponse:
     """Get public profile of another user (limited fields).
 
     Args:
         user_id: ID of user to fetch
-        session: Database session
+        uow: Unit of Work for database access
 
     Returns:
         UserPublicResponse with limited profile information
@@ -59,10 +58,7 @@ async def get_public_profile(
     Raises:
         HTTPException 404: If user not found or deleted
     """
-    result = await session.execute(
-        select(User).where(User.id == user_id, User.deleted_at.is_(None))
-    )
-    user = result.scalar_one_or_none()
+    user = await uow.users.get_by_id(user_id)
 
     if not user:
         raise HTTPException(
@@ -77,14 +73,14 @@ async def get_public_profile(
 async def update_profile(
     body: UserProfileUpdate,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> UserResponse:
     """Update current user's profile.
 
     Args:
         body: Profile update request
         current_user: Current authenticated user
-        session: Database session
+        uow: Unit of Work for database access
 
     Returns:
         UserResponse with updated profile
@@ -104,9 +100,9 @@ async def update_profile(
     # Update timestamp
     current_user.updated_at = datetime.now(timezone.utc)
 
-    session.add(current_user)
-    await session.commit()
-    await session.refresh(current_user)
+    uow.session.add(current_user)
+    await uow.commit()
+    await uow.refresh(current_user)
 
     return UserResponse.model_validate(current_user)
 
@@ -114,13 +110,13 @@ async def update_profile(
 @router.get("/me/preferences", response_model=UserPreferencesResponse)
 async def get_preferences(
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> UserPreferencesResponse:
     """Get current user's preferences.
 
     Args:
         current_user: Current authenticated user
-        session: Database session
+        uow: Unit of Work for database access
 
     Returns:
         UserPreferencesResponse with all preferences
@@ -129,7 +125,7 @@ async def get_preferences(
         HTTPException 401: If not authenticated
     """
     # Fetch preferences from database
-    result = await session.execute(
+    result = await uow.session.execute(
         select(UserPreference).where(UserPreference.user_id == current_user.id)
     )
     prefs_list = result.scalars().all()
@@ -155,14 +151,14 @@ async def get_preferences(
 async def update_preferences(
     body: UserPreferenceUpdate,
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> UserPreferencesResponse:
     """Update current user's preferences.
 
     Args:
         body: Preferences update request
         current_user: Current authenticated user
-        session: Database session
+        uow: Unit of Work for database access
 
     Returns:
         UserPreferencesResponse with all preferences after update
@@ -182,7 +178,7 @@ async def update_preferences(
     for key, value in preference_fields.items():
         if value is not None:
             # Check if preference exists
-            result = await session.execute(
+            result = await uow.session.execute(
                 select(UserPreference).where(
                     UserPreference.user_id == current_user.id,
                     UserPreference.pref_key == key,
@@ -201,12 +197,12 @@ async def update_preferences(
                     pref_key=key,
                     pref_value=value,
                 )
-                session.add(pref)
+                uow.session.add(pref)
 
-    await session.commit()
+    await uow.commit()
 
     # Fetch all preferences and return
-    result = await session.execute(
+    result = await uow.session.execute(
         select(UserPreference).where(UserPreference.user_id == current_user.id)
     )
     prefs_list = result.scalars().all()
@@ -230,13 +226,13 @@ async def update_preferences(
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_account(
     current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     """Delete current user's account (soft delete).
 
     Args:
         current_user: Current authenticated user
-        session: Database session
+        uow: Unit of Work for database access
 
     Raises:
         HTTPException 401: If not authenticated
@@ -244,8 +240,8 @@ async def delete_account(
     current_user.deleted_at = datetime.now(timezone.utc)
     current_user.is_active = False
 
-    session.add(current_user)
-    await session.commit()
+    uow.session.add(current_user)
+    await uow.commit()
 
 
 @router.get("", response_model=dict)
@@ -253,7 +249,7 @@ async def list_users(
     cursor: Optional[int] = Query(None, description="Cursor for pagination (user ID)"),
     limit: int = Query(10, ge=1, le=100, description="Number of users per page"),
     current_user: User = Depends(get_admin_user),
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> dict[str, Any]:
     """List all users with cursor-based pagination (admin only).
 
@@ -261,7 +257,7 @@ async def list_users(
         cursor: Cursor user ID for pagination
         limit: Number of users per page (1-100)
         current_user: Current admin user
-        session: Database session
+        uow: Unit of Work for database access
 
     Returns:
         dict with users list and next_cursor
@@ -274,7 +270,7 @@ async def list_users(
         query = query.where(User.id > cursor)
     query = query.order_by(User.id).limit(limit + 1)
 
-    result = await session.execute(query)
+    result = await uow.session.execute(query)
     users = result.scalars().all()
 
     next_cursor = None
@@ -293,7 +289,7 @@ async def update_user_status(
     user_id: int,
     body: UserStatusUpdate,
     current_user: User = Depends(get_admin_user),
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> AdminUserResponse:
     """Activate or deactivate a user (admin only).
 
@@ -301,7 +297,7 @@ async def update_user_status(
         user_id: ID of user to update
         body: Status update request with is_active
         current_user: Current admin user
-        session: Database session
+        uow: Unit of Work for database access
 
     Returns:
         AdminUserResponse with updated user
@@ -310,10 +306,7 @@ async def update_user_status(
         HTTPException 403: If user is not admin
         HTTPException 404: If user not found or deleted
     """
-    result = await session.execute(
-        select(User).where(User.id == user_id, User.deleted_at.is_(None))
-    )
-    user = result.scalar_one_or_none()
+    user = await uow.users.get_by_id(user_id)
 
     if not user:
         raise HTTPException(
@@ -323,8 +316,8 @@ async def update_user_status(
 
     user.is_active = body.is_active
     user.updated_at = datetime.now(timezone.utc)
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
+    uow.session.add(user)
+    await uow.commit()
+    await uow.refresh(user)
 
     return AdminUserResponse.model_validate(user)

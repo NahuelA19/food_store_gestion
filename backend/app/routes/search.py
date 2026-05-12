@@ -1,5 +1,6 @@
 """Search and filtering endpoint."""
 
+from collections import Counter
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -7,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.core.uow import UnitOfWork
 from app.dependencies import get_uow
 from app.schemas.product import ProductDetailResponse
+from app.schemas.review import ReviewSummary
 from app.schemas.search import SearchResponse
 from app.services.search_service import (
     search_products,
@@ -103,8 +105,37 @@ async def search_and_filter_products(
         order=order,
     )
 
-    # Serialize products
-    items = [ProductDetailResponse.model_validate(p) for p in products]
+    # Serialize products, computing ReviewSummary from eager-loaded reviews
+    # Matches get_review_summary() logic: only approved reviews, round to 1 decimal
+    items = []
+    for p in products:
+        review_list = getattr(p, "reviews", []) or []
+        approved = [r for r in review_list if hasattr(r, "is_approved") and r.is_approved]
+        if approved:
+            ratings = [r.rating for r in approved if hasattr(r, "rating")]
+            summary = ReviewSummary(
+                average_rating=round(sum(ratings) / len(ratings), 1) if ratings else None,
+                total_count=len(approved),
+                distribution=dict(Counter(r.rating for r in approved if hasattr(r, "rating"))),
+            )
+        else:
+            summary = ReviewSummary(total_count=0)
+
+        items.append(
+            ProductDetailResponse(
+                id=p.id,
+                name=p.name,
+                description=p.description,
+                price=p.price,
+                category_id=p.category_id,
+                category=p.category,
+                is_available=p.is_available,
+                inventory=p.inventory,
+                reviews=summary,
+                created_at=p.created_at,
+                updated_at=p.updated_at,
+            )
+        )
 
     return SearchResponse(
         items=items,

@@ -37,6 +37,7 @@ class Product(Base, SoftDeleteMixin, TimestampMixin):
         index=True,
     )
     is_available: Mapped[bool] = mapped_column(default=True, nullable=False, index=True)
+    image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     search_vector: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True)
 
     # Relationships

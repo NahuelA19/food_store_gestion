@@ -44,6 +44,7 @@ class ProductCreate(BaseModel):
     price: Decimal = Field(..., gt=Decimal("0"), max_digits=10, decimal_places=2)
     category_id: int = Field(..., gt=0)
     is_available: bool = Field(default=True)
+    image_url: str | None = Field(None, max_length=2048)
 
 
 class ProductUpdate(BaseModel):
@@ -54,6 +55,7 @@ class ProductUpdate(BaseModel):
     price: Decimal | None = Field(None, gt=Decimal("0"), max_digits=10, decimal_places=2)
     category_id: int | None = Field(None, gt=0)
     is_available: bool | None = None
+    image_url: str | None = None
 
 
 class ProductResponse(BaseModel):
@@ -66,6 +68,7 @@ class ProductResponse(BaseModel):
     category_id: int
     category: CategoryResponse
     is_available: bool
+    image_url: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -82,6 +85,7 @@ class ProductDetailResponse(BaseModel):
     category_id: int
     category: CategoryResponse
     is_available: bool
+    image_url: str | None = None
     inventory: InventoryResponse | None = None
     reviews: ReviewSummary | None = None
     created_at: datetime

@@ -145,6 +145,7 @@ async def search_products(
     query = select(Product).options(
         selectinload(Product.category),
         selectinload(Product.inventory),
+        selectinload(Product.reviews),
     )
 
     if filters:
