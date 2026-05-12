@@ -57,7 +57,7 @@
   */
   --color-text-primary: oklch(0.14 0.012 70);     /* Very dark gray (#1a1a1a) - body text */
   --color-text-secondary: oklch(0.35 0.010 70);   /* Medium gray - secondary info */
-  --color-text-muted: oklch(0.55 0.008 70);       /* Light gray - muted labels */
+  --color-text-muted: oklch(0.42 0.010 70);       /* Darker gray for better contrast on lavender background */
   --color-text-on-brand: oklch(1 0 0);            /* White text on brand color */
   --color-text-inverse: oklch(0.98 0.002 70);     /* Inverse (white-ish) */
 
