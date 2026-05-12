@@ -14,13 +14,16 @@
    DESIGN TOKENS — ROOT (Light Mode)
    ============================================================================ */
 @theme {
-  /* ---- Neutral & Background ---- 
-     Light mode: white/cream surfaces with glassmorphism over blue background
+  /* ---- Glassmorphic Surfaces: Light Mode (over #1a3de4) ---- 
+     Base: white with controlled transparency + backdrop-filter blur
   */
-  --color-surface: oklch(0.98 0.002 70);        /* Cards: semi-transparent white for glass effect */
-  --color-surface-alt: oklch(0.96 0.003 70);   /* Surfaces: slightly darker for depth */
-  --color-surface-card: oklch(0.96 0.003 70);  /* Card base: frosted glass appearance */
-  --color-surface-raised: oklch(0.98 0.002 70); /* Elevated elements */
+  --color-surface: rgba(255, 255, 255, 0.92);        /* Cards: glassmorphic base */
+  --color-surface-alt: rgba(255, 255, 255, 0.88);    /* Surfaces: subsections */
+  --color-surface-card: rgba(255, 255, 255, 0.92);   /* Card primary surface */
+  --color-surface-raised: rgba(255, 255, 255, 0.96); /* Elevated (modals) */
+  --glass-blur: blur(12px);
+  --glass-blur-elevated: blur(16px);
+  --glass-border: rgba(255, 255, 255, 0.3);
 
   /* ---- Brand Colors: Warm Amber (Primary Action) ----
      Derived from #f97316 (warning-orange) — adjusted for WCAG AA contrast
@@ -216,13 +219,16 @@
    ============================================================================ */
 
 .dark {
-  /* ---- Dark Mode Surfaces ----
-     Background is #1a1a1a (existing). Cards must have clear elevation.
+  /* ---- Glassmorphic Surfaces: Dark Mode (over #1a1a1a) ----
+     Base: dark gray with controlled transparency + backdrop-filter blur
   */
-  --color-surface: oklch(0.20 0.010 70);        /* Slightly elevated from #1a1a1a */
-  --color-surface-alt: oklch(0.26 0.012 70);    /* Cards with depth */
-  --color-surface-card: oklch(0.26 0.012 70);   /* Card primary surface */
-  --color-surface-raised: oklch(0.32 0.014 70); /* Modals, dropdowns */
+  --color-surface: rgba(45, 45, 45, 0.85);        /* Cards: glassmorphic base */
+  --color-surface-alt: rgba(35, 35, 35, 0.80);    /* Surfaces: subsections */
+  --color-surface-card: rgba(45, 45, 45, 0.85);   /* Card primary surface */
+  --color-surface-raised: rgba(55, 55, 55, 0.90); /* Modals, dropdowns */
+  --glass-blur: blur(12px);
+  --glass-blur-elevated: blur(16px);
+  --glass-border: rgba(255, 255, 255, 0.15);
 
   /* ---- Dark Mode Text ----
      WCAG AA requires 4.5:1 for normal text.
@@ -434,16 +440,58 @@
     scrollbar-color: var(--color-border) transparent;
   }
 
-  /* ---- Glassmorphism Effect ---- */
-  .glass {
+  /* ---- Glassmorphism Effect — Light Mode ---- */
+  .glass-light {
     background: var(--color-surface-card);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid var(--color-border-light);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s ease-out;
   }
 
+  .glass-light:hover {
+    background: var(--color-surface-alt);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* ---- Glassmorphism Effect — Dark Mode ---- */
   .glass-dark {
-    @apply dark:bg-surface-card dark:backdrop-blur-none;
+    background: var(--color-surface-card);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s ease-out;
+  }
+
+  .glass-dark:hover {
+    background: var(--color-surface-alt);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* ---- Glassmorphism — Unified (uses correct mode) ---- */
+  .glass {
+    background: var(--color-surface-card);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s ease-out;
+  }
+
+  .glass:hover {
+    background: var(--color-surface-alt);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* ---- Glassmorphism — Elevated (Modals, Dropdowns) ---- */
+  .glass-raised {
+    background: var(--color-surface-raised);
+    backdrop-filter: var(--glass-blur-elevated);
+    -webkit-backdrop-filter: var(--glass-blur-elevated);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-modal);
   }
 
   /* ---- Elevated Surface ---- */
