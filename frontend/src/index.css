@@ -207,7 +207,7 @@
     background-repeat: no-repeat;
   }
 
-  body.dark {
+  :root.dark body {
     background-image: url("./assets/images/fondo-darkmode.png");
   }
 
