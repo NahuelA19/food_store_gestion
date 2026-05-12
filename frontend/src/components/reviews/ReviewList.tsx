@@ -29,7 +29,7 @@ function ReviewSkeleton() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="rounded-xl border border-border-light bg-surface-alt p-4"
+          className="rounded-xl border border-border bg-surface-alt p-4"
         >
           <div className="mb-3 flex items-center gap-3">
             <Skeleton variant="circle" className="h-8 w-8" />

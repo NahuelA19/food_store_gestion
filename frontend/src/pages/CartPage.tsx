@@ -140,7 +140,7 @@ export function CartPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center overflow-hidden rounded-lg border-2 border-border-light">
+                <div className="flex items-center overflow-hidden rounded-lg border-2 border-border">
                   <Button
                     variant="outline"
                     size="sm"
@@ -212,7 +212,7 @@ export function CartPage() {
                   value={shippingAddress}
                   onChange={(e) => setShippingAddress(e.target.value)}
                   placeholder="Calle y número, ciudad, código postal"
-                  className="w-full rounded-lg border-2 border-border-light bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none"
+                  className="w-full rounded-lg border-2 border-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none"
                 />
               </div>
               <Button

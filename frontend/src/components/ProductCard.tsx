@@ -90,7 +90,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </p>
         )}
 
-        <div className="border-b border-border-light pb-3 mb-3">
+        <div className="border-b border-border pb-3 mb-3">
           <span
             className="block text-xl font-bold text-brand-600"
             aria-label={`Price: $${product.price.toFixed(2)}`}
@@ -123,7 +123,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {!isOutOfStock && (
           <div className="mt-auto flex flex-col gap-2">
-            <div className="flex overflow-hidden rounded-xl border-2 border-border-light bg-surface-alt">
+            <div className="flex overflow-hidden rounded-xl border-2 border-border bg-surface-alt">
               <Button
                 variant="outline"
                 size="sm"

@@ -174,7 +174,7 @@ export function EmployeesPage() {
                   {filteredEmployees.map((employee) => (
                     <tr
                       key={employee.id}
-                      className="border-b border-border-light last:border-0 hover:bg-surface-alt/50 transition-colors"
+                      className="border-b border-border last:border-0 hover:bg-surface-alt/50 transition-colors"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">

@@ -146,7 +146,7 @@ export const ProductDetailPage: React.FC = () => {
               </p>
             )}
 
-            <div className="border-b border-border-light pb-6">
+            <div className="border-b border-border pb-6">
               <span className="font-display text-4xl font-black text-primary lg:text-5xl">
                 ${product.price.toFixed(2)}
               </span>
@@ -188,7 +188,7 @@ export const ProductDetailPage: React.FC = () => {
 
             {!isOutOfStock && (
               <div className="flex flex-col gap-4 sm:flex-row">
-                <div className="flex overflow-hidden rounded-xl border-2 border-border-light bg-surface-alt">
+                <div className="flex overflow-hidden rounded-xl border-2 border-border bg-surface-alt">
                   <Button
                     variant="outline"
                     size="sm"
@@ -237,7 +237,7 @@ export const ProductDetailPage: React.FC = () => {
       </Card>
 
       {/* Reviews Section */}
-      <section className="mt-12 border-t border-border-light pt-10">
+      <section className="mt-12 border-t border-border pt-10">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <ReviewList
@@ -251,7 +251,7 @@ export const ProductDetailPage: React.FC = () => {
           </div>
 
           <div>
-            <div className="sticky top-24 rounded-xl border border-border-light bg-surface-alt p-6 dark:border-border-dark dark:bg-surface">
+            <div className="sticky top-24 rounded-xl border border-border bg-surface-alt p-6 dark:border-border dark:bg-surface">
               <h3 className="mb-4 font-display text-lg font-bold text-text-primary">
                 Write a Review
               </h3>

@@ -64,7 +64,7 @@ export function ReviewForm({ productId, onSubmit }: ReviewFormProps) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Summary of your review"
           maxLength={200}
-          className="w-full rounded-xl border-2 border-border-light bg-surface-alt px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-surface"
+          className="w-full rounded-xl border-2 border-border bg-surface-alt px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-500 focus:outline-none dark:border-border dark:bg-surface"
         />
       </div>
 
@@ -81,7 +81,7 @@ export function ReviewForm({ productId, onSubmit }: ReviewFormProps) {
           onChange={(e) => setComment(e.target.value)}
           placeholder="Tell others about your experience"
           rows={4}
-          className="w-full resize-none rounded-xl border-2 border-border-light bg-surface-alt px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-surface"
+          className="w-full resize-none rounded-xl border-2 border-border bg-surface-alt px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-500 focus:outline-none dark:border-border dark:bg-surface"
         />
       </div>
 

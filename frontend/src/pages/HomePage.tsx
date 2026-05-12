@@ -400,7 +400,7 @@ export function HomePage() {
                     {recentOrders.map((order) => (
                       <tr
                         key={order.id}
-                        className="border-b border-border-light last:border-0 hover:bg-surface-alt/50 transition-colors"
+                        className="border-b border-border last:border-0 hover:bg-surface-alt/50 transition-colors"
                       >
                         <td className="px-4 py-3">
                           <span className="font-semibold text-text-primary">
@@ -449,7 +449,7 @@ export function HomePage() {
                 recentOrders.slice(0, 3).map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-start gap-3 pb-3 border-b border-border-light last:border-0 last:pb-0"
+                    className="flex items-start gap-3 pb-3 border-b border-border last:border-0 last:pb-0"
                   >
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
                       <Icon icon={ShoppingBag} size={16} />
