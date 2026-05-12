@@ -5,16 +5,20 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Numeric, String
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.models.estado_pedido import EstadoPedido
+
 if TYPE_CHECKING:
+    from app.models.historial_estado_pedido import HistorialEstadoPedido
     from app.models.notification import Notification
     from app.models.order_item import OrderItem
+    from app.models.pago import Pago
     from app.models.user import User
 
 from app.models.base import Base, TimestampMixin
@@ -30,14 +34,23 @@ class PaymentStatus(str, Enum):
 
 
 class OrderStatus(str, Enum):
-    """Order status enumeration."""
+    """Order status enumeration (FSM v5)."""
 
+    PENDIENTE = "pendiente"
+    PAGO_PENDIENTE = "pago_pendiente"
     PAYMENT_PENDING = "payment_pending"
-    PAYMENT_FAILED = "payment_failed"
+    PAGADO = "pagado"
     PAID = "paid"
+    PAGO_FALLIDO = "pago_fallido"
+    PAYMENT_FAILED = "payment_failed"
+    CONFIRMADO = "confirmado"
     CONFIRMED = "confirmed"
     SHIPPED = "shipped"
+    PREPARANDO = "preparando"
+    LISTO = "listo"
+    ENTREGADO = "entregado"
     DELIVERED = "delivered"
+    CANCELADO = "cancelado"
     CANCELLED = "cancelled"
 
 
@@ -68,26 +81,35 @@ class Order(Base, TimestampMixin):
         nullable=True,
     )
 
-    # Payment fields
-    payment_status: Mapped[Optional[PaymentStatus]] = mapped_column(
+    # ERD v5: state catalog FK
+    estado_codigo: Mapped[str | None] = mapped_column(
+        String(30),
+        ForeignKey("estados_pedido.codigo", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+
+    # Payment fields (MercadoPago)
+    payment_status: Mapped[PaymentStatus | None] = mapped_column(
         SQLEnum(PaymentStatus),
         default=PaymentStatus.PENDING,
         nullable=True,
     )
-    stripe_payment_intent_id: Mapped[Optional[str]] = mapped_column(
+    mp_preference_id: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
         index=True,
     )
-    stripe_customer_id: Mapped[Optional[str]] = mapped_column(
+    mp_payment_id: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
+        index=True,
     )
-    payment_method: Mapped[Optional[str]] = mapped_column(
+    payment_method: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
     )
-    paid_at: Mapped[Optional[datetime]] = mapped_column(
+    paid_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
@@ -97,8 +119,28 @@ class Order(Base, TimestampMixin):
     items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem", back_populates="order", cascade="all, delete-orphan"
     )
-    notifications: Mapped[list["Notification"]] = relationship(  # noqa: F821
+    notifications: Mapped[list["Notification"]] = relationship(
         "Notification", back_populates="order", cascade="all, delete-orphan"
+    )
+
+    historial: Mapped[list["HistorialEstadoPedido"]] = relationship(
+        "HistorialEstadoPedido",
+        back_populates="pedido",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    pagos: Mapped[list["Pago"]] = relationship(
+        "Pago",
+        back_populates="pedido",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    estado: Mapped["EstadoPedido | None"] = relationship(
+        "EstadoPedido",
+        foreign_keys=[estado_codigo],
+        lazy="selectin",
     )
 
     def __repr__(self) -> str:

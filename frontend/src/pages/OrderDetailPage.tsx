@@ -95,7 +95,7 @@ export function OrderDetailPage() {
     setStatusOpen(false);
     setStatusError(null);
     try {
-      await updateStatus(order!.id, newStatus);
+      await updateStatus({ id: order!.id, status: newStatus });
       setCurrentStatus(newStatus);
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : "Error al actualizar estado");

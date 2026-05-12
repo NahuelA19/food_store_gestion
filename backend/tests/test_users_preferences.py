@@ -44,8 +44,8 @@ def auth_headers(user_with_profile: User) -> dict:
 async def test_get_preferences_success(
     test_client: TestClient, user_with_profile: User, auth_headers: dict
 ) -> None:
-    """Test GET /api/users/me/preferences returns default preferences."""
-    response = test_client.get("/api/users/me/preferences", headers=auth_headers)
+    """Test GET /api/v1/users/me/preferences returns default preferences."""
+    response = test_client.get("/api/v1/users/me/preferences", headers=auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -56,8 +56,8 @@ async def test_get_preferences_success(
 
 @pytest.mark.asyncio
 async def test_get_preferences_without_auth(test_client: TestClient) -> None:
-    """Test GET /api/users/me/preferences without auth returns 403."""
-    response = test_client.get("/api/users/me/preferences")
+    """Test GET /api/v1/users/me/preferences without auth returns 403."""
+    response = test_client.get("/api/v1/users/me/preferences")
 
     assert response.status_code == 403
 
@@ -66,9 +66,9 @@ async def test_get_preferences_without_auth(test_client: TestClient) -> None:
 async def test_update_preferences_single(
     test_client: TestClient, user_with_profile: User, auth_headers: dict
 ) -> None:
-    """Test PUT /api/users/me/preferences updates single preference."""
+    """Test PUT /api/v1/users/me/preferences updates single preference."""
     payload = {"theme": "dark"}
-    response = test_client.put("/api/users/me/preferences", json=payload, headers=auth_headers)
+    response = test_client.put("/api/v1/users/me/preferences", json=payload, headers=auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -81,13 +81,13 @@ async def test_update_preferences_single(
 async def test_update_preferences_multiple(
     test_client: TestClient, user_with_profile: User, auth_headers: dict
 ) -> None:
-    """Test PUT /api/users/me/preferences updates multiple preferences."""
+    """Test PUT /api/v1/users/me/preferences updates multiple preferences."""
     payload = {
         "theme": "auto",
         "language": "es",
         "notifications": "push",
     }
-    response = test_client.put("/api/users/me/preferences", json=payload, headers=auth_headers)
+    response = test_client.put("/api/v1/users/me/preferences", json=payload, headers=auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -100,9 +100,9 @@ async def test_update_preferences_multiple(
 async def test_update_preferences_invalid_theme(
     test_client: TestClient, user_with_profile: User, auth_headers: dict
 ) -> None:
-    """Test PUT /api/users/me/preferences with invalid theme returns 422."""
+    """Test PUT /api/v1/users/me/preferences with invalid theme returns 422."""
     payload = {"theme": "invalid-color"}
-    response = test_client.put("/api/users/me/preferences", json=payload, headers=auth_headers)
+    response = test_client.put("/api/v1/users/me/preferences", json=payload, headers=auth_headers)
 
     assert response.status_code == 422
 
@@ -111,17 +111,17 @@ async def test_update_preferences_invalid_theme(
 async def test_update_preferences_invalid_language(
     test_client: TestClient, user_with_profile: User, auth_headers: dict
 ) -> None:
-    """Test PUT /api/users/me/preferences with invalid language returns 422."""
+    """Test PUT /api/v1/users/me/preferences with invalid language returns 422."""
     payload = {"language": "xx"}
-    response = test_client.put("/api/users/me/preferences", json=payload, headers=auth_headers)
+    response = test_client.put("/api/v1/users/me/preferences", json=payload, headers=auth_headers)
 
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
 async def test_update_preferences_without_auth(test_client: TestClient) -> None:
-    """Test PUT /api/users/me/preferences without auth returns 403."""
+    """Test PUT /api/v1/users/me/preferences without auth returns 403."""
     payload = {"theme": "dark"}
-    response = test_client.put("/api/users/me/preferences", json=payload)
+    response = test_client.put("/api/v1/users/me/preferences", json=payload)
 
     assert response.status_code == 403

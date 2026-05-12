@@ -303,12 +303,6 @@ jest.mock('@services/api', () => ({
 }));
 
 // Backend
-from unittest.mock import patch
-
-@patch('app.services.stripe.charge')
-def test_payment(mock_charge):
-    mock_charge.return_value = {"status": "succeeded"}
-    # Test payment flow
 ```
 
 ### Testing Edge Cases

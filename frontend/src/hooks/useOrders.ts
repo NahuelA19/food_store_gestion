@@ -1,83 +1,61 @@
-import { useEffect, useState, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { orderApi } from "../api/orderApi";
-import type { Order, OrderDetail, OrderStatus } from "../types/order";
+import type { OrderStatus } from "../types/order";
 
 export function useOrders(page = 1, status?: string) {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["orders", { page, status }],
+    queryFn: () => orderApi.getOrders(page, status),
+  });
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await orderApi.getOrders(page, status);
-        setOrders(data.items);
-        setTotal(data.total);
-        setTotalPages(data.total_pages);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch orders");
-        setOrders([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [page, status]);
-
-  return { orders, total, totalPages, isLoading, error };
+  return {
+    orders: query.data?.items ?? [],
+    total: query.data?.total ?? 0,
+    totalPages: query.data?.total_pages ?? 0,
+    isLoading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error
+        ? query.error.message
+        : "Failed to fetch orders"
+      : null,
+  };
 }
 
 export function useOrder(id: number) {
-  const [order, setOrder] = useState<OrderDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["order", id],
+    queryFn: () => orderApi.getOrder(id),
+    enabled: !!id,
+  });
 
-  useEffect(() => {
-    if (!id) return;
-
-    const fetchOrder = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await orderApi.getOrder(id);
-        setOrder(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch order");
-        setOrder(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchOrder();
-  }, [id]);
-
-  return { order, isLoading, error };
+  return {
+    order: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error
+        ? query.error.message
+        : "Failed to fetch order"
+      : null,
+  };
 }
 
 export function useUpdateOrderStatus() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: OrderStatus }) =>
+      orderApi.updateOrderStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
 
-  const updateStatus = useCallback(async (id: number, status: OrderStatus) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await orderApi.updateOrderStatus(id, status);
-      return result;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to update status";
-      setError(message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  return { updateStatus, isLoading, error };
+  return {
+    updateStatus: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    error: mutation.error
+      ? mutation.error instanceof Error
+        ? mutation.error.message
+        : "Failed to update status"
+      : null,
+  };
 }

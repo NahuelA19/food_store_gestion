@@ -2,7 +2,7 @@
  * BranchesPage — Branch list with card grid and quick actions
  */
 
-import { useMemo, useCallback } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
@@ -10,7 +10,6 @@ import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Icon } from "../components/ui/Icon";
 import { useBranches, useToggleBranchStatus } from "../hooks/useBranches";
-import type { Branch } from "../types/branch";
 import {
   Building2,
   MapPin,
@@ -34,12 +33,12 @@ const FALLBACK_BRANCHES: BranchRow[] = [
 ];
 
 export function BranchesPage() {
-  const { branches: apiBranches, setBranches, isLoading } = useBranches();
+  const { branches: apiBranches, isLoading } = useBranches();
   const { toggleStatus: apiToggle, isLoading: toggling } = useToggleBranchStatus();
 
   const branches = useMemo((): BranchRow[] => {
     if (apiBranches.length > 0) {
-      return apiBranches.map((b: Branch) => ({
+      return apiBranches.map((b) => ({
         id: b.id,
         name: b.name,
         address: b.address || "",
@@ -49,18 +48,13 @@ export function BranchesPage() {
     return FALLBACK_BRANCHES;
   }, [apiBranches]);
 
-  const toggleStatus = useCallback(async (id: number) => {
+  const toggleStatus = async (id: number) => {
     try {
-      const updated = await apiToggle(id);
-      setBranches((prev: Branch[]) =>
-        prev.map((b) =>
-          b.id === id ? { ...b, is_active: updated.is_active } : b
-        )
-      );
+      await apiToggle(id);
     } catch {
-      // Revert on failure is handled by keeping previous state
+      // Error handled by mutation state
     }
-  }, [apiToggle, setBranches]);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">

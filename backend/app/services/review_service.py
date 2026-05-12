@@ -4,8 +4,9 @@ from math import ceil
 
 from fastapi import HTTPException, status
 from sqlalchemy import Select, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+from app.core.uow import UnitOfWork
 
 from app.models.product import Product
 from app.models.review import Review
@@ -21,7 +22,7 @@ from app.schemas.review import (
 
 
 async def create_review(
-    db: AsyncSession,
+    uow: UnitOfWork,
     user_id: int,
     data: ReviewCreate,
 ) -> Review:
@@ -31,7 +32,7 @@ async def create_review(
     New reviews default to unmoderated (is_approved=False).
     """
     # Check product exists
-    result = await db.execute(select(Product).where(Product.id == data.product_id))
+    result = await uow.session.execute(select(Product).where(Product.id == data.product_id))
     product = result.scalar_one_or_none()
     if not product:
         raise HTTPException(
@@ -40,7 +41,7 @@ async def create_review(
         )
 
     # Check for duplicate review
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Review).where(
             Review.product_id == data.product_id,
             Review.user_id == user_id,
@@ -61,14 +62,14 @@ async def create_review(
         comment=data.comment,
         is_approved=False,
     )
-    db.add(review)
-    await db.commit()
-    await db.refresh(review)
+    uow.session.add(review)
+    await uow.flush()
+    await uow.refresh(review)
     return review
 
 
 async def get_product_reviews(
-    db: AsyncSession,
+    uow: UnitOfWork,
     product_id: int,
     page: int = 1,
     per_page: int = 10,
@@ -94,17 +95,17 @@ async def get_product_reviews(
     )
     if not include_pending:
         count_query = count_query.where(Review.is_approved == True)
-    total_result = await db.execute(count_query)
+    total_result = await uow.session.execute(count_query)
     total = total_result.scalar() or 0
 
     # Get review summary
-    summary = await get_review_summary(db, product_id, include_pending)
+    summary = await get_review_summary(uow, product_id, include_pending)
 
     # Apply ordering and pagination
     query = query.order_by(Review.created_at.desc())
     query = query.offset((page - 1) * per_page).limit(per_page)
 
-    result = await db.execute(query)
+    result = await uow.session.execute(query)
     reviews = result.scalars().all()
 
     # Serialize
@@ -125,7 +126,7 @@ async def get_product_reviews(
 
 
 async def get_review_summary(
-    db: AsyncSession,
+    uow: UnitOfWork,
     product_id: int,
     include_pending: bool = False,
 ) -> ReviewSummary:
@@ -140,7 +141,7 @@ async def get_review_summary(
         func.avg(Review.rating).label("average"),
         func.count(Review.id).label("total"),
     ).where(condition)
-    result = await db.execute(agg_query)
+    result = await uow.session.execute(agg_query)
     row = result.one()
 
     avg = float(row.average) if row.average is not None else None
@@ -153,7 +154,7 @@ async def get_review_summary(
         .group_by(Review.rating)
         .order_by(Review.rating)
     )
-    result = await db.execute(dist_query)
+    result = await uow.session.execute(dist_query)
     distribution = {r: 0 for r in range(1, 6)}
     for rating, count in result:
         distribution[rating] = count
@@ -166,11 +167,11 @@ async def get_review_summary(
 
 
 async def get_review_by_id(
-    db: AsyncSession,
+    uow: UnitOfWork,
     review_id: int,
 ) -> Review | None:
     """Get a single review by ID."""
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Review)
         .options(selectinload(Review.user))
         .where(Review.id == review_id)
@@ -179,13 +180,13 @@ async def get_review_by_id(
 
 
 async def update_review(
-    db: AsyncSession,
+    uow: UnitOfWork,
     review_id: int,
     user_id: int,
     data: ReviewUpdate,
 ) -> Review:
     """Update a review. Only the review owner can update."""
-    review = await get_review_by_id(db, review_id)
+    review = await get_review_by_id(uow, review_id)
     if not review:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -210,19 +211,19 @@ async def update_review(
     review.moderated_at = None
     review.rejection_reason = None
 
-    db.add(review)
-    await db.commit()
-    await db.refresh(review)
+    uow.session.add(review)
+    await uow.flush()
+    await uow.refresh(review)
     return review
 
 
 async def delete_review(
-    db: AsyncSession,
+    uow: UnitOfWork,
     review_id: int,
     user_id: int,
 ) -> None:
     """Delete a review. Only the review owner can delete."""
-    review = await get_review_by_id(db, review_id)
+    review = await get_review_by_id(uow, review_id)
     if not review:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -234,18 +235,17 @@ async def delete_review(
             detail="You can only delete your own reviews",
         )
 
-    await db.delete(review)
-    await db.commit()
+    await uow.session.delete(review)
 
 
 async def moderate_review(
-    db: AsyncSession,
+    uow: UnitOfWork,
     review_id: int,
     moderator_id: int,
     data: ReviewModeration,
 ) -> Review:
     """Moderate a review (approve or reject). Admin only."""
-    review = await get_review_by_id(db, review_id)
+    review = await get_review_by_id(uow, review_id)
     if not review:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -263,14 +263,14 @@ async def moderate_review(
     from datetime import datetime, timezone
     review.moderated_at = datetime.now(timezone.utc)
 
-    db.add(review)
-    await db.commit()
-    await db.refresh(review)
+    uow.session.add(review)
+    await uow.flush()
+    await uow.refresh(review)
     return review
 
 
 async def get_pending_reviews(
-    db: AsyncSession,
+    uow: UnitOfWork,
     page: int = 1,
     per_page: int = 20,
 ) -> dict:
@@ -288,12 +288,12 @@ async def get_pending_reviews(
         .select_from(Review)
         .where(Review.is_approved == False, Review.moderated_by.is_(None))
     )
-    total_result = await db.execute(count_query)
+    total_result = await uow.session.execute(count_query)
     total = total_result.scalar() or 0
 
     # Paginate
     query = query.offset((page - 1) * per_page).limit(per_page)
-    result = await db.execute(query)
+    result = await uow.session.execute(query)
     reviews = result.scalars().all()
 
     return {
@@ -318,11 +318,11 @@ async def get_pending_reviews(
 
 
 async def delete_review_admin(
-    db: AsyncSession,
+    uow: UnitOfWork,
     review_id: int,
 ) -> None:
     """Delete any review (admin)."""
-    result = await db.execute(select(Review).where(Review.id == review_id))
+    result = await uow.session.execute(select(Review).where(Review.id == review_id))
     review = result.scalar_one_or_none()
     if not review:
         raise HTTPException(
@@ -330,12 +330,11 @@ async def delete_review_admin(
             detail="Review not found",
         )
 
-    await db.delete(review)
-    await db.commit()
+    await uow.session.delete(review)
 
 
 async def get_recent_reviews(
-    db: AsyncSession,
+    uow: UnitOfWork,
     limit: int = 5,
 ) -> list[ReviewResponse]:
     """Get most recent approved reviews across all products."""
@@ -346,7 +345,7 @@ async def get_recent_reviews(
         .order_by(Review.created_at.desc())
         .limit(limit)
     )
-    result = await db.execute(query)
+    result = await uow.session.execute(query)
     reviews = result.scalars().all()
 
     response = []

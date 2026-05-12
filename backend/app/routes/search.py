@@ -3,9 +3,9 @@
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_db
+from app.core.uow import UnitOfWork
+from app.dependencies import get_uow
 from app.schemas.product import ProductDetailResponse
 from app.schemas.search import SearchResponse
 from app.services.search_service import (
@@ -28,7 +28,7 @@ async def search_and_filter_products(
     limit: int = 20,
     sort_by: str = "relevance",
     order: str = "asc",
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> SearchResponse:
     """
     Search and filter products with full-text search and advanced filtering.
@@ -75,7 +75,7 @@ async def search_and_filter_products(
 
     # Validate search params (price range, category existence, etc.)
     errors = await validate_search_params(
-        db=db,
+        uow=uow,
         category_id=category_id,
         min_price=min_price,
         max_price=max_price,
@@ -90,7 +90,7 @@ async def search_and_filter_products(
 
     # Execute search
     products, pagination = await search_products(
-        db=db,
+        uow=uow,
         q=q,
         category_id=category_id,
         min_price=min_price,

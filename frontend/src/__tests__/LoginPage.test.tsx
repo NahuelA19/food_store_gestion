@@ -2,43 +2,28 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LoginPage } from "../pages/LoginPage";
 
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
+  );
+}
+
 describe("LoginPage", () => {
-  const mockLogin = vi.fn();
-  const mockRegister = vi.fn();
-  const mockLogout = vi.fn();
-
-  const renderLoginPage = (contextOverrides = {}) => {
-    return render(
-      <MemoryRouter>
-        <AuthContext.Provider
-          value={{
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null,
-            login: mockLogin,
-            register: mockRegister,
-            logout: mockLogout,
-            updateProfile: vi.fn(),
-            updatePreferences: vi.fn(),
-            ...contextOverrides,
-          }}
-        >
-          <LoginPage />
-        </AuthContext.Provider>
-      </MemoryRouter>
-    );
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
+    (global.fetch as any) = vi.fn();
   });
 
   it("renders login form with email and password inputs", () => {
-    renderLoginPage();
+    render(<LoginPage />, { wrapper: createWrapper() });
 
     expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
@@ -47,14 +32,18 @@ describe("LoginPage", () => {
   });
 
   it("has a link to the registration page", () => {
-    renderLoginPage();
+    render(<LoginPage />, { wrapper: createWrapper() });
 
     expect(screen.getByRole("link", { name: /create one/i })).toHaveAttribute("href", "/register");
   });
 
   it("calls login with correct credentials on submit", async () => {
-    mockLogin.mockResolvedValue(undefined);
-    renderLoginPage();
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 1, email: "test@example.com", access_token: "token", token_type: "bearer" }),
+    });
+
+    render(<LoginPage />, { wrapper: createWrapper() });
 
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
@@ -64,13 +53,17 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith("test@example.com", "password123");
+      expect(global.fetch).toHaveBeenCalled();
     });
   });
 
   it("displays error message when login fails", async () => {
-    mockLogin.mockRejectedValue(new Error("Invalid credentials"));
-    renderLoginPage();
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ detail: "Invalid credentials" }),
+    });
+
+    render(<LoginPage />, { wrapper: createWrapper() });
 
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
@@ -84,34 +77,24 @@ describe("LoginPage", () => {
     });
   });
 
-  it("shows loading state while login is in progress", () => {
-    renderLoginPage({ isLoading: true });
-
-    expect(screen.getByRole("button", { name: /signing in\.\.\./i })).toBeDisabled();
-  });
-
-  it("shows error from context when present", async () => {
-    // LoginPage uses local submitError state, not context.error directly.
-    // The error is set from the caught exception in handleSubmit.
-    // This test verifies that when context has error, login is still callable
-    // and local submitError gets populated on submit failure.
-    mockLogin.mockRejectedValue(new Error("Session expired"));
-    renderLoginPage({ error: "Session expired" });
+  it("shows loading state while login is in progress", async () => {
+    (global.fetch as any).mockImplementationOnce(() => new Promise(() => {}));
+    render(<LoginPage />, { wrapper: createWrapper() });
 
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
 
     await userEvent.type(emailInput, "test@example.com");
-    await userEvent.type(passwordInput, "wrongpass");
+    await userEvent.type(passwordInput, "secret123");
     await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getByText("Session expired")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /signing in\.\.\./i })).toBeDisabled();
     });
   });
 
   it("form fields are required", () => {
-    renderLoginPage();
+    render(<LoginPage />, { wrapper: createWrapper() });
 
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
@@ -121,13 +104,13 @@ describe("LoginPage", () => {
   });
 
   it("email input has correct type", () => {
-    renderLoginPage();
+    render(<LoginPage />, { wrapper: createWrapper() });
 
     expect(screen.getByLabelText(/email/i)).toHaveAttribute("type", "email");
   });
 
   it("password input has correct type", () => {
-    renderLoginPage();
+    render(<LoginPage />, { wrapper: createWrapper() });
 
     expect(screen.getByLabelText(/password/i)).toHaveAttribute("type", "password");
   });

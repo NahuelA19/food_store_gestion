@@ -4,9 +4,10 @@ from decimal import Decimal
 from typing import Any, Sequence
 
 from sqlalchemy import and_, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.expression import ColumnElement
+
+from app.core.uow import UnitOfWork
 
 from app.models.inventory import Inventory
 from app.models.product import Product
@@ -14,7 +15,7 @@ from app.schemas.search import PaginationInfo
 
 
 async def validate_search_params(
-    db: AsyncSession,
+    uow: UnitOfWork,
     category_id: int | None = None,
     min_price: Decimal | None = None,
     max_price: Decimal | None = None,
@@ -31,7 +32,7 @@ async def validate_search_params(
     if category_id:
         from app.models.category import Category
 
-        result = await db.execute(
+        result = await uow.session.execute(
             select(Category).where(Category.id == category_id)
         )
         if not result.scalar_one_or_none():
@@ -116,7 +117,7 @@ def calculate_pagination_info(
 
 
 async def search_products(
-    db: AsyncSession,
+    uow: UnitOfWork,
     q: str | None = None,
     category_id: int | None = None,
     min_price: Decimal | None = None,
@@ -153,7 +154,7 @@ async def search_products(
     count_query = select(func.count()).select_from(Product)
     if filters:
         count_query = count_query.where(and_(*filters))
-    total = await db.scalar(count_query) or 0
+    total = await uow.session.scalar(count_query) or 0
 
     # Apply sorting
     sort_clause = build_sort_order(sort_by, order, q)
@@ -164,7 +165,7 @@ async def search_products(
     query = query.offset(offset).limit(limit)
 
     # Execute query
-    result = await db.execute(query)
+    result = await uow.session.execute(query)
     products = result.scalars().all()
 
     # Calculate pagination info

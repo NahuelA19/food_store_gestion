@@ -2,13 +2,14 @@
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.uow import UnitOfWork
 
 from app.models.branch import Branch
 from app.schemas.branch import BranchCreate, BranchResponse, BranchUpdate
 
 
-async def list_branches(db: AsyncSession) -> list[BranchResponse]:
+async def list_branches(uow: UnitOfWork) -> list[BranchResponse]:
     """List all branches ordered by name.
 
     Args:
@@ -17,7 +18,7 @@ async def list_branches(db: AsyncSession) -> list[BranchResponse]:
     Returns:
         list[BranchResponse]: List of all branches
     """
-    result = await db.execute(select(Branch).order_by(Branch.name))
+    result = await uow.session.execute(select(Branch).order_by(Branch.name))
     branches = result.scalars().all()
     return [
         BranchResponse(
@@ -34,7 +35,7 @@ async def list_branches(db: AsyncSession) -> list[BranchResponse]:
     ]
 
 
-async def get_branch(branch_id: int, db: AsyncSession) -> BranchResponse:
+async def get_branch(branch_id: int, uow: UnitOfWork) -> BranchResponse:
     """Get a single branch by ID.
 
     Args:
@@ -47,7 +48,7 @@ async def get_branch(branch_id: int, db: AsyncSession) -> BranchResponse:
     Raises:
         HTTPException 404: If branch not found
     """
-    result = await db.execute(select(Branch).where(Branch.id == branch_id))
+    result = await uow.session.execute(select(Branch).where(Branch.id == branch_id))
     branch = result.scalar_one_or_none()
 
     if not branch:
@@ -68,7 +69,7 @@ async def get_branch(branch_id: int, db: AsyncSession) -> BranchResponse:
     )
 
 
-async def create_branch(data: BranchCreate, db: AsyncSession) -> BranchResponse:
+async def create_branch(data: BranchCreate, uow: UnitOfWork) -> BranchResponse:
     """Create a new branch.
 
     Args:
@@ -81,7 +82,7 @@ async def create_branch(data: BranchCreate, db: AsyncSession) -> BranchResponse:
     Raises:
         HTTPException 409: If branch name already exists
     """
-    existing = await db.execute(select(Branch).where(Branch.name == data.name))
+    existing = await uow.session.execute(select(Branch).where(Branch.name == data.name))
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -94,9 +95,9 @@ async def create_branch(data: BranchCreate, db: AsyncSession) -> BranchResponse:
         phone=data.phone,
         email=data.email,
     )
-    db.add(branch)
-    await db.commit()
-    await db.refresh(branch)
+    uow.session.add(branch)
+    await uow.flush()
+    await uow.refresh(branch)
 
     return BranchResponse(
         id=branch.id,
@@ -110,7 +111,7 @@ async def create_branch(data: BranchCreate, db: AsyncSession) -> BranchResponse:
     )
 
 
-async def update_branch(branch_id: int, data: BranchUpdate, db: AsyncSession) -> BranchResponse:
+async def update_branch(branch_id: int, data: BranchUpdate, uow: UnitOfWork) -> BranchResponse:
     """Update an existing branch.
 
     Args:
@@ -125,7 +126,7 @@ async def update_branch(branch_id: int, data: BranchUpdate, db: AsyncSession) ->
         HTTPException 404: If branch not found
         HTTPException 409: If new name conflicts with existing branch
     """
-    result = await db.execute(select(Branch).where(Branch.id == branch_id))
+    result = await uow.session.execute(select(Branch).where(Branch.id == branch_id))
     branch = result.scalar_one_or_none()
 
     if not branch:
@@ -135,7 +136,7 @@ async def update_branch(branch_id: int, data: BranchUpdate, db: AsyncSession) ->
         )
 
     if data.name is not None and data.name != branch.name:
-        existing = await db.execute(select(Branch).where(Branch.name == data.name))
+        existing = await uow.session.execute(select(Branch).where(Branch.name == data.name))
         if existing.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -152,9 +153,9 @@ async def update_branch(branch_id: int, data: BranchUpdate, db: AsyncSession) ->
     if data.is_active is not None:
         branch.is_active = data.is_active
 
-    db.add(branch)
-    await db.commit()
-    await db.refresh(branch)
+    uow.session.add(branch)
+    await uow.flush()
+    await uow.refresh(branch)
 
     return BranchResponse(
         id=branch.id,
@@ -168,7 +169,7 @@ async def update_branch(branch_id: int, data: BranchUpdate, db: AsyncSession) ->
     )
 
 
-async def delete_branch(branch_id: int, db: AsyncSession) -> None:
+async def delete_branch(branch_id: int, uow: UnitOfWork) -> None:
     """Delete a branch.
 
     Args:
@@ -178,7 +179,7 @@ async def delete_branch(branch_id: int, db: AsyncSession) -> None:
     Raises:
         HTTPException 404: If branch not found
     """
-    result = await db.execute(select(Branch).where(Branch.id == branch_id))
+    result = await uow.session.execute(select(Branch).where(Branch.id == branch_id))
     branch = result.scalar_one_or_none()
 
     if not branch:
@@ -187,11 +188,10 @@ async def delete_branch(branch_id: int, db: AsyncSession) -> None:
             detail=f"Branch with id {branch_id} not found",
         )
 
-    await db.delete(branch)
-    await db.commit()
+    await uow.session.delete(branch)
 
 
-async def toggle_branch_status(branch_id: int, db: AsyncSession) -> BranchResponse:
+async def toggle_branch_status(branch_id: int, uow: UnitOfWork) -> BranchResponse:
     """Toggle a branch's active status.
 
     Args:
@@ -204,7 +204,7 @@ async def toggle_branch_status(branch_id: int, db: AsyncSession) -> BranchRespon
     Raises:
         HTTPException 404: If branch not found
     """
-    result = await db.execute(select(Branch).where(Branch.id == branch_id))
+    result = await uow.session.execute(select(Branch).where(Branch.id == branch_id))
     branch = result.scalar_one_or_none()
 
     if not branch:
@@ -214,9 +214,9 @@ async def toggle_branch_status(branch_id: int, db: AsyncSession) -> BranchRespon
         )
 
     branch.is_active = not branch.is_active
-    db.add(branch)
-    await db.commit()
-    await db.refresh(branch)
+    uow.session.add(branch)
+    await uow.flush()
+    await uow.refresh(branch)
 
     return BranchResponse(
         id=branch.id,

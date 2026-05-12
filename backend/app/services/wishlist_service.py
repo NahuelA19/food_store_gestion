@@ -2,15 +2,16 @@
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+from app.core.uow import UnitOfWork
 
 from app.models.product import Product
 from app.models.wishlist import WishlistItem
 
 
 async def toggle_wishlist(
-    db: AsyncSession,
+    uow: UnitOfWork,
     user_id: int,
     product_id: int,
 ) -> bool:
@@ -19,7 +20,7 @@ async def toggle_wishlist(
     Returns True if added, False if removed.
     """
     # Check product exists
-    result = await db.execute(select(Product).where(Product.id == product_id))
+    result = await uow.session.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
     if not product:
         raise HTTPException(
@@ -28,7 +29,7 @@ async def toggle_wishlist(
         )
 
     # Check if already wishlisted
-    result = await db.execute(
+    result = await uow.session.execute(
         select(WishlistItem).where(
             WishlistItem.user_id == user_id,
             WishlistItem.product_id == product_id,
@@ -37,22 +38,20 @@ async def toggle_wishlist(
     existing = result.scalar_one_or_none()
 
     if existing:
-        await db.delete(existing)
-        await db.commit()
+        await uow.session.delete(existing)
         return False  # Removed
     else:
         item = WishlistItem(user_id=user_id, product_id=product_id)
-        db.add(item)
-        await db.commit()
+        uow.session.add(item)
         return True  # Added
 
 
 async def get_wishlist(
-    db: AsyncSession,
+    uow: UnitOfWork,
     user_id: int,
 ) -> list[WishlistItem]:
     """Get all wishlist items for a user with product details."""
-    result = await db.execute(
+    result = await uow.session.execute(
         select(WishlistItem)
         .where(WishlistItem.user_id == user_id)
         .options(selectinload(WishlistItem.product).selectinload(Product.category))
@@ -62,7 +61,7 @@ async def get_wishlist(
 
 
 async def check_wishlist(
-    db: AsyncSession,
+    uow: UnitOfWork,
     user_id: int,
     product_ids: list[int],
 ) -> dict[str, bool]:
@@ -73,7 +72,7 @@ async def check_wishlist(
     if not product_ids:
         return {}
 
-    result = await db.execute(
+    result = await uow.session.execute(
         select(WishlistItem.product_id).where(
             WishlistItem.user_id == user_id,
             WishlistItem.product_id.in_(product_ids),

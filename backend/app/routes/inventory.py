@@ -4,9 +4,9 @@ from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_db
+from app.core.uow import UnitOfWork
+from app.dependencies import get_uow
 from app.models.inventory import Inventory
 from app.models.product import Product
 from app.schemas.inventory import (
@@ -21,11 +21,11 @@ router = APIRouter(prefix="/inventory", tags=["inventory"])
 @router.get("/{product_id}", response_model=InventoryResponse)
 async def get_inventory(
     product_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> InventoryResponse:
     """Get inventory for a product."""
     # Check product exists
-    result = await db.execute(select(Product).where(Product.id == product_id))
+    result = await uow.session.execute(select(Product).where(Product.id == product_id))
     if not result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -33,7 +33,7 @@ async def get_inventory(
         )
 
     # Get inventory
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Inventory).where(Inventory.product_id == product_id)
     )
     inventory = cast(Inventory | None, result.scalar_one_or_none())
@@ -50,11 +50,11 @@ async def get_inventory(
 async def update_inventory(
     product_id: int,
     body: InventoryUpdate,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> InventoryResponse:
     """Update inventory stock levels."""
     # Check product exists
-    result = await db.execute(select(Product).where(Product.id == product_id))
+    result = await uow.session.execute(select(Product).where(Product.id == product_id))
     if not result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -62,7 +62,7 @@ async def update_inventory(
         )
 
     # Get inventory
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Inventory).where(Inventory.product_id == product_id)
     )
     inventory = cast(Inventory | None, result.scalar_one_or_none())
@@ -84,9 +84,9 @@ async def update_inventory(
     if body.low_stock_threshold is not None:
         inventory.low_stock_threshold = body.low_stock_threshold
 
-    db.add(inventory)
-    await db.commit()
-    await db.refresh(inventory)
+    uow.session.add(inventory)
+    await uow.flush()
+    await uow.refresh(inventory)
     return InventoryResponse.model_validate(inventory)
 
 
@@ -94,11 +94,11 @@ async def update_inventory(
 async def reserve_inventory(
     product_id: int,
     body: InventoryReserveRequest,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> InventoryResponse:
     """Reserve stock for a product."""
     # Check product exists
-    result = await db.execute(select(Product).where(Product.id == product_id))
+    result = await uow.session.execute(select(Product).where(Product.id == product_id))
     if not result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -106,7 +106,7 @@ async def reserve_inventory(
         )
 
     # Get inventory
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Inventory).where(Inventory.product_id == product_id)
     )
     inventory = cast(Inventory | None, result.scalar_one_or_none())
@@ -126,7 +126,7 @@ async def reserve_inventory(
 
     # Reserve stock
     inventory.reserved_quantity += body.quantity
-    db.add(inventory)
-    await db.commit()
-    await db.refresh(inventory)
+    uow.session.add(inventory)
+    await uow.flush()
+    await uow.refresh(inventory)
     return InventoryResponse.model_validate(inventory)

@@ -50,13 +50,13 @@ def auth_headers(user_with_profile: User) -> dict:
 async def test_update_profile_success(
     test_client: TestClient, user_with_profile: User, auth_headers: dict
 ) -> None:
-    """Test PUT /api/users/me updates user profile."""
+    """Test PUT /api/v1/users/me updates user profile."""
     payload = {
         "first_name": "Jane",
         "last_name": "Smith",
         "phone": "+1-555-987-6543",
     }
-    response = test_client.put("/api/users/me", json=payload, headers=auth_headers)
+    response = test_client.put("/api/v1/users/me", json=payload, headers=auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -69,11 +69,11 @@ async def test_update_profile_success(
 async def test_update_profile_partial(
     test_client: TestClient, user_with_profile: User, auth_headers: dict, db_session: AsyncSession
 ) -> None:
-    """Test PUT /api/users/me with partial fields only updates those fields."""
+    """Test PUT /api/v1/users/me with partial fields only updates those fields."""
     payload = {
         "first_name": "Janet",
     }
-    response = test_client.put("/api/users/me", json=payload, headers=auth_headers)
+    response = test_client.put("/api/v1/users/me", json=payload, headers=auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -86,20 +86,20 @@ async def test_update_profile_partial(
 async def test_update_profile_invalid_phone(
     test_client: TestClient, user_with_profile: User, auth_headers: dict
 ) -> None:
-    """Test PUT /api/users/me with invalid phone returns 422."""
+    """Test PUT /api/v1/users/me with invalid phone returns 422."""
     payload = {
         "phone": "abc",  # Too short and invalid format
     }
-    response = test_client.put("/api/users/me", json=payload, headers=auth_headers)
+    response = test_client.put("/api/v1/users/me", json=payload, headers=auth_headers)
 
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
 async def test_update_profile_without_auth(test_client: TestClient) -> None:
-    """Test PUT /api/users/me without auth returns 403."""
+    """Test PUT /api/v1/users/me without auth returns 403."""
     payload = {"first_name": "Jane"}
-    response = test_client.put("/api/users/me", json=payload)
+    response = test_client.put("/api/v1/users/me", json=payload)
 
     assert response.status_code == 403
 
@@ -108,8 +108,8 @@ async def test_update_profile_without_auth(test_client: TestClient) -> None:
 async def test_delete_account_success(
     test_client: TestClient, user_with_profile: User, auth_headers: dict, db_session: AsyncSession
 ) -> None:
-    """Test DELETE /api/users/me soft-deletes user."""
-    response = test_client.delete("/api/users/me", headers=auth_headers)
+    """Test DELETE /api/v1/users/me soft-deletes user."""
+    response = test_client.delete("/api/v1/users/me", headers=auth_headers)
 
     assert response.status_code == 204
 
@@ -122,8 +122,8 @@ async def test_delete_account_success(
 
 @pytest.mark.asyncio
 async def test_delete_account_without_auth(test_client: TestClient) -> None:
-    """Test DELETE /api/users/me without auth returns 403."""
-    response = test_client.delete("/api/users/me")
+    """Test DELETE /api/v1/users/me without auth returns 403."""
+    response = test_client.delete("/api/v1/users/me")
 
     assert response.status_code == 403
 
@@ -143,7 +143,7 @@ async def test_deleted_user_cannot_login(test_client: TestClient, db_session: As
 
     # Try to login
     payload = {"email": "deleted@example.com", "password": "TestPassword123"}
-    response = test_client.post("/api/auth/login", json=payload)
+    response = test_client.post("/api/v1/auth/login", json=payload)
 
     assert response.status_code == 403
     assert "inactive" in response.json()["detail"].lower()

@@ -3,10 +3,10 @@
 from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, func, select
 
-from app.dependencies import get_db
+from app.core.uow import UnitOfWork
+from app.dependencies import get_uow
 from app.models.category import Category
 from app.models.product import Product
 from app.schemas.category import (
@@ -21,10 +21,10 @@ router = APIRouter(prefix="/categories", tags=["categories"])
 
 @router.get("/", response_model=list[CategoryWithProductsResponse])
 async def list_categories(
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> list[CategoryWithProductsResponse]:
-    """List all categories with product counts."""
-    result = await db.execute(
+    """List all non-deleted categories with product counts."""
+    result = await uow.session.execute(
         select(
             Category.id,
             Category.name,
@@ -33,7 +33,14 @@ async def list_categories(
             Category.updated_at,
             func.count(Product.id).label("product_count"),
         )
-        .outerjoin(Product, Product.category_id == Category.id)
+        .outerjoin(
+            Product,
+            and_(
+                Product.category_id == Category.id,
+                Product.deleted_at.is_(None),
+            ),
+        )
+        .where(Category.deleted_at.is_(None))
         .group_by(
             Category.id,
             Category.name,
@@ -60,10 +67,17 @@ async def list_categories(
 @router.get("/{category_id}", response_model=CategoryResponse)
 async def get_category(
     category_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> CategoryResponse:
     """Get a category by ID."""
-    result = await db.execute(select(Category).where(Category.id == category_id))
+    result = await uow.session.execute(
+        select(Category).where(
+            and_(
+                Category.id == category_id,
+                Category.deleted_at.is_(None),
+            )
+        )
+    )
     category = result.scalar_one_or_none()
     if not category:
         raise HTTPException(
@@ -76,11 +90,11 @@ async def get_category(
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     body: CategoryCreate,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> CategoryResponse:
     """Create a new category."""
-    # Check if category with same name already exists
-    result = await db.execute(select(Category).where(Category.name == body.name))
+    # Check if category with same name already exists (including soft-deleted)
+    result = await uow.session.execute(select(Category).where(Category.name == body.name))
     if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -88,9 +102,9 @@ async def create_category(
         )
 
     category = Category(name=body.name, description=body.description)
-    db.add(category)
-    await db.commit()
-    await db.refresh(category)
+    uow.session.add(category)
+    await uow.flush()
+    await uow.refresh(category)
     return CategoryResponse.model_validate(category)
 
 
@@ -98,10 +112,17 @@ async def create_category(
 async def update_category(
     category_id: int,
     body: CategoryUpdate,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> CategoryResponse:
     """Update a category."""
-    result = await db.execute(select(Category).where(Category.id == category_id))
+    result = await uow.session.execute(
+        select(Category).where(
+            and_(
+                Category.id == category_id,
+                Category.deleted_at.is_(None),
+            )
+        )
+    )
     category = result.scalar_one_or_none()
     if not category:
         raise HTTPException(
@@ -111,7 +132,7 @@ async def update_category(
 
     # Check for duplicate name if changing it
     if body.name and body.name != category.name:
-        result = await db.execute(select(Category).where(Category.name == body.name))
+        result = await uow.session.execute(select(Category).where(Category.name == body.name))
         if result.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -124,19 +145,26 @@ async def update_category(
     if body.description is not None:
         category.description = body.description
 
-    db.add(category)
-    await db.commit()
-    await db.refresh(category)
+    uow.session.add(category)
+    await uow.flush()
+    await uow.refresh(category)
     return CategoryResponse.model_validate(category)
 
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(
     category_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> None:
-    """Delete a category."""
-    result = await db.execute(select(Category).where(Category.id == category_id))
+    """Soft-delete a category."""
+    result = await uow.session.execute(
+        select(Category).where(
+            and_(
+                Category.id == category_id,
+                Category.deleted_at.is_(None),
+            )
+        )
+    )
     category = result.scalar_one_or_none()
     if not category:
         raise HTTPException(
@@ -144,16 +172,20 @@ async def delete_category(
             detail=f"Category with id {category_id} not found",
         )
 
-    # Check if category has products
-    result = await db.execute(
-        select(func.count(Product.id)).where(Product.category_id == category_id)
+    # Check if category has non-deleted products
+    result = await uow.session.execute(
+        select(func.count(Product.id)).where(
+            and_(
+                Product.category_id == category_id,
+                Product.deleted_at.is_(None),
+            )
+        )
     )
     product_count = cast(int | None, result.scalar())
     if product_count and product_count > 0:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot delete category with {product_count} product(s)",
+            detail=f"Cannot delete category with {product_count} active product(s)",
         )
 
-    await db.delete(category)
-    await db.commit()
+    category.soft_delete()

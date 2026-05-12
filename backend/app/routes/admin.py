@@ -5,10 +5,10 @@ from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select, text
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.dependencies import get_admin_user, get_db
+from app.core.uow import UnitOfWork
+from app.dependencies import get_admin_user, get_uow
 from app.models.branch import Branch
 from app.models.order import Order
 from app.models.order_item import OrderItem
@@ -39,7 +39,7 @@ async def admin_list_all_orders(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     status_filter: str | None = Query(None, alias="status", description="Filter by order status"),
     current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> OrderListResponse:
     """List ALL orders (admin only). Supports pagination and status filtering."""
     query = select(Order)
@@ -63,11 +63,11 @@ async def admin_list_all_orders(
         query = query.where(text("status::text = :st")).params(st=db_status)
 
     count_query = select(func.count()).select_from(query.subquery())
-    count_result = await db.execute(count_query)
+    count_result = await uow.session.execute(count_query)
     total = count_result.scalar_one()
 
     offset = (page - 1) * limit
-    result = await db.execute(
+    result = await uow.session.execute(
         query.order_by(Order.created_at.desc()).offset(offset).limit(limit)
     )
     orders = result.scalars().all()
@@ -96,10 +96,10 @@ async def admin_list_all_orders(
 async def admin_get_order_detail(
     order_id: int,
     current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> OrderDetailResponse:
     """Get ANY order detail (admin bypasses ownership check)."""
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Order)
         .where(Order.id == order_id)
         .options(selectinload(Order.items).selectinload(OrderItem.product))
@@ -131,7 +131,6 @@ async def admin_get_order_detail(
         total_amount=order.total_amount,
         status_history=order.status_history,
         payment_status=order.payment_status.value if order.payment_status and hasattr(order.payment_status, "value") else order.payment_status,
-        stripe_payment_intent_id=order.stripe_payment_intent_id,
         payment_method=order.payment_method,
         paid_at=order.paid_at,
         created_at=order.created_at,
@@ -143,7 +142,7 @@ async def admin_get_order_detail(
 @router.get("/dashboard/stats", response_model=DashboardStatsResponse)
 async def admin_dashboard_stats(
     current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> DashboardStatsResponse:
     """Get dashboard KPI statistics (admin only).
 
@@ -160,7 +159,7 @@ async def admin_dashboard_stats(
 
     # Orders created today
     today_start = func.date_trunc("day", now)
-    today_orders_result = await db.execute(
+    today_orders_result = await uow.session.execute(
         select(func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0))
         .where(Order.created_at >= today_start)
     )
@@ -169,7 +168,7 @@ async def admin_dashboard_stats(
 
     # Active branches
     try:
-        branches_result = await db.execute(
+        branches_result = await uow.session.execute(
             select(func.count(Branch.id)).where(Branch.is_active.is_(True))
         )
         active_branches = branches_result.scalar_one()
@@ -177,26 +176,26 @@ async def admin_dashboard_stats(
         active_branches = 0
 
     # Pending orders (using DB enum value "pending")
-    pending_result = await db.execute(
+    pending_result = await uow.session.execute(
         text("SELECT COUNT(*) FROM orders WHERE status::text = :st"),
         {"st": _DB_STATUS_PENDING},
     )
     pending_orders = pending_result.scalar_one()
 
     # Total products
-    products_result = await db.execute(select(func.count(Product.id)))
+    products_result = await uow.session.execute(select(func.count(Product.id)))
     total_products = products_result.scalar_one()
 
     # Monthly revenue
     month_start = func.date_trunc("month", now)
-    monthly_result = await db.execute(
+    monthly_result = await uow.session.execute(
         select(func.coalesce(func.sum(Order.total_amount), 0))
         .where(Order.created_at >= month_start)
     )
     monthly_revenue = float(monthly_result.scalar_one())
 
     # Orders by status (using DB enum values)
-    status_counts_result = await db.execute(
+    status_counts_result = await uow.session.execute(
         text("SELECT status::text, COUNT(*) FROM orders GROUP BY status")
     )
     orders_by_status = {row[0]: row[1] for row in status_counts_result.all()}

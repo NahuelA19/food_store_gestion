@@ -1,62 +1,45 @@
-/**
- * Wishlist hook
- */
-
-import { useCallback, useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { wishlistApi } from "../api/wishlistApi";
-import type { WishlistItem } from "../types/wishlist";
 
 export function useWishlist() {
-  const [items, setItems] = useState<WishlistItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const query = useQuery({
+    queryKey: ["wishlist"],
+    queryFn: () => wishlistApi.list(),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (productId: number) => wishlistApi.toggle(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
+  });
+
+  const items = query.data ?? [];
+
+  const toggle = async (productId: number): Promise<boolean> => {
     try {
-      const data = await wishlistApi.list();
-      setItems(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load wishlist");
-    } finally {
-      setIsLoading(false);
+      const result = await toggleMutation.mutateAsync(productId);
+      return result.is_wishlisted;
+    } catch {
+      return false;
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  const toggle = useCallback(
-    async (productId: number): Promise<boolean> => {
-      try {
-        const result = await wishlistApi.toggle(productId);
-        // Refresh list after toggle
-        await refresh();
-        return result.is_wishlisted;
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to toggle");
-        return false;
-      }
-    },
-    [refresh],
-  );
-
-  const isWishlisted = useCallback(
-    (productId: number): boolean => {
-      return items.some((item) => item.product_id === productId);
-    },
-    [items],
-  );
+  const isWishlisted = (productId: number): boolean => {
+    return items.some((item) => item.product_id === productId);
+  };
 
   return {
     items,
     count: items.length,
-    isLoading,
-    error,
+    isLoading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error ? query.error.message : "Failed to load wishlist"
+      : null,
     toggle,
     isWishlisted,
-    refresh,
+    refresh: query.refetch,
   };
 }

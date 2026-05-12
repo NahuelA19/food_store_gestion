@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.category import Category
@@ -49,7 +50,7 @@ class TestWishlistToggle:
     ):
         """Test adding a product to wishlist."""
         response = test_client.post(
-            f"/api/wishlist/toggle/{test_product.id}",
+            f"/api/v1/wishlist/toggle/{test_product.id}",
             headers=auth_headers,
         )
         assert response.status_code == 200
@@ -64,12 +65,12 @@ class TestWishlistToggle:
         """Test removing a product from wishlist."""
         # Add first
         test_client.post(
-            f"/api/wishlist/toggle/{test_product.id}",
+            f"/api/v1/wishlist/toggle/{test_product.id}",
             headers=auth_headers,
         )
         # Remove
         response = test_client.post(
-            f"/api/wishlist/toggle/{test_product.id}",
+            f"/api/v1/wishlist/toggle/{test_product.id}",
             headers=auth_headers,
         )
         assert response.status_code == 200
@@ -82,7 +83,7 @@ class TestWishlistToggle:
     ):
         """Test toggle without auth returns 401."""
         response = test_client.post(
-            f"/api/wishlist/toggle/{test_product.id}",
+            f"/api/v1/wishlist/toggle/{test_product.id}",
         )
         assert response.status_code == 401
 
@@ -93,7 +94,7 @@ class TestWishlistToggle:
     ):
         """Test toggle non-existent product returns 404."""
         response = test_client.post(
-            "/api/wishlist/toggle/99999",
+            "/api/v1/wishlist/toggle/99999",
             headers=auth_headers,
         )
         assert response.status_code == 404
@@ -111,11 +112,11 @@ class TestWishlistList:
         """Test listing wishlist with items returns products."""
         # Add product
         test_client.post(
-            f"/api/wishlist/toggle/{test_product.id}",
+            f"/api/v1/wishlist/toggle/{test_product.id}",
             headers=auth_headers,
         )
         # List
-        response = test_client.get("/api/wishlist/", headers=auth_headers)
+        response = test_client.get("/api/v1/wishlist/", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1
@@ -129,7 +130,7 @@ class TestWishlistList:
         auth_headers: dict,
     ):
         """Test listing empty wishlist returns empty array."""
-        response = test_client.get("/api/wishlist/", headers=auth_headers)
+        response = test_client.get("/api/v1/wishlist/", headers=auth_headers)
         assert response.status_code == 200
         assert response.json() == []
 
@@ -138,7 +139,7 @@ class TestWishlistList:
         test_client: TestClient,
     ):
         """Test list without auth returns 401."""
-        response = test_client.get("/api/wishlist/")
+        response = test_client.get("/api/v1/wishlist/")
         assert response.status_code == 401
 
 
@@ -153,11 +154,11 @@ class TestWishlistCheck:
     ):
         """Test checking a single product."""
         test_client.post(
-            f"/api/wishlist/toggle/{test_product.id}",
+            f"/api/v1/wishlist/toggle/{test_product.id}",
             headers=auth_headers,
         )
         response = test_client.get(
-            f"/api/wishlist/check?product_ids={test_product.id}",
+            f"/api/v1/wishlist/check?product_ids={test_product.id}",
             headers=auth_headers,
         )
         assert response.status_code == 200
@@ -171,15 +172,15 @@ class TestWishlistCheck:
     ):
         """Test checking a product not in wishlist."""
         response = test_client.get(
-            f"/api/wishlist/check?product_ids={test_product.id}",
+            f"/api/v1/wishlist/check?product_ids={test_product.id}",
             headers=auth_headers,
         )
         assert response.status_code == 200
         assert response.json()[str(test_product.id)] is False
 
-    def test_check_multiple_products(
+    async def test_check_multiple_products(
         self,
-        test_client: TestClient,
+        async_client: AsyncClient,
         test_product: Product,
         db_session: AsyncSession,
         test_category: Category,
@@ -200,13 +201,13 @@ class TestWishlistCheck:
         await db_session.refresh(p2)
 
         # Add first product to wishlist only
-        test_client.post(
-            f"/api/wishlist/toggle/{test_product.id}",
+        await async_client.post(
+            f"/api/v1/wishlist/toggle/{test_product.id}",
             headers=auth_headers,
         )
 
-        response = test_client.get(
-            f"/api/wishlist/check?product_ids={test_product.id},{p2.id}",
+        response = await async_client.get(
+            f"/api/v1/wishlist/check?product_ids={test_product.id},{p2.id}",
             headers=auth_headers,
         )
         assert response.status_code == 200

@@ -4,12 +4,14 @@ import logging
 from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-from app.dependencies import get_admin_user, get_current_user, get_db
-from app.models.order import OrderStatus
+from app.core.uow import UnitOfWork
+from app.dependencies import get_admin_user, get_current_user, get_uow
+from app.models.order import Order, OrderStatus
 from app.models.user import User
 from app.schemas.order import (
+    HistorialResponse,
     OrderDetailResponse,
     OrderListResponse,
     OrderStatusUpdate,
@@ -17,6 +19,7 @@ from app.schemas.order import (
 from app.services.order_service import (
     cancel_order,
     get_order_detail,
+    get_order_historial,
     get_user_orders,
     update_order_status,
 )
@@ -31,14 +34,14 @@ async def list_orders(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> OrderListResponse:
     """List current user's orders (paginated, most recent first)."""
     return await get_user_orders(
         user_id=current_user.id,
         page=page,
         limit=limit,
-        db=db,
+        uow=uow,
     )
 
 
@@ -46,13 +49,13 @@ async def list_orders(
 async def get_order(
     order_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> OrderDetailResponse:
     """Get order details with line items."""
     return await get_order_detail(
         order_id=order_id,
         user_id=current_user.id,
-        db=db,
+        uow=uow,
         is_admin=current_user.role == "admin",
     )
 
@@ -61,13 +64,13 @@ async def get_order(
 async def cancel_user_order(
     order_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> OrderDetailResponse:
     """Cancel a pending order. Releases reserved inventory."""
     order = await cancel_order(
         order_id=order_id,
         user_id=current_user.id,
-        db=db,
+        uow=uow,
         is_admin=current_user.role == "admin",
     )
     logger.info(
@@ -77,7 +80,7 @@ async def cancel_user_order(
     return await get_order_detail(
         order_id=order.id,
         user_id=current_user.id,
-        db=db,
+        uow=uow,
         is_admin=current_user.role == "admin",
     )
 
@@ -87,7 +90,7 @@ async def update_status(
     order_id: int,
     body: OrderStatusUpdate,
     current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> OrderDetailResponse:
     """Update order status (admin only). Validates status transitions."""
     try:
@@ -102,7 +105,7 @@ async def update_status(
         order_id=order_id,
         new_status=new_status,
         admin_id=current_user.id,
-        db=db,
+        uow=uow,
     )
     logger.info(
         "Order status updated: order_id=%s, new_status=%s, by=%s",
@@ -111,6 +114,33 @@ async def update_status(
     return await get_order_detail(
         order_id=order.id,
         user_id=current_user.id,
-        db=db,
+        uow=uow,
         is_admin=True,
     )
+
+
+@router.get("/{order_id}/historial", response_model=list[HistorialResponse])
+async def get_historial(
+    order_id: int,
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> list[HistorialResponse]:
+    """Get the FSM state transition history for an order.
+
+    Accessible by the order owner or admin.
+    """
+    result = await uow.session.execute(select(Order).where(Order.id == order_id))
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order with id {order_id} not found",
+        )
+
+    if current_user.role != "admin" and order.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order with id {order_id} not found",
+        )
+
+    return await get_order_historial(order_id=order_id, uow=uow)

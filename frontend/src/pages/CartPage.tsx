@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCartContext } from "../context/CartContext";
-import { ShoppingBag, Package, Trash2, Plus, Minus, ArrowLeft } from "lucide-react";
+import { usePaymentStore } from "../store/paymentStore";
+import { useAuthStore } from "../store/authStore";
+import { paymentApi } from "../api/paymentApi";
+import { ShoppingBag, Package, Trash2, Plus, Minus, ArrowLeft, CreditCard, Loader2 } from "lucide-react";
 
 export function CartPage() {
   const {
@@ -18,7 +22,32 @@ export function CartPage() {
     updateQuantity,
     removeItem,
     clearCart,
+    checkout,
   } = useCartContext();
+  const navigate = useNavigate();
+  const { setPreference } = usePaymentStore();
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleMpCheckout = async () => {
+    if (!shippingAddress.trim()) return;
+    if (!accessToken) return;
+    setIsProcessing(true);
+    try {
+      const checkoutResult = await checkout({ shipping_address: shippingAddress });
+      const orderId = checkoutResult.order_id;
+      if (!orderId) throw new Error("No se pudo crear la orden");
+      const { preference_id, init_point } = await paymentApi.createPreference(orderId, accessToken);
+      setPreference(preference_id);
+      window.location.href = init_point;
+    } catch (err) {
+      console.error("Checkout error:", err);
+      navigate("/payment/failure");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -173,12 +202,36 @@ export function CartPage() {
                 <span>Total</span>
                 <span>${Number(total).toFixed(2)}</span>
               </div>
-              <p className="pt-2 text-center text-xs italic text-text-muted">
-                El checkout se implementará próximamente.
-              </p>
+              <div className="space-y-2">
+                <label htmlFor="shipping-address" className="text-sm font-medium text-text-primary">
+                  Dirección de envío
+                </label>
+                <input
+                  id="shipping-address"
+                  type="text"
+                  value={shippingAddress}
+                  onChange={(e) => setShippingAddress(e.target.value)}
+                  placeholder="Calle y número, ciudad, código postal"
+                  className="w-full rounded-lg border-2 border-border-light bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none"
+                />
+              </div>
+              <Button
+                variant="default"
+                size="lg"
+                className="w-full gap-2"
+                disabled={!shippingAddress.trim() || isProcessing}
+                onClick={handleMpCheckout}
+              >
+                {isProcessing ? (
+                  <Icon icon={Loader2} size={18} className="animate-spin" />
+                ) : (
+                  <Icon icon={CreditCard} size={18} />
+                )}
+                {isProcessing ? "Procesando..." : "Pagar con MercadoPago"}
+              </Button>
               <Link
                 to="/products"
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-text-on-primary shadow-sm transition-all hover:bg-primary-hover hover:shadow-md"
+                className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-border bg-surface-card px-4 py-3 text-sm font-semibold text-text-primary transition-all hover:bg-surface-alt"
               >
                 <Icon icon={ArrowLeft} size={16} />
                 Seguir comprando

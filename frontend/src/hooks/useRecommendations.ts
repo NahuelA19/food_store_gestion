@@ -1,81 +1,43 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { productApi } from "../api/productApi";
-import { Product } from "../types/product";
 
 export function useRecommendations(limit = 8) {
-  const [recommendations, setRecommendations] = useState<Product[]>([]);
-  const [trending, setTrending] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const recsQuery = useQuery({
+    queryKey: ["recommendations", limit],
+    queryFn: () => productApi.getRecommendations(limit),
+    staleTime: 1000 * 60 * 10,
+  });
 
-  useEffect(() => {
-    const abortController = new AbortController();
+  const trendingQuery = useQuery({
+    queryKey: ["trending", limit],
+    queryFn: () => productApi.getTrending(limit),
+    staleTime: 1000 * 60 * 10,
+  });
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [recs, trend] = await Promise.all([
-          productApi.getRecommendations(limit),
-          productApi.getTrending(limit),
-        ]);
-        if (!abortController.signal.aborted) {
-          setRecommendations(recs);
-          setTrending(trend);
-        }
-      } catch (err) {
-        if (!abortController.signal.aborted) {
-          setError(err instanceof Error ? err.message : "Failed to fetch recommendations");
-          setRecommendations([]);
-          setTrending([]);
-        }
-      } finally {
-        if (!abortController.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => abortController.abort();
-  }, [limit]);
-
-  return { recommendations, trending, loading, error };
+  return {
+    recommendations: recsQuery.data ?? [],
+    trending: trendingQuery.data ?? [],
+    loading: recsQuery.isLoading || trendingQuery.isLoading,
+    error: recsQuery.error
+      ? recsQuery.error instanceof Error ? recsQuery.error.message : "Failed to fetch recommendations"
+      : trendingQuery.error
+        ? trendingQuery.error instanceof Error ? trendingQuery.error.message : "Failed to fetch trends"
+        : null,
+  };
 }
 
 export function useFrequentlyBoughtTogether(productId: number) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["frequently-bought", productId],
+    queryFn: () => productApi.getFrequentlyBoughtTogether(productId, 4),
+    enabled: !!productId,
+  });
 
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await productApi.getFrequentlyBoughtTogether(productId, 4);
-        if (!abortController.signal.aborted) {
-          setProducts(data);
-        }
-      } catch (err) {
-        if (!abortController.signal.aborted) {
-          setError(err instanceof Error ? err.message : "Failed to fetch frequently bought together");
-          setProducts([]);
-        }
-      } finally {
-        if (!abortController.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => abortController.abort();
-  }, [productId]);
-
-  return { products, loading, error };
+  return {
+    products: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error ? query.error.message : "Failed to fetch frequently bought together"
+      : null,
+  };
 }

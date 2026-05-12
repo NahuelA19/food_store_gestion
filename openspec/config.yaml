@@ -2,19 +2,84 @@ schema: spec-driven
 
 # Project context (optional)
 # This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  ## Food Store — TPI Integrador (Proyecto Académico)
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  **Stack**: React 18 + TypeScript + Vite / FastAPI + Python 3.10+ / PostgreSQL + asyncpg / Alembic
+
+  ### Restricciones Académicas OBLIGATORIAS
+  Este proyecto debe cumplir con los 3 documentos de la cátedra ubicados en `docs/`:
+  - `docs/Integrador.txt` — Rúbrica de evaluación (200 pts), stack técnico, arquitectura obligatoria
+  - `docs/Historias_de_usuario.txt` — Requisitos funcionales, reglas de negocio (RN-*), FSM de pedidos
+  - `docs/Descripcion.txt` — Decisiones arquitectónicas, patrones, justificaciones del sistema
+
+  **Antes de diseñar cualquier change, leer los 3 documentos y verificar que lo propuesto los cumpla.**
+
+  ### Arquitectura Backend Obligatoria (Integrador.txt)
+  - Capas: Router → Service → UnitOfWork → Repository → Model (siempre en este orden)
+  - UnitOfWork en `core/uow.py` — los services NO hacen `db.commit()` directamente
+  - BaseRepository[T] genérico con métodos: get, get_all, add, update, delete
+  - Módulos feature-first: `app/modules/{dominio}/` con model + schema + repo + service + router
+  - Prefijo de rutas: `/api/v1` en TODOS los endpoints (no `/api` solo)
+
+  ### Pagos: MercadoPago (NO Stripe)
+  - SDK Python: `mercadopago 2.3.0+`
+  - Flujo: Checkout API con tokenización desde frontend
+  - Campos obligatorios en tabla Pago: `mp_payment_id`, `mp_status`, `external_reference`, `idempotency_key` (UUID)
+  - Webhook IPN en `/api/v1/pagos/webhook`
+  - NO usar Stripe, PayPal ni ningún otro gateway
+
+  ### Frontend: Estado Obligatorio (Integrador.txt)
+  - **Zustand** para estado del cliente (4 stores obligatorios: authStore, cartStore, paymentStore, uiStore)
+  - **TanStack Query** para estado del servidor (useQuery / useMutation en TODOS los hooks de datos)
+  - Los stores Zustand deben usar middleware `persist` con localStorage donde corresponda
+  - Zustand y TanStack Query NO deben mezclarse — cada uno tiene su dominio
+  - Estructura Feature-Sliced Design: pages / features / components / hooks / store / api / types
+
+  ### Modelo de Datos ERD v5 (Integrador.txt)
+  Tablas obligatorias que deben existir:
+  - `refresh_tokens` (token_hash, user_id, expires_at, revoked_at, device_info)
+  - `ingredientes` (nombre, es_alergeno)
+  - `producto_ingredientes` (producto_id, ingrediente_id)
+  - `formas_pago` (codigo, nombre, habilitado)
+  - `estados_pedido` (codigo PK, descripcion, es_terminal) — tabla catálogo, no enum Python
+  - `historial_estados_pedido` — tabla append-only con estado_desde/hasta, usuario_id, created_at (sin updated_at)
+  - `pagos` (pedido_id, mp_payment_id, mp_status, external_reference, idempotency_key, monto)
+  - Soft delete con `deleted_at TIMESTAMPTZ` en Producto, Categoria, Usuario
+
+  ### Reglas de Negocio Críticas (Historias_de_usuario.txt)
+  - FSM pedidos: PENDIENTE→PAGO_PENDIENTE→PAGADO→CONFIRMADO→PREPARANDO→LISTO→ENTREGADO / CANCELADO
+  - PENDIENTE→CONFIRMADO solo puede ocurrir automáticamente via webhook de pago (no manual)
+  - Rate limiting en login: máx 5 intentos / 15 min por IP (usar slowapi)
+  - JWT: access token 30 min, refresh token 7 días con rotación en cada uso
+  - RBAC: 4 roles fijos — ADMIN, STOCK, PEDIDOS, CLIENT
+  - Idempotency key UUID obligatorio en cada intento de pago (evitar duplicados)
+  - Snapshot de precio en DetallePedido: guardar nombre_snapshot y precio_snapshot al crear pedido
+
+  ### Checklist de Entrega (no negociable)
+  - CE-09: Pago sandbox MercadoPago funciona end-to-end
+  - CE-10: Ningún service.session.commit() — todo via UnitOfWork
+  - CE-11: 4 stores Zustand tipados con persist implementados
+  - CE-12: Screenshots de 10 pantallas en el repo
+  - CE-13: Video demo enlazado en README
+
+# Per-artifact rules (obligatorias para todos los changes)
+rules:
+  proposal:
+    - Verificar que la propuesta no use Stripe ni ningún gateway distinto a MercadoPago
+    - Verificar que el estado del servidor use TanStack Query (useQuery/useMutation), nunca useEffect+fetch manual
+    - Verificar que el estado del cliente use Zustand stores, nunca React Context para estado global
+    - Si el change toca el backend, verificar que respete la capa UnitOfWork (no db.commit() directo)
+    - Si el change toca modelos de datos, verificar que use el ERD v5 completo (tablas catálogo, soft delete, snapshots)
+    - Incluir sección "Cumplimiento TPI" que liste qué criterios de la rúbrica aborda este change
+  design:
+    - Incluir sección "Patrón de capas" que muestre el flujo Router→Service→UoW→Repository→Model
+    - Si hay pagos, especificar explícitamente los campos mp_payment_id, idempotency_key, external_reference
+    - Si hay estado en el frontend, especificar qué va a Zustand vs qué va a TanStack Query
+    - Documentar los endpoints con prefijo /api/v1 (no /api)
+  tasks:
+    - Incluir task de verificación: "Confirmar que no hay db.commit() directo en ningún service"
+    - Incluir task de verificación: "Confirmar que los endpoints usan prefijo /api/v1"
+    - Si el change incluye frontend con datos del servidor, incluir task: "Implementar con useQuery/useMutation de TanStack Query"
+    - Si el change incluye estado del cliente, incluir task: "Implementar store Zustand correspondiente con persist"
+    - Incluir task final: "Verificar cumplimiento con docs/Integrador.txt, Historias_de_usuario.txt y Descripcion.txt"

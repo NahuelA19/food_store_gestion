@@ -35,10 +35,11 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
-    # Payment
-    stripe_secret_key: str = ""
-    stripe_webhook_secret: str = ""
-    stripe_publishable_key: str = ""
+    # Payment (MercadoPago)
+    mp_access_token: str = ""
+    mp_public_key: str = ""
+    mp_webhook_secret: str = ""  # For IPN validation if used
+    mp_notification_url: str = "http://your-domain.com/api/v1/payments/webhook"
 
     # CORS
     allowed_origins: list[str] | str = "http://localhost:5173,http://localhost:3000"

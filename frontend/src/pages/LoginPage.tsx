@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuthContext } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -12,7 +12,7 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { login, isLoading } = useAuthContext();
+  const { login, isLoading } = useAuth();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

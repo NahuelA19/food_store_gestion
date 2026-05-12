@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { useAuthContext } from "../context/AuthContext";
+import { useAuthStore } from "../store/authStore";
 import { useWishlist } from "../hooks/useWishlist";
 import { FavoriteButton } from "./wishlist/FavoriteButton";
 import { ShoppingCart, Plus, Minus, Package } from "lucide-react";
@@ -21,7 +21,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onClick,
 }) => {
   const [quantity, setQuantity] = React.useState(1);
-  const { isAuthenticated } = useAuthContext();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { isWishlisted, toggle } = useWishlist();
 
   const handleAddToCart = () => {

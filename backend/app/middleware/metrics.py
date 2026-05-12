@@ -34,8 +34,10 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 
         http_requests_in_progress.inc()
         start = time.time()
+        status_code = 500
         try:
             response = await call_next(request)
+            status_code = response.status_code
             return response
         finally:
             duration = time.time() - start
@@ -43,7 +45,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             http_requests_total.labels(
                 method=request.method,
                 path=request.url.path,
-                status=response.status_code,
+                status=str(status_code),
             ).inc()
             http_request_duration.labels(
                 method=request.method,

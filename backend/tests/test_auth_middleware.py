@@ -24,7 +24,7 @@ class TestAuthMiddleware:
         token = create_access_token(data={"user_id": test_user.id, "email": test_user.email})
 
         response = await async_client.get(
-            "/api/health/protected/test",
+            "/api/v1/protected/test",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -37,7 +37,7 @@ class TestAuthMiddleware:
     @pytest.mark.asyncio
     async def test_protected_route_without_token(self, async_client: AsyncClient):
         """Protected route rejects request without token."""
-        response = await async_client.get("/api/health/protected/test")
+        response = await async_client.get("/api/v1/protected/test")
 
         assert response.status_code == 401  # Unauthorized (missing credentials)
 
@@ -45,7 +45,7 @@ class TestAuthMiddleware:
     async def test_protected_route_with_invalid_token(self, async_client: AsyncClient):
         """Protected route rejects invalid token."""
         response = await async_client.get(
-            "/api/health/protected/test",
+            "/api/v1/protected/test",
             headers={"Authorization": "Bearer invalid.token.here"},
         )
 
@@ -67,7 +67,7 @@ class TestAuthMiddleware:
         )
 
         response = await async_client.get(
-            "/api/health/protected/test",
+            "/api/v1/protected/test",
             headers={"Authorization": f"Bearer {expired_token}"},
         )
 
@@ -81,7 +81,7 @@ class TestAuthMiddleware:
         token = create_access_token(data={"user_id": 99999, "email": "nonexistent@example.com"})
 
         response = await async_client.get(
-            "/api/health/protected/test",
+            "/api/v1/protected/test",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -110,7 +110,7 @@ class TestAuthMiddleware:
         )
 
         response = await async_client.get(
-            "/api/health/protected/test",
+            "/api/v1/protected/test",
             headers={"Authorization": f"Bearer {token}"},
         )
 
@@ -120,7 +120,7 @@ class TestAuthMiddleware:
     @pytest.mark.asyncio
     async def test_public_route_without_token(self, async_client: AsyncClient):
         """Public route bypasses authentication."""
-        response = await async_client.get("/api/health/public/test")
+        response = await async_client.get("/api/v1/public/test")
 
         assert response.status_code == 200
         data = response.json()
@@ -136,7 +136,7 @@ class TestAuthMiddleware:
         token = create_access_token(data={"user_id": test_user.id, "email": test_user.email})
 
         response = await async_client.get(
-            "/api/health/public/test",
+            "/api/v1/public/test",
             headers={"Authorization": f"Bearer {token}"},
         )
 

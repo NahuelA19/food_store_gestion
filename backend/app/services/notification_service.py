@@ -4,7 +4,8 @@ import asyncio
 import logging
 
 from sqlalchemy import func, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.uow import UnitOfWork
 
 from app.models.notification import Notification
 from app.models.order import OrderStatus
@@ -52,7 +53,7 @@ _STATUS_TO_NOTIFICATION: dict[OrderStatus, str] = {
 }
 
 
-async def get_user_notification_preference(db: AsyncSession, user_id: int) -> str:
+async def get_user_notification_preference(uow: UnitOfWork, user_id: int) -> str:
     """Get the user's notification preference.
 
     Args:
@@ -62,7 +63,7 @@ async def get_user_notification_preference(db: AsyncSession, user_id: int) -> st
     Returns:
         str: "email", "push", or "off" (default: "email")
     """
-    result = await db.execute(
+    result = await uow.session.execute(
         select(UserPreference).where(
             UserPreference.user_id == user_id,
             UserPreference.pref_key == "notifications",
@@ -73,7 +74,7 @@ async def get_user_notification_preference(db: AsyncSession, user_id: int) -> st
 
 
 async def create_notification(
-    db: AsyncSession,
+    uow: UnitOfWork,
     user_id: int,
     type: str,
     title: str,
@@ -95,7 +96,7 @@ async def create_notification(
     Returns:
         Notification or None if preference is "off"
     """
-    pref = await get_user_notification_preference(db, user_id)
+    pref = await get_user_notification_preference(uow, user_id)
     if pref == "off":
         return None
 
@@ -107,14 +108,14 @@ async def create_notification(
         related_order_id=related_order_id,
         is_read=False,
     )
-    db.add(notif)
-    await db.flush()
-    await db.refresh(notif)
+    uow.session.add(notif)
+    await uow.flush()
+    await uow.refresh(notif)
     return notif
 
 
 async def create_and_send_notification(
-    db: AsyncSession,
+    uow: UnitOfWork,
     user_id: int,
     type: str,
     title: str,
@@ -139,17 +140,16 @@ async def create_and_send_notification(
     Returns:
         Notification or None
     """
-    pref = await get_user_notification_preference(db, user_id)
+    pref = await get_user_notification_preference(uow, user_id)
     if pref == "off":
         return None
 
     # Create in-app notification
-    notif = await create_notification(db, user_id, type, title, message, related_order_id)
-    await db.commit()
+    notif = await create_notification(uow, user_id, type, title, message, related_order_id)
 
     # Send email if preference is "email"
     if pref == "email":
-        result = await db.execute(select(User).where(User.id == user_id))
+        result = await uow.session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if user and user.email:
             template_map = {
@@ -178,7 +178,7 @@ async def create_and_send_notification(
 
 
 async def get_user_notifications(
-    db: AsyncSession,
+    uow: UnitOfWork,
     user_id: int,
     page: int = 1,
     limit: int = 20,
@@ -206,13 +206,13 @@ async def get_user_notifications(
         base_query = base_query.where(Notification.is_read == False)  # noqa: E712
 
     # Get total count
-    count_result = await db.execute(
+    count_result = await uow.session.execute(
         select(func.count(Notification.id)).where(Notification.user_id == user_id)
     )
     total_count = count_result.scalar_one()
 
     # Get unread count
-    unread_result = await db.execute(
+    unread_result = await uow.session.execute(
         select(func.count(Notification.id)).where(
             Notification.user_id == user_id,
             Notification.is_read == False,  # noqa: E712
@@ -222,7 +222,7 @@ async def get_user_notifications(
 
     # Get paginated results
     offset = (page - 1) * limit
-    result = await db.execute(
+    result = await uow.session.execute(
         base_query.order_by(Notification.created_at.desc()).offset(offset).limit(limit)
     )
     items = list(result.scalars().all())
@@ -231,7 +231,7 @@ async def get_user_notifications(
 
 
 async def get_unread_count(
-    db: AsyncSession,
+    uow: UnitOfWork,
     user_id: int,
 ) -> int:
     """Get unread notification count for a user.
@@ -243,7 +243,7 @@ async def get_unread_count(
     Returns:
         Number of unread notifications
     """
-    result = await db.execute(
+    result = await uow.session.execute(
         select(func.count(Notification.id)).where(
             Notification.user_id == user_id,
             Notification.is_read == False,  # noqa: E712
@@ -253,7 +253,7 @@ async def get_unread_count(
 
 
 async def mark_as_read(
-    db: AsyncSession,
+    uow: UnitOfWork,
     notification_id: int,
     user_id: int,
 ) -> Notification | None:
@@ -267,7 +267,7 @@ async def mark_as_read(
     Returns:
         Updated Notification or None if not found
     """
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Notification).where(
             Notification.id == notification_id,
             Notification.user_id == user_id,
@@ -278,14 +278,14 @@ async def mark_as_read(
         return None
 
     notif.is_read = True
-    db.add(notif)
-    await db.commit()
-    await db.refresh(notif)
+    uow.session.add(notif)
+    await uow.flush()
+    await uow.refresh(notif)
     return notif
 
 
 async def mark_all_as_read(
-    db: AsyncSession,
+    uow: UnitOfWork,
     user_id: int,
 ) -> int:
     """Mark all notifications as read for a user.
@@ -297,17 +297,16 @@ async def mark_all_as_read(
     Returns:
         Number of notifications updated
     """
-    result = await db.execute(
+    result = await uow.session.execute(
         update(Notification)
         .where(Notification.user_id == user_id, Notification.is_read == False)  # noqa: E712
         .values(is_read=True)
     )
-    await db.commit()
     return result.rowcount  # type: ignore[return-value]
 
 
 async def create_order_notification(
-    db: AsyncSession,
+    uow: UnitOfWork,
     order_id: int,
     user_id: int,
     new_status: OrderStatus,
@@ -331,7 +330,7 @@ async def create_order_notification(
     message = f"{info['message']} Order #{order_id}."
 
     return await create_and_send_notification(
-        db=db,
+        uow=uow,
         user_id=user_id,
         type=info["type"],
         title=info["title"],
@@ -340,7 +339,7 @@ async def create_order_notification(
     )
 
 
-async def cleanup_old_notifications(db: AsyncSession, days: int = 90) -> int:
+async def cleanup_old_notifications(uow: UnitOfWork, days: int = 90) -> int:
     """Delete notifications older than the specified number of days.
 
     Args:
@@ -353,11 +352,10 @@ async def cleanup_old_notifications(db: AsyncSession, days: int = 90) -> int:
     from datetime import datetime, timedelta, timezone
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Notification).where(Notification.created_at < cutoff)
     )
     old = list(result.scalars().all())
     for n in old:
-        await db.delete(n)
-    await db.commit()
+        await uow.session.delete(n)
     return len(old)

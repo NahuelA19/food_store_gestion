@@ -40,7 +40,6 @@ class OrderDetailResponse(BaseModel):
     total_amount: Decimal
     status_history: list[dict] | None = None
     payment_status: str | None = None
-    stripe_payment_intent_id: str | None = None
     payment_method: str | None = None
     paid_at: datetime | None = None
     created_at: datetime
@@ -64,3 +63,15 @@ class OrderStatusUpdate(BaseModel):
     """Schema for updating order status (admin)."""
 
     status: str = Field(..., min_length=1, max_length=20)
+
+
+class HistorialResponse(BaseModel):
+    """Order status history entry response."""
+
+    id: int
+    estado_desde: str | None = None
+    estado_hasta: str
+    motivo: str | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

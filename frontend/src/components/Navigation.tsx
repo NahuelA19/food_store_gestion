@@ -5,7 +5,8 @@
 
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuthContext } from "../context/AuthContext";
+import { useAuthStore } from "../store/authStore";
+import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../context/ThemeContext";
 import { CartBadge } from "./Cart/CartBadge";
 import { Button } from "./ui/Button";
@@ -24,7 +25,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export function Navigation() {
-  const { isAuthenticated, user, logout } = useAuthContext();
+  const { isAuthenticated, user } = useAuthStore();
+  const { logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);

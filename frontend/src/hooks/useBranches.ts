@@ -1,79 +1,51 @@
-import { useEffect, useState, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { branchApi } from "../api/branchApi";
-import type { Branch } from "../types/branch";
 
 export function useBranches() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["branches"],
+    queryFn: () => branchApi.getBranches(),
+  });
 
-  useEffect(() => {
-    const fetchBranches = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await branchApi.getBranches();
-        setBranches(data.items);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch branches");
-        setBranches([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBranches();
-  }, []);
-
-  return { branches, setBranches, isLoading, error };
+  return {
+    branches: query.data?.items ?? [],
+    isLoading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error ? query.error.message : "Failed to fetch branches"
+      : null,
+  };
 }
 
 export function useBranch(id: number) {
-  const [branch, setBranch] = useState<Branch | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["branch", id],
+    queryFn: () => branchApi.getBranch(id),
+    enabled: !!id,
+  });
 
-  useEffect(() => {
-    if (!id) return;
-
-    const fetchBranch = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await branchApi.getBranch(id);
-        setBranch(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch branch");
-        setBranch(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBranch();
-  }, [id]);
-
-  return { branch, isLoading, error };
+  return {
+    branch: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error ? query.error.message : "Failed to fetch branch"
+      : null,
+  };
 }
 
 export function useToggleBranchStatus() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (id: number) => branchApi.toggleBranchStatus(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
+    },
+  });
 
-  const toggleStatus = useCallback(async (id: number) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await branchApi.toggleBranchStatus(id);
-      return result;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to toggle branch status";
-      setError(message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  return { toggleStatus, isLoading, error };
+  return {
+    toggleStatus: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    error: mutation.error
+      ? mutation.error instanceof Error ? mutation.error.message : "Failed to toggle branch status"
+      : null,
+  };
 }

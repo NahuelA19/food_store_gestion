@@ -1,29 +1,17 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { dashboardApi } from "../api/dashboardApi";
-import type { DashboardStats } from "../types/dashboard";
 
 export function useDashboardStats() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: () => dashboardApi.getDashboardStats(),
+  });
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await dashboardApi.getDashboardStats();
-        setStats(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch dashboard stats");
-        setStats(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  return { stats, isLoading, error };
+  return {
+    stats: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error ? query.error.message : "Failed to fetch dashboard stats"
+      : null,
+  };
 }

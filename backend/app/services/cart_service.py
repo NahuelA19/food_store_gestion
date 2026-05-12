@@ -5,8 +5,9 @@ from typing import Any, cast
 
 from fastapi import HTTPException, status
 from sqlalchemy import delete, select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+from app.core.uow import UnitOfWork
 
 from app.models.cart import Cart, CartItem
 from app.models.product import Product
@@ -19,14 +20,13 @@ from app.schemas.cart import (
     CheckoutRequest,
 )
 from app.services.order_service import create_order_from_cart
-from app.services.payment_service import create_payment_intent
 
 TAX_RATE = Decimal("0.10")
 
 
 async def get_or_create_user_cart(
     user_id: int,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> Cart:
     """Get user's active cart or create a new one.
 
@@ -38,7 +38,7 @@ async def get_or_create_user_cart(
         Cart: The user's active cart
     """
     # Look for existing active cart
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Cart)
         .where(Cart.user_id == user_id, Cart.status == "active")
         .options(selectinload(Cart.items).selectinload(CartItem.product))
@@ -50,16 +50,16 @@ async def get_or_create_user_cart(
 
     # Create new cart
     cart = Cart(user_id=user_id, status="active")
-    db.add(cart)
-    await db.flush()
-    await db.refresh(cart)
+    uow.session.add(cart)
+    await uow.flush()
+    await uow.refresh(cart, ["items"])
     return cart
 
 
 async def get_cart_with_items(
     cart_id: int,
     user_id: int,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> Cart:
     """Get a cart by ID with items loaded, verifying ownership.
 
@@ -75,7 +75,7 @@ async def get_cart_with_items(
         HTTPException 404: Cart not found
         HTTPException 403: Cart doesn't belong to user
     """
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Cart)
         .where(Cart.id == cart_id)
         .options(selectinload(Cart.items).selectinload(CartItem.product))
@@ -150,7 +150,7 @@ async def get_cart_response(
 async def validate_product_for_cart(
     product_id: int,
     quantity: int,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> Product:
     """Validate that a product can be added to cart.
 
@@ -166,7 +166,7 @@ async def validate_product_for_cart(
         HTTPException 404: Product not found
         HTTPException 400: Product unavailable or invalid quantity
     """
-    result = await db.execute(select(Product).where(Product.id == product_id))
+    result = await uow.session.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
 
     if not product:
@@ -193,7 +193,7 @@ async def validate_product_for_cart(
 async def add_item_to_cart(
     cart_id: int,
     body: CartItemAdd,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> Cart:
     """Add an item to cart (idempotent: updates qty if product already in cart).
 
@@ -206,10 +206,10 @@ async def add_item_to_cart(
         Cart: Updated cart with items
     """
     # Validate product
-    product = await validate_product_for_cart(body.product_id, body.quantity, db)
+    product = await validate_product_for_cart(body.product_id, body.quantity, uow)
 
     # Check if item already in cart (idempotent)
-    result = await db.execute(
+    result = await uow.session.execute(
         select(CartItem).where(
             CartItem.cart_id == cart_id,
             CartItem.product_id == body.product_id,
@@ -220,7 +220,7 @@ async def add_item_to_cart(
     if existing_item:
         # Update quantity instead of duplicate
         existing_item.quantity += body.quantity
-        db.add(existing_item)
+        uow.session.add(existing_item)
     else:
         # Add new item with price snapshot
         item = CartItem(
@@ -229,19 +229,17 @@ async def add_item_to_cart(
             quantity=body.quantity,
             unit_price=product.price,
         )
-        db.add(item)
-
-    await db.commit()
+        uow.session.add(item)
 
     # Return updated cart
-    return await get_cart_with_items(cart_id, (await db.execute(select(Cart).where(Cart.id == cart_id))).scalar_one().user_id, db)
+    return await get_cart_with_items(cart_id, (await uow.session.execute(select(Cart).where(Cart.id == cart_id))).scalar_one().user_id, uow)
 
 
 async def update_cart_item_quantity(
     cart_id: int,
     item_id: int,
     body: CartItemUpdate,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> Cart:
     """Update cart item quantity. Removes item if quantity is 0.
 
@@ -257,7 +255,7 @@ async def update_cart_item_quantity(
     Raises:
         HTTPException 404: Item not found in cart
     """
-    result = await db.execute(
+    result = await uow.session.execute(
         select(CartItem).where(CartItem.id == item_id, CartItem.cart_id == cart_id)
     )
     item = result.scalar_one_or_none()
@@ -270,23 +268,21 @@ async def update_cart_item_quantity(
 
     if body.quantity <= 0:
         # Remove item
-        await db.delete(item)
+        await uow.session.delete(item)
     else:
         item.quantity = body.quantity
-        db.add(item)
-
-    await db.commit()
+        uow.session.add(item)
 
     # Return updated cart
-    result = await db.execute(select(Cart.user_id).where(Cart.id == cart_id))
+    result = await uow.session.execute(select(Cart.user_id).where(Cart.id == cart_id))
     user_id = cast(int, result.scalar_one())
-    return await get_cart_with_items(cart_id, user_id, db)
+    return await get_cart_with_items(cart_id, user_id, uow)
 
 
 async def remove_cart_item(
     cart_id: int,
     item_id: int,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> Cart:
     """Remove an item from cart.
 
@@ -301,7 +297,7 @@ async def remove_cart_item(
     Raises:
         HTTPException 404: Item not found
     """
-    result = await db.execute(
+    result = await uow.session.execute(
         select(CartItem).where(CartItem.id == item_id, CartItem.cart_id == cart_id)
     )
     item = result.scalar_one_or_none()
@@ -312,17 +308,16 @@ async def remove_cart_item(
             detail=f"Item with id {item_id} not found in cart",
         )
 
-    await db.delete(item)
-    await db.commit()
+    await uow.session.delete(item)
 
-    result = await db.execute(select(Cart.user_id).where(Cart.id == cart_id))
+    result = await uow.session.execute(select(Cart.user_id).where(Cart.id == cart_id))
     user_id = cast(int, result.scalar_one())
-    return await get_cart_with_items(cart_id, user_id, db)
+    return await get_cart_with_items(cart_id, user_id, uow)
 
 
 async def clear_cart_items(
     cart_id: int,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> Cart:
     """Remove all items from cart.
 
@@ -333,19 +328,18 @@ async def clear_cart_items(
     Returns:
         Cart: Empty cart
     """
-    await db.execute(
+    await uow.session.execute(
         delete(CartItem).where(CartItem.cart_id == cart_id)
     )
-    await db.commit()
 
-    result = await db.execute(select(Cart.user_id).where(Cart.id == cart_id))
+    result = await uow.session.execute(select(Cart.user_id).where(Cart.id == cart_id))
     user_id = result.scalar_one()
-    return await get_cart_with_items(cart_id, user_id, db)
+    return await get_cart_with_items(cart_id, user_id, uow)
 
 
 async def validate_cart_for_checkout(
     cart: Cart,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> None:
     """Validate that cart is ready for checkout.
 
@@ -373,7 +367,7 @@ async def validate_cart_for_checkout(
         product = item.product
         if product is None:
             # Reload product
-            result = await db.execute(select(Product).where(Product.id == item.product_id))
+            result = await uow.session.execute(select(Product).where(Product.id == item.product_id))
             product = result.scalar_one_or_none()
 
         if product is None or not product.is_available:
@@ -395,7 +389,7 @@ async def checkout_cart(
     cart_id: int,
     user: User,
     body: CheckoutRequest,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> dict[str, Any]:
     """Initiate checkout for a cart.
 
@@ -413,7 +407,7 @@ async def checkout_cart(
     Raises:
         HTTPException: If checkout validation fails
     """
-    cart = await get_cart_with_items(cart_id, user.id, db)
+    cart = await get_cart_with_items(cart_id, user.id, uow)
 
     if not cart:
         raise HTTPException(
@@ -422,27 +416,23 @@ async def checkout_cart(
         )
 
     # Validate cart for checkout
-    await validate_cart_for_checkout(cart, db)
+    await validate_cart_for_checkout(cart, uow)
 
     # Get cart response with totals
     cart_response = await get_cart_response(cart)
 
     # Create order with items and reserve inventory
-    order = await create_order_from_cart(cart, body, db)
-
-    # Create Stripe PaymentIntent
-    payment_data = await create_payment_intent(order, user, db)
+    order = await create_order_from_cart(cart, body, uow)
 
     # Mark cart as checked_out
     cart.status = "checked_out"
-    db.add(cart)
-    await db.commit()
+    uow.session.add(cart)
 
     return {
         "cart_id": cart_id,
         "order_id": order.id,
         "status": "checked_out",
         "total": cart_response.total,
-        "client_secret": payment_data["client_secret"],
         "message": "Checkout initiated successfully",
+        "client_secret": None,  # TODO: Set MercadoPago preference ID here
     }

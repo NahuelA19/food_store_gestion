@@ -74,8 +74,8 @@ def admin_auth_headers(admin_user: User) -> dict:
 async def test_list_users_as_regular_user_returns_403(
     test_client: TestClient, regular_auth_headers: dict
 ) -> None:
-    """Test GET /api/users as regular user returns 403."""
-    response = test_client.get("/api/users", headers=regular_auth_headers)
+    """Test GET /api/v1/users as regular user returns 403."""
+    response = test_client.get("/api/v1/users", headers=regular_auth_headers)
 
     assert response.status_code == 403
 
@@ -84,8 +84,8 @@ async def test_list_users_as_regular_user_returns_403(
 async def test_list_users_as_admin_returns_paginated_list(
     test_client: TestClient, admin_auth_headers: dict
 ) -> None:
-    """Test GET /api/users as admin returns paginated user list."""
-    response = test_client.get("/api/users", headers=admin_auth_headers)
+    """Test GET /api/v1/users as admin returns paginated user list."""
+    response = test_client.get("/api/v1/users", headers=admin_auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -98,8 +98,8 @@ async def test_list_users_as_admin_returns_paginated_list(
 
 @pytest.mark.asyncio
 async def test_list_users_with_limit(test_client: TestClient, admin_auth_headers: dict) -> None:
-    """Test GET /api/users with limit parameter."""
-    response = test_client.get("/api/users?limit=1", headers=admin_auth_headers)
+    """Test GET /api/v1/users with limit parameter."""
+    response = test_client.get("/api/v1/users?limit=1", headers=admin_auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -110,7 +110,7 @@ async def test_list_users_with_limit(test_client: TestClient, admin_auth_headers
 async def test_list_users_with_cursor(
     test_client: TestClient, admin_user: User, admin_auth_headers: dict, db_session: AsyncSession
 ) -> None:
-    """Test GET /api/users with cursor pagination."""
+    """Test GET /api/v1/users with cursor pagination."""
     # Create a second user to have pagination
     second_user = User(
         email="second@example.com",
@@ -122,7 +122,7 @@ async def test_list_users_with_cursor(
     await db_session.commit()
 
     # Get first page with cursor after admin user
-    response = test_client.get(f"/api/users?cursor={admin_user.id}", headers=admin_auth_headers)
+    response = test_client.get(f"/api/v1/users?cursor={admin_user.id}", headers=admin_auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -135,10 +135,10 @@ async def test_list_users_with_cursor(
 async def test_update_user_status_as_admin(
     test_client: TestClient, regular_user: User, admin_auth_headers: dict
 ) -> None:
-    """Test PATCH /api/users/{id}/status as admin deactivates user."""
+    """Test PATCH /api/v1/users/{id}/status as admin deactivates user."""
     payload = {"is_active": False}
     response = test_client.patch(
-        f"/api/users/{regular_user.id}/status",
+        f"/api/v1/users/{regular_user.id}/status",
         json=payload,
         headers=admin_auth_headers,
     )
@@ -153,10 +153,10 @@ async def test_update_user_status_as_admin(
 async def test_update_user_status_as_regular_user_returns_403(
     test_client: TestClient, admin_user: User, regular_auth_headers: dict
 ) -> None:
-    """Test PATCH /api/users/{id}/status as regular user returns 403."""
+    """Test PATCH /api/v1/users/{id}/status as regular user returns 403."""
     payload = {"is_active": False}
     response = test_client.patch(
-        f"/api/users/{admin_user.id}/status",
+        f"/api/v1/users/{admin_user.id}/status",
         json=payload,
         headers=regular_auth_headers,
     )
@@ -168,10 +168,10 @@ async def test_update_user_status_as_regular_user_returns_403(
 async def test_update_user_status_non_existent(
     test_client: TestClient, admin_auth_headers: dict
 ) -> None:
-    """Test PATCH /api/users/{id}/status with non-existent user returns 404."""
+    """Test PATCH /api/v1/users/{id}/status with non-existent user returns 404."""
     payload = {"is_active": False}
     response = test_client.patch(
-        "/api/users/99999/status",
+        "/api/v1/users/99999/status",
         json=payload,
         headers=admin_auth_headers,
     )
@@ -183,10 +183,10 @@ async def test_update_user_status_non_existent(
 async def test_update_user_status_reactivate(
     test_client: TestClient, regular_user: User, admin_auth_headers: dict
 ) -> None:
-    """Test PATCH /api/users/{id}/status reactivates user."""
+    """Test PATCH /api/v1/users/{id}/status reactivates user."""
     # Deactivate first
     response = test_client.patch(
-        f"/api/users/{regular_user.id}/status",
+        f"/api/v1/users/{regular_user.id}/status",
         json={"is_active": False},
         headers=admin_auth_headers,
     )
@@ -195,7 +195,7 @@ async def test_update_user_status_reactivate(
 
     # Reactivate
     response = test_client.patch(
-        f"/api/users/{regular_user.id}/status",
+        f"/api/v1/users/{regular_user.id}/status",
         json={"is_active": True},
         headers=admin_auth_headers,
     )
@@ -207,7 +207,7 @@ async def test_update_user_status_reactivate(
 async def test_list_users_without_auth_returns_403(
     test_client: TestClient,
 ) -> None:
-    """Test GET /api/users without auth returns 403."""
-    response = test_client.get("/api/users")
+    """Test GET /api/v1/users without auth returns 403."""
+    response = test_client.get("/api/v1/users")
 
     assert response.status_code == 403

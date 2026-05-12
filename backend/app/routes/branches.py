@@ -3,9 +3,9 @@
 import logging
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_admin_user, get_db
+from app.core.uow import UnitOfWork
+from app.dependencies import get_admin_user, get_uow
 from app.models.user import User
 from app.schemas.branch import (
     BranchCreate,
@@ -29,30 +29,30 @@ router = APIRouter(prefix="/branches", tags=["branches"])
 
 @router.get("/", response_model=BranchListResponse)
 async def list_all_branches(
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> BranchListResponse:
     """List all branches (public)."""
-    branches = await list_branches(db)
+    branches = await list_branches(uow)
     return BranchListResponse(items=branches, total=len(branches))
 
 
 @router.get("/{branch_id}", response_model=BranchResponse)
 async def get_branch_detail(
     branch_id: int,
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> BranchResponse:
     """Get branch detail by ID (public)."""
-    return await get_branch(branch_id=branch_id, db=db)
+    return await get_branch(branch_id=branch_id, uow=uow)
 
 
 @router.post("/", response_model=BranchResponse, status_code=status.HTTP_201_CREATED)
 async def create_new_branch(
     body: BranchCreate,
     current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> BranchResponse:
     """Create a new branch (admin only)."""
-    branch = await create_branch(data=body, db=db)
+    branch = await create_branch(data=body, uow=uow)
     logger.info(
         "Branch created: id=%s, name=%s, by=%s",
         branch.id, branch.name, current_user.id,
@@ -65,10 +65,10 @@ async def update_existing_branch(
     branch_id: int,
     body: BranchUpdate,
     current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> BranchResponse:
     """Update an existing branch (admin only)."""
-    branch = await update_branch(branch_id=branch_id, data=body, db=db)
+    branch = await update_branch(branch_id=branch_id, data=body, uow=uow)
     logger.info(
         "Branch updated: id=%s, by=%s",
         branch.id, current_user.id,
@@ -80,10 +80,10 @@ async def update_existing_branch(
 async def delete_existing_branch(
     branch_id: int,
     current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     """Delete a branch (admin only)."""
-    await delete_branch(branch_id=branch_id, db=db)
+    await delete_branch(branch_id=branch_id, uow=uow)
     logger.info(
         "Branch deleted: id=%s, by=%s",
         branch_id, current_user.id,
@@ -94,10 +94,10 @@ async def delete_existing_branch(
 async def toggle_branch_active_status(
     branch_id: int,
     current_user: User = Depends(get_admin_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> BranchResponse:
     """Toggle branch is_active status (admin only)."""
-    branch = await toggle_branch_status(branch_id=branch_id, db=db)
+    branch = await toggle_branch_status(branch_id=branch_id, uow=uow)
     logger.info(
         "Branch toggled: id=%s, is_active=%s, by=%s",
         branch.id, branch.is_active, current_user.id,

@@ -1,13 +1,13 @@
 """FastAPI dependency functions."""
 
-from typing import Optional
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from app.models.user import User
+from app.core.uow import UnitOfWork
 from app.security.jwt import verify_token
 from database.session import get_db_session
 
@@ -17,23 +17,19 @@ security = HTTPBearer()
 get_db = get_db_session
 
 
+async def get_uow(
+    session: AsyncSession = Depends(get_db),
+) -> AsyncGenerator[UnitOfWork, None]:
+    """Provide a UnitOfWork tied to the request session."""
+    async with UnitOfWork(session) as uow:
+        yield uow
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> User:
-    """Get the currently authenticated user from JWT token.
-
-    Args:
-        credentials: HTTP Bearer credentials from request
-        session: Database session
-
-    Returns:
-        User object for the authenticated user
-
-    Raises:
-        HTTPException 401: If token is invalid or expired
-        HTTPException 404: If user not found in database
-    """
+    """Get the currently authenticated user from JWT token."""
     token = credentials.credentials
     payload = verify_token(token)
 
@@ -52,22 +48,27 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Fetch user from database
-    result = await session.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
+    # Use UoW repository instead of direct session execute
+    user = await uow.users.get_by_id(user_id)
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Check if user is not soft-deleted
     if user.deleted_at is not None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Account has been deleted",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive",
         )
 
     return user
@@ -76,17 +77,7 @@ async def get_current_user(
 async def get_admin_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Get the currently authenticated user and verify they are an admin.
-
-    Args:
-        current_user: Current authenticated user
-
-    Returns:
-        User object if user is admin
-
-    Raises:
-        HTTPException 403: If user is not admin
-    """
+    """Verify current user is an admin."""
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -95,24 +86,36 @@ async def get_admin_user(
     return current_user
 
 
+def require_role(*roles: str):
+    """Factory: returns a FastAPI dependency that checks the user has one of the given roles.
+
+    Usage:
+        @router.get("/admin-only")
+        async def admin_endpoint(current_user: User = Depends(require_role("admin"))):
+            ...
+
+        @router.get("/staff")
+        async def staff_endpoint(current_user: User = Depends(require_role("admin", "staff"))):
+            ...
+    """
+    async def _role_checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Requires one of these roles: {', '.join(roles)}",
+            )
+        return current_user
+
+    return _role_checker
+
+
 async def get_current_user_optional(
     credentials: HTTPAuthorizationCredentials | None = Depends(
         HTTPBearer(auto_error=False)
     ),
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> User | None:
-    """Get the currently authenticated user or None if not authenticated.
-
-    Unlike get_current_user, this does NOT raise 401 if no token is provided.
-    Useful for endpoints that personalize results but work without auth.
-
-    Args:
-        credentials: Optional HTTP Bearer credentials
-        session: Database session
-
-    Returns:
-        User object or None if not authenticated
-    """
+    """Get the currently authenticated user or None."""
     if credentials is None:
         return None
 
@@ -125,8 +128,7 @@ async def get_current_user_optional(
     if user_id is None:
         return None
 
-    result = await session.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
+    user = await uow.users.get_by_id(user_id)
 
     if not user or user.deleted_at is not None:
         return None

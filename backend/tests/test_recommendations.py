@@ -222,7 +222,7 @@ def test_get_recommendation_service_is_singleton():
 def _register_user(test_client: TestClient, email: str, password: str) -> dict:
     """Register a user and return auth headers."""
     resp = test_client.post(
-        "/api/auth/register",
+        "/api/v1/auth/register",
         json={"email": email, "password": password},
     )
     assert resp.status_code == 201, f"Register failed: {resp.json()}"
@@ -233,7 +233,7 @@ def _register_user(test_client: TestClient, email: str, password: str) -> dict:
 def _create_category(test_client: TestClient, name: str, headers: dict | None = None) -> int:
     """Create a category and return its ID."""
     resp = test_client.post(
-        "/api/categories/",
+        "/api/v1/categories/",
         json={"name": name, "description": "Test category"},
         headers=headers or {},
     )
@@ -251,7 +251,7 @@ def _create_product(
 ) -> int:
     """Create a product and return its ID."""
     resp = test_client.post(
-        "/api/products/",
+        "/api/v1/products/",
         json={"name": name, "price": price, "category_id": category_id, "is_available": is_available},
         headers=headers or {},
     )
@@ -272,7 +272,7 @@ class TestRecommendationEndpoints:
         _create_product(test_client, "Trend A", 10.00, cat_id)
         _create_product(test_client, "Trend B", 20.00, cat_id)
 
-        response = test_client.get("/api/products/trending")
+        response = test_client.get("/api/v1/products/trending")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -290,14 +290,14 @@ class TestRecommendationEndpoints:
         for i in range(5):
             _create_product(test_client, f"TrendLimit {i}", 10.00 + i, cat_id)
 
-        response = test_client.get("/api/products/trending?limit=2")
+        response = test_client.get("/api/v1/products/trending?limit=2")
         assert response.status_code == 200
         data = response.json()
         assert len(data) <= 2
 
     def test_trending_validates_limit_upper_bound(self, test_client: TestClient):
         """Trending rejects limit > 20."""
-        response = test_client.get("/api/products/trending?limit=50")
+        response = test_client.get("/api/v1/products/trending?limit=50")
         assert response.status_code == 422
 
     def test_recommendations_without_auth_returns_trending(self, test_client: TestClient):
@@ -305,7 +305,7 @@ class TestRecommendationEndpoints:
         cat_id = _create_category(test_client, "RecNoAuthCat")
         _create_product(test_client, "RecNoAuth", 10.00, cat_id)
 
-        response = test_client.get("/api/products/recommendations")
+        response = test_client.get("/api/v1/products/recommendations")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -319,7 +319,7 @@ class TestRecommendationEndpoints:
         cat_id = _create_category(test_client, "RecAuthCat")
         _create_product(test_client, "RecAuthProd", 15.00, cat_id)
 
-        response = test_client.get("/api/products/recommendations", headers=auth)
+        response = test_client.get("/api/v1/products/recommendations", headers=auth)
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -329,7 +329,7 @@ class TestRecommendationEndpoints:
         cat_id = _create_category(test_client, "ShapeCat")
         _create_product(test_client, "Shape Prod", 10.00, cat_id)
 
-        response = test_client.get("/api/products/recommendations")
+        response = test_client.get("/api/v1/products/recommendations")
         assert response.status_code == 200
         for item in response.json():
             assert "id" in item
@@ -345,7 +345,7 @@ class TestRecommendationEndpoints:
         for i in range(5):
             _create_product(test_client, f"LimitProd {i}", 10.00 + i, cat_id)
 
-        response = test_client.get("/api/products/recommendations?limit=2")
+        response = test_client.get("/api/v1/products/recommendations?limit=2")
         assert response.status_code == 200
         assert len(response.json()) <= 2
 
@@ -355,7 +355,7 @@ class TestRecommendationEndpoints:
         p1_id = _create_product(test_client, "FBT Base", 10.00, cat_id)
         _create_product(test_client, "FBT Related", 15.00, cat_id)
 
-        response = test_client.get(f"/api/products/{p1_id}/frequently-bought-together")
+        response = test_client.get(f"/api/v1/products/{p1_id}/frequently-bought-together")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -368,13 +368,13 @@ class TestRecommendationEndpoints:
         cat_id = _create_category(test_client, "LonelyCat")
         p1_id = _create_product(test_client, "Only Product", 5.00, cat_id)
 
-        response = test_client.get(f"/api/products/{p1_id}/frequently-bought-together")
+        response = test_client.get(f"/api/v1/products/{p1_id}/frequently-bought-together")
         assert response.status_code == 200
         assert response.json() == []
 
     def test_fbt_nonexistent_product_returns_404(self, test_client: TestClient):
         """FBT returns 404 for non-existent product."""
-        response = test_client.get("/api/products/99999/frequently-bought-together")
+        response = test_client.get("/api/v1/products/99999/frequently-bought-together")
         assert response.status_code == 404
 
     def test_fbt_with_orders_shows_co_purchased(self, test_client: TestClient):
@@ -387,33 +387,33 @@ class TestRecommendationEndpoints:
         p3_id = _create_product(test_client, "Co-Purchased B", 20.00, cat_id, headers=auth)
 
         # Add products to cart and checkout
-        cart_resp = test_client.get("/api/carts/", headers=auth)
+        cart_resp = test_client.get("/api/v1/carts/", headers=auth)
         cart_id = cart_resp.json()["id"]
 
         test_client.post(
-            f"/api/carts/{cart_id}/items",
+            f"/api/v1/carts/{cart_id}/items",
             json={"product_id": p1_id, "quantity": 1},
             headers=auth,
         )
         test_client.post(
-            f"/api/carts/{cart_id}/items",
+            f"/api/v1/carts/{cart_id}/items",
             json={"product_id": p2_id, "quantity": 1},
             headers=auth,
         )
         test_client.post(
-            f"/api/carts/{cart_id}/items",
+            f"/api/v1/carts/{cart_id}/items",
             json={"product_id": p3_id, "quantity": 2},
             headers=auth,
         )
 
         checkout_resp = test_client.post(
-            "/api/orders/checkout",
+            "/api/v1/orders/checkout",
             json={"notes": "Test order"},
             headers=auth,
         )
         assert checkout_resp.status_code == 201
 
-        fbt_resp = test_client.get(f"/api/products/{p1_id}/frequently-bought-together")
+        fbt_resp = test_client.get(f"/api/v1/products/{p1_id}/frequently-bought-together")
         assert fbt_resp.status_code == 200
         data = fbt_resp.json()
         fbt_ids = {item["id"] for item in data}
@@ -427,7 +427,7 @@ class TestRecommendationEndpoints:
         _create_product(test_client, "Available", 10.00, cat_id, is_available=True)
         _create_product(test_client, "Unavailable", 5.00, cat_id, is_available=False)
 
-        response = test_client.get("/api/products/trending")
+        response = test_client.get("/api/v1/products/trending")
         assert response.status_code == 200
         for item in response.json():
             assert item["is_available"] is True
@@ -438,7 +438,7 @@ class TestRecommendationEndpoints:
         p1_id = _create_product(test_client, "Self", 10.00, cat_id)
         _create_product(test_client, "Other", 15.00, cat_id)
 
-        response = test_client.get(f"/api/products/{p1_id}/frequently-bought-together")
+        response = test_client.get(f"/api/v1/products/{p1_id}/frequently-bought-together")
         fbt_ids = {item["id"] for item in response.json()}
         assert p1_id not in fbt_ids
 
@@ -447,7 +447,7 @@ class TestRecommendationEndpoints:
         cat_id = _create_category(test_client, "ExtraFieldsCat")
         _create_product(test_client, "Extra", 10.00, cat_id)
 
-        response = test_client.get("/api/products/trending")
+        response = test_client.get("/api/v1/products/trending")
         assert response.status_code == 200
         data = response.json()
         if len(data) > 0:

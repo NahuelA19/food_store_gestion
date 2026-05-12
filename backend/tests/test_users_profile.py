@@ -49,8 +49,8 @@ def auth_headers(user_with_profile: User) -> dict:
 async def test_get_current_profile_success(
     test_client: TestClient, user_with_profile: User, auth_headers: dict
 ) -> None:
-    """Test GET /api/users/me returns user's full profile."""
-    response = test_client.get("/api/users/me", headers=auth_headers)
+    """Test GET /api/v1/users/me returns user's full profile."""
+    response = test_client.get("/api/v1/users/me", headers=auth_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -65,16 +65,16 @@ async def test_get_current_profile_success(
 
 @pytest.mark.asyncio
 async def test_get_current_profile_without_auth(test_client: TestClient) -> None:
-    """Test GET /api/users/me without auth returns 401."""
-    response = test_client.get("/api/users/me")
+    """Test GET /api/v1/users/me without auth returns 401."""
+    response = test_client.get("/api/v1/users/me")
 
     assert response.status_code == 403  # 403 because no credentials at all
 
 
 @pytest.mark.asyncio
 async def test_get_public_profile_success(test_client: TestClient, user_with_profile: User) -> None:
-    """Test GET /api/users/{id} returns limited public profile."""
-    response = test_client.get(f"/api/users/{user_with_profile.id}")
+    """Test GET /api/v1/users/{id} returns limited public profile."""
+    response = test_client.get(f"/api/v1/users/{user_with_profile.id}")
 
     assert response.status_code == 200
     data = response.json()
@@ -91,8 +91,8 @@ async def test_get_public_profile_success(test_client: TestClient, user_with_pro
 
 @pytest.mark.asyncio
 async def test_get_public_profile_non_existent(test_client: TestClient) -> None:
-    """Test GET /api/users/{id} with non-existent user returns 404."""
-    response = test_client.get("/api/users/99999")
+    """Test GET /api/v1/users/{id} with non-existent user returns 404."""
+    response = test_client.get("/api/v1/users/99999")
 
     assert response.status_code == 404
 
@@ -101,7 +101,7 @@ async def test_get_public_profile_non_existent(test_client: TestClient) -> None:
 async def test_get_deleted_user_profile_returns_404(
     test_client: TestClient, db_session: AsyncSession
 ) -> None:
-    """Test GET /api/users/{id} with deleted user returns 404."""
+    """Test GET /api/v1/users/{id} with deleted user returns 404."""
     # Create and delete a user
     user = User(
         email="deleted@example.com",
@@ -113,6 +113,6 @@ async def test_get_deleted_user_profile_returns_404(
     await db_session.commit()
     await db_session.refresh(user)
 
-    response = test_client.get(f"/api/users/{user.id}")
+    response = test_client.get(f"/api/v1/users/{user.id}")
 
     assert response.status_code == 404

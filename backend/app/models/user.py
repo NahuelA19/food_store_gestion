@@ -2,23 +2,24 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.models.cart import Cart
     from app.models.notification import Notification
     from app.models.order import Order
+    from app.models.refresh_token import RefreshToken
+    from app.models.historial_estado_pedido import HistorialEstadoPedido
     from app.models.review import Review
     from app.models.wishlist import WishlistItem
 
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 
 
-class User(Base, TimestampMixin):
+class User(Base, SoftDeleteMixin, TimestampMixin):
     """User model for authentication and profile."""
 
     __tablename__ = "users"
@@ -30,15 +31,11 @@ class User(Base, TimestampMixin):
     role: Mapped[str] = mapped_column(String(20), default="user", nullable=False)
 
     # Profile fields
-    first_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    last_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    first_name: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
-    # Stripe customer ID for payment processing
-    stripe_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-
-    # Soft delete
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Stripe fields were removed in migracion-hacia-aprobacion (ERD v5)
 
     # Relationships
     preferences: Mapped[list["UserPreference"]] = relationship(  # noqa: F821
@@ -58,6 +55,20 @@ class User(Base, TimestampMixin):
     )
     notifications: Mapped[list["Notification"]] = relationship(  # noqa: F821
         "Notification", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    # No cascade: history is append-only and keeps usuario_id nullable (ON DELETE SET NULL).
+    historial_estados_pedido: Mapped[list["HistorialEstadoPedido"]] = relationship(
+        "HistorialEstadoPedido",
+        back_populates="usuario",
+        lazy="selectin",
     )
 
     @property

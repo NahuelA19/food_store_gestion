@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String
+from sqlalchemy import DateTime, String
 
 if TYPE_CHECKING:
     from app.models.product import Product
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 
 
-class Category(Base, TimestampMixin):
+class Category(Base, SoftDeleteMixin, TimestampMixin):
     """Product category model."""
 
     __tablename__ = "categories"

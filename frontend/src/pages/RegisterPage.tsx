@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuthContext } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +16,7 @@ export function RegisterPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const navigate = useNavigate();
-  const { register, isLoading } = useAuthContext();
+  const { register, isLoading } = useAuth();
 
   const validatePassword = (): string[] => {
     const errors: string[] = [];

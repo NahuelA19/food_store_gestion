@@ -96,7 +96,7 @@ class TestCreateReview:
     ):
         """Test creating a review with all fields."""
         response = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 4,
@@ -122,7 +122,7 @@ class TestCreateReview:
     ):
         """Test creating a review with only required fields."""
         response = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 5,
@@ -142,7 +142,7 @@ class TestCreateReview:
     ):
         """Test creating review without auth returns 401."""
         response = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 3,
@@ -157,7 +157,7 @@ class TestCreateReview:
     ):
         """Test creating review for non-existent product returns 404."""
         response = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": 99999,
                 "rating": 3,
@@ -175,7 +175,7 @@ class TestCreateReview:
         """Test creating duplicate review returns 409."""
         # First review
         test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 4,
@@ -184,7 +184,7 @@ class TestCreateReview:
         )
         # Second review (duplicate)
         response = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 5,
@@ -201,7 +201,7 @@ class TestCreateReview:
     ):
         """Test creating review with invalid rating returns 422."""
         response = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 0,
@@ -211,7 +211,7 @@ class TestCreateReview:
         assert response.status_code == 422
 
         response = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 6,
@@ -231,7 +231,7 @@ class TestListReviews:
     ):
         """Test listing reviews for product with no reviews."""
         response = test_client.get(
-            f"/api/reviews/product/{test_product.id}"
+            f"/api/v1/reviews/product/{test_product.id}"
         )
         assert response.status_code == 200
         data = response.json()
@@ -248,7 +248,7 @@ class TestListReviews:
         """Test listing reviews shows only approved reviews."""
         # Create review
         test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 4,
@@ -258,7 +258,7 @@ class TestListReviews:
         )
         # List - should be 0 because review is pending approval
         response = test_client.get(
-            f"/api/reviews/product/{test_product.id}"
+            f"/api/v1/reviews/product/{test_product.id}"
         )
         assert response.status_code == 200
         assert response.json()["total"] == 0
@@ -276,7 +276,7 @@ class TestUpdateReview:
         """Test updating own review succeeds."""
         # Create review
         create_resp = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 3,
@@ -288,7 +288,7 @@ class TestUpdateReview:
 
         # Update
         response = test_client.put(
-            f"/api/reviews/{review_id}",
+            f"/api/v1/reviews/{review_id}",
             json={"rating": 5, "comment": "Updated - amazing!"},
             headers=user_auth_headers,
         )
@@ -308,7 +308,7 @@ class TestUpdateReview:
         """Test updating another user's review returns 403."""
         # User 1 creates review
         create_resp = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 4,
@@ -319,7 +319,7 @@ class TestUpdateReview:
 
         # User 2 tries to update
         response = test_client.put(
-            f"/api/reviews/{review_id}",
+            f"/api/v1/reviews/{review_id}",
             json={"rating": 1},
             headers=second_user_auth_headers,
         )
@@ -337,7 +337,7 @@ class TestDeleteReview:
     ):
         """Test deleting own review succeeds."""
         create_resp = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 3,
@@ -347,7 +347,7 @@ class TestDeleteReview:
         review_id = create_resp.json()["id"]
 
         response = test_client.delete(
-            f"/api/reviews/{review_id}",
+            f"/api/v1/reviews/{review_id}",
             headers=user_auth_headers,
         )
         assert response.status_code == 204
@@ -361,7 +361,7 @@ class TestDeleteReview:
     ):
         """Test deleting another user's review returns 403."""
         create_resp = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 4,
@@ -371,7 +371,7 @@ class TestDeleteReview:
         review_id = create_resp.json()["id"]
 
         response = test_client.delete(
-            f"/api/reviews/{review_id}",
+            f"/api/v1/reviews/{review_id}",
             headers=second_user_auth_headers,
         )
         assert response.status_code == 403
@@ -390,7 +390,7 @@ class TestAdminModeration:
         """Test admin can approve a review."""
         # Create review as regular user
         create_resp = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 5,
@@ -402,7 +402,7 @@ class TestAdminModeration:
 
         # Admin approves
         response = test_client.patch(
-            f"/api/admin/reviews/{review_id}/moderate",
+            f"/api/v1/admin/reviews/{review_id}/moderate",
             json={"action": "approve"},
             headers=admin_auth_headers,
         )
@@ -418,7 +418,7 @@ class TestAdminModeration:
     ):
         """Test admin can reject a review with reason."""
         create_resp = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 2,
@@ -430,7 +430,7 @@ class TestAdminModeration:
 
         # Admin rejects
         response = test_client.patch(
-            f"/api/admin/reviews/{review_id}/moderate",
+            f"/api/v1/admin/reviews/{review_id}/moderate",
             json={
                 "action": "reject",
                 "rejection_reason": "Inappropriate content",
@@ -450,7 +450,7 @@ class TestAdminModeration:
     ):
         """Test non-admin user cannot moderate reviews."""
         create_resp = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 4,
@@ -460,7 +460,7 @@ class TestAdminModeration:
         review_id = create_resp.json()["id"]
 
         response = test_client.patch(
-            f"/api/admin/reviews/{review_id}/moderate",
+            f"/api/v1/admin/reviews/{review_id}/moderate",
             json={"action": "approve"},
             headers=user_auth_headers,
         )
@@ -475,7 +475,7 @@ class TestAdminModeration:
     ):
         """Test admin can delete any review."""
         create_resp = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 3,
@@ -485,7 +485,7 @@ class TestAdminModeration:
         review_id = create_resp.json()["id"]
 
         response = test_client.delete(
-            f"/api/admin/reviews/{review_id}",
+            f"/api/v1/admin/reviews/{review_id}",
             headers=admin_auth_headers,
         )
         assert response.status_code == 204
@@ -504,7 +504,7 @@ class TestProductDetailReviews:
         """Test product detail endpoint includes review summary."""
         # Create and approve a review
         create_resp = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 4,
@@ -515,13 +515,13 @@ class TestProductDetailReviews:
         review_id = create_resp.json()["id"]
 
         test_client.patch(
-            f"/api/admin/reviews/{review_id}/moderate",
+            f"/api/v1/admin/reviews/{review_id}/moderate",
             json={"action": "approve"},
             headers=admin_auth_headers,
         )
 
         # Get product detail
-        response = test_client.get(f"/api/products/{test_product.id}")
+        response = test_client.get(f"/api/v1/products/{test_product.id}")
         assert response.status_code == 200
         data = response.json()
         assert "reviews" in data
@@ -535,7 +535,7 @@ class TestRecentReviews:
 
     def test_recent_reviews_empty(self, test_client: TestClient):
         """Test recent reviews when no approved reviews exist."""
-        response = test_client.get("/api/reviews/recent")
+        response = test_client.get("/api/v1/reviews/recent")
         assert response.status_code == 200
         assert response.json() == []
 
@@ -549,7 +549,7 @@ class TestRecentReviews:
         """Test recent reviews returns approved reviews."""
         # Create and approve a review
         create_resp = test_client.post(
-            "/api/reviews/",
+            "/api/v1/reviews/",
             json={
                 "product_id": test_product.id,
                 "rating": 5,
@@ -560,12 +560,12 @@ class TestRecentReviews:
         review_id = create_resp.json()["id"]
 
         test_client.patch(
-            f"/api/admin/reviews/{review_id}/moderate",
+            f"/api/v1/admin/reviews/{review_id}/moderate",
             json={"action": "approve"},
             headers=admin_auth_headers,
         )
 
-        response = test_client.get("/api/reviews/recent?limit=5")
+        response = test_client.get("/api/v1/reviews/recent?limit=5")
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1

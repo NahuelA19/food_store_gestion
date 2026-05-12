@@ -72,7 +72,7 @@ export function NotificationsPage() {
           </p>
         </div>
         {unreadCount > 0 && (
-          <Button variant="outline" onClick={markAllAsRead}>
+          <Button variant="outline" onClick={() => markAllAsRead()}>
             Mark all as read
           </Button>
         )}

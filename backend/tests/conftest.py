@@ -10,6 +10,14 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
+os.environ["TESTING"] = "1"
+if "DATABASE_URL" not in os.environ:
+    os.environ["DATABASE_URL"] = "postgresql+asyncpg://food_store_user:root@localhost:5433/food_store_test"
+if "SECRET_KEY" not in os.environ:
+    os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
+
+from fastapi import APIRouter, Depends
+
 from app.main import app
 from app.models import Base
 from app.models.category import Category
@@ -17,146 +25,102 @@ from app.models.inventory import Inventory
 from app.models.product import Product
 from app.models.user import User
 from app.security.password import get_password_hash
-from database.session import get_db_session
+from app.dependencies import get_current_user, get_uow
+from app.core.uow import UnitOfWork
 
-# Override DATABASE_URL for testing
+# Test-only routes for auth middleware tests
+_test_router = APIRouter()
+
+
+@_test_router.get("/protected/test")
+async def protected_test_route(current_user=Depends(get_current_user)):
+    """Test protected endpoint."""
+    return {"status": "ok", "user_id": current_user.id, "user_email": current_user.email}
+
+
+@_test_router.get("/public/test")
+async def public_test_route():
+    """Test public endpoint."""
+    return {"status": "ok"}
+
+
+app.include_router(_test_router, prefix="/api/v1")
+
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
     "postgresql+asyncpg://food_store_user:root@localhost:5433/food_store_test",
 )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def test_engine():
-    """Create test database engine with NullPool.
-
-    This fixture requires a running PostgreSQL database.
-    If the database is not available, tests using this fixture will be skipped.
-    """
-    engine = create_async_engine(
-        TEST_DATABASE_URL,
-        echo=False,
-        poolclass=NullPool,
-    )
-
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-    except Exception as e:
-        pytest.skip(f"Database not available: {e}")
-
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield engine
-
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
-    except Exception:
-        pass  # Ignore errors on cleanup
-
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
 
 
 @pytest.fixture
-async def get_test_db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
-    """Get a test database session."""
-    if test_engine is None:
-        pytest.skip("Database not available")
-
-    # Clean up all tables before each test
+async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-
     async with AsyncSession(test_engine, expire_on_commit=False) as session:
-        try:
-            yield session
-        finally:
-            await session.rollback()
+        yield session
+        await session.rollback()
 
 
 @pytest.fixture
-def override_get_db_session(get_test_db_session):
-    """Override FastAPI dependency for test database session."""
+def override_uow(db_session):
+    from app.security.limiter import limiter
+    limiter._storage.reset()
 
-    def _get_db_session():
-        yield get_test_db_session
-
-    app.dependency_overrides[get_db_session] = _get_db_session
+    async def _get_uow_override():
+        async with UnitOfWork(db_session) as uow:
+            yield uow
+    app.dependency_overrides[get_uow] = _get_uow_override
     yield
     app.dependency_overrides.clear()
 
 
 @pytest.fixture
-def test_client(override_get_db_session) -> TestClient:
-    """FastAPI test client with overridden database dependency."""
-    return TestClient(app)
-
-
-@pytest.fixture
-async def async_client(override_get_db_session) -> AsyncClient:
-    """Async HTTP client for FastAPI app."""
+async def async_client(override_uow) -> AsyncClient:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
 
 @pytest.fixture
-async def db_session(get_test_db_session) -> AsyncSession:
-    """Database session for tests."""
-    return get_test_db_session
+def test_client(override_uow) -> TestClient:
+    with TestClient(app) as client:
+        yield client
 
 
 @pytest.fixture
 async def test_user(db_session: AsyncSession) -> User:
-    """Create a test user for authentication tests."""
-    user = User(
-        email="testuser@example.com",
-        hashed_password=get_password_hash("TestPassword123"),
-        is_active=True,
-    )
+    user = User(email="testuser@example.com", hashed_password=get_password_hash("TestPassword123"), is_active=True)
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
     return user
 
-
 @pytest.fixture
 async def test_category(db_session: AsyncSession) -> Category:
-    """Create a test category."""
     category = Category(name="Vegetables", description="Fresh vegetables")
     db_session.add(category)
     await db_session.commit()
     await db_session.refresh(category)
     return category
 
-
 @pytest.fixture
 async def test_product(db_session: AsyncSession, test_category: Category) -> Product:
-    """Create a test product."""
-    product = Product(
-        name="Tomato",
-        description="Fresh red tomato",
-        price=Decimal("2.50"),
-        category_id=test_category.id,
-        is_available=True,
-    )
+    product = Product(name="Tomato", description="Fresh red tomato", price=Decimal("2.50"), category_id=test_category.id, is_available=True)
     db_session.add(product)
     await db_session.flush()
-
-    # Auto-create inventory
     inventory = Inventory(product_id=product.id, stock_quantity=100)
     db_session.add(inventory)
     await db_session.commit()
     await db_session.refresh(product)
-    await db_session.refresh(inventory)
     return product
-
-
-@pytest.fixture
-async def test_inventory(db_session: AsyncSession, test_product: Product) -> Inventory:
-    """Get the inventory for the test product."""
-    from sqlalchemy import select
-
-    result = await db_session.execute(
-        select(Inventory).where(Inventory.product_id == test_product.id)
-    )
-    return result.scalar_one()

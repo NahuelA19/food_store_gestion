@@ -4,7 +4,8 @@
  */
 
 import { Link, useLocation } from "react-router-dom";
-import { useAuthContext } from "../../context/AuthContext";
+import { useAuthStore } from "../../store/authStore";
+import { useAuth } from "../../hooks/useAuth";
 import { Icon } from "../ui/Icon";
 import { cn } from "@/lib/utils";
 import {
@@ -26,7 +27,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
-  const { isAuthenticated, user, logout } = useAuthContext();
+  const { isAuthenticated, user } = useAuthStore();
+  const { logout } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => {

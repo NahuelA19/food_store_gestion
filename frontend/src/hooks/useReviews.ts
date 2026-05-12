@@ -1,135 +1,114 @@
-/**
- * Review hooks
- */
-
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { reviewApi } from "../api/reviewApi";
-import type { Review, ReviewCreate, ReviewListResponse, ReviewUpdate } from "../types/review";
+import type { Review, ReviewCreate, ReviewUpdate } from "../types/review";
 
 export function useProductReviews(productId: number | undefined) {
-  const [data, setData] = useState<ReviewListResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    if (!productId) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    reviewApi
-      .getProductReviews(productId, page)
-      .then(setData)
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, [productId, page]);
-
-  const refetch = useCallback(() => {
-    if (!productId) return;
-    setIsLoading(true);
-    reviewApi
-      .getProductReviews(productId, page)
-      .then(setData)
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, [productId, page]);
+  const query = useQuery({
+    queryKey: ["product-reviews", productId, page],
+    queryFn: () => reviewApi.getProductReviews(productId!, page),
+    enabled: !!productId,
+  });
 
   return {
-    reviews: data?.reviews ?? [],
+    reviews: query.data?.reviews ?? [],
     summary: {
-      average_rating: data?.average_rating ?? null,
-      total_count: data?.total_reviews ?? 0,
+      average_rating: query.data?.average_rating ?? null,
+      total_count: query.data?.total_reviews ?? 0,
       distribution: {} as Record<number, number>,
     },
-    total: data?.total ?? 0,
+    total: query.data?.total ?? 0,
     page,
     setPage,
-    isLoading,
-    error,
-    refetch,
+    isLoading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error ? query.error.message : "Failed to fetch reviews"
+      : null,
+    refetch: query.refetch,
   };
 }
 
 export function useCreateReview() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (data: ReviewCreate) => reviewApi.createReview(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["product-reviews", variables.product_id] });
+    },
+  });
 
-  const createReview = async (data: ReviewCreate): Promise<Review | null> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const review = await reviewApi.createReview(data);
-      return review;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to create review";
-      setError(message);
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
+  return {
+    createReview: async (data: ReviewCreate): Promise<Review | null> => {
+      try {
+        return await mutation.mutateAsync(data);
+      } catch {
+        return null;
+      }
+    },
+    isLoading: mutation.isPending,
+    error: mutation.error
+      ? mutation.error instanceof Error ? mutation.error.message : "Failed to create review"
+      : null,
   };
-
-  return { createReview, isLoading, error };
 }
 
 export function useUpdateReview() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ReviewUpdate }) =>
+      reviewApi.updateReview(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product-reviews"] });
+    },
+  });
 
-  const updateReview = async (id: number, data: ReviewUpdate): Promise<Review | null> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const review = await reviewApi.updateReview(id, data);
-      return review;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to update review";
-      setError(message);
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
+  return {
+    updateReview: mutation.mutateAsync,
+    isLoading: mutation.isPending,
+    error: mutation.error
+      ? mutation.error instanceof Error ? mutation.error.message : "Failed to update review"
+      : null,
   };
-
-  return { updateReview, isLoading, error };
 }
 
 export function useDeleteReview() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (id: number) => reviewApi.deleteReview(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product-reviews"] });
+    },
+  });
 
-  const deleteReview = async (id: number): Promise<boolean> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await reviewApi.deleteReview(id);
-      return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete review";
-      setError(message);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+  return {
+    deleteReview: async (id: number): Promise<boolean> => {
+      try {
+        await mutation.mutateAsync(id);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    isLoading: mutation.isPending,
+    error: mutation.error
+      ? mutation.error instanceof Error ? mutation.error.message : "Failed to delete review"
+      : null,
   };
-
-  return { deleteReview, isLoading, error };
 }
 
 export function useRecentReviews(limit: number = 5) {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["recent-reviews", limit],
+    queryFn: () => reviewApi.getRecentReviews(limit),
+  });
 
-  useEffect(() => {
-    setIsLoading(true);
-    reviewApi
-      .getRecentReviews(limit)
-      .then(setReviews)
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, [limit]);
-
-  return { reviews, isLoading, error };
+  return {
+    reviews: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error ? query.error.message : "Failed to fetch recent reviews"
+      : null,
+  };
 }

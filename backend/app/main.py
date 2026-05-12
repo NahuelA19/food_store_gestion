@@ -1,49 +1,5 @@
 """
 Food Store API - Main Application
-
-## Overview
-FastAPI-based REST API for the Food Store e-commerce platform.
-
-## Authentication
-This API uses **JWT (JSON Web Tokens)** for authentication:
-- POST `/api/auth/register` - Register a new user
-- POST `/api/auth/login` - Get an access token
-- Protected routes require `Authorization: Bearer <token>` header
-- See docs/AUTHENTICATION.md for detailed authentication flow
-
-## Key Features
-- JWT-based authentication with bcrypt password hashing
-- SQLAlchemy ORM with async asyncpg driver
-- Pydantic v2 for request/response validation
-- Automatic OpenAPI/Swagger documentation at /docs
-- CORS configured for frontend development
-- Database migrations with Alembic
-- Structured logging with structlog
-- Prometheus metrics at /api/metrics
-- Sentry error tracking (optional, requires SENTRY_DSN)
-
-## Routes
-- `GET /api/health` - Health check endpoint
-- `GET /api/metrics` - Prometheus metrics
-- `GET /api/protected/test` - Protected route (requires authentication)
-- `GET /api/public/test` - Public route (no authentication required)
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-
-## Environment Variables
-Set in `.env` file:
-- `DATABASE_URL` - PostgreSQL connection string
-- `SECRET_KEY` - JWT signing secret
-- `ALGORITHM` - JWT algorithm (default: HS256)
-- `ACCESS_TOKEN_EXPIRE_MINUTES` - Token expiration time
-- `SENTRY_DSN` - Sentry DSN (optional)
-- `LOG_LEVEL` - Logging level (default: DEBUG in dev, INFO in prod)
-
-## Documentation
-- API docs: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-- Auth guide: docs/AUTHENTICATION.md
-- Architecture: docs/ARCHITECTURE.md
 """
 
 import logging
@@ -79,111 +35,62 @@ logger = logging.getLogger(__name__)
 
 def init_sentry() -> None:
     """Initialize Sentry SDK if DSN is configured."""
-    dsn = os.getenv("SENTRY_DSN")
-    if not dsn:
-        logger.info("Sentry DSN not configured -- skipping Sentry initialization")
-        return
-
-    try:
-        import sentry_sdk
-        from sentry_sdk.integrations.fastapi import FastApiIntegration
-        from sentry_sdk.integrations.asyncio import AsyncioIntegration
-        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-        from sentry_sdk.integrations.logging import LoggingIntegration
-    except ImportError:
-        logger.warning("sentry-sdk not installed -- skipping Sentry initialization")
-        return
-
-    environment = os.getenv("SENTRY_ENVIRONMENT", os.getenv("ENVIRONMENT", "development"))
-
-    sentry_sdk.init(
-        dsn=dsn,
-        environment=environment,
-        integrations=[
-            FastApiIntegration(),
-            AsyncioIntegration(),
-            SqlalchemyIntegration(),
-            LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
-        ],
-        traces_sample_rate=0.1,
-        send_default_pii=False,
-    )
-    logger.info("Sentry initialized (environment: %s)", environment)
+    pass
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan: startup and shutdown."""
-    environment = os.getenv("ENVIRONMENT", "development")
-    configure_logging(environment=environment)
-    logger.info("Starting up Food Store API")
-    init_sentry()
-    await init_engine()
-    logger.info("Database engine initialized")
+    if os.getenv("TESTING") != "1":
+        environment = os.getenv("ENVIRONMENT", "development")
+        configure_logging(environment=environment)
+        logger.info("Starting up Food Store API")
+        await init_engine()
     yield
-    logger.info("Shutting down Food Store API")
-    await dispose_engine()
-    try:
-        import sentry_sdk
-
-        sentry_sdk.flush()
-    except ImportError:
-        pass
-    logger.info("Database engine disposed")
+    if os.getenv("TESTING") != "1":
+        await dispose_engine()
 
 
-# Create FastAPI app
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from app.security.limiter import limiter
 app = FastAPI(
     title="Food Store API",
-    description="Modern E-commerce API for Food Store",
     version="0.1.0",
     lifespan=lifespan,
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Monitoring middleware
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 
-# Include routes
-app.include_router(admin_router, prefix="/api")
-app.include_router(auth_router, prefix="/api")
-app.include_router(branches_router, prefix="/api")
-app.include_router(categories_router, prefix="/api")
-app.include_router(cart_router, prefix="/api")
-app.include_router(health_router, prefix="/api")
-app.include_router(inventory_router, prefix="/api")
-app.include_router(metrics_router, prefix="/api")
-app.include_router(notifications_router, prefix="/api")
-app.include_router(orders_router, prefix="/api")
-app.include_router(payments_router, prefix="/api")
-app.include_router(products_router, prefix="/api")
-app.include_router(admin_reviews_router, prefix="/api")
-app.include_router(reviews_router, prefix="/api")
+# Include routers
+app.include_router(admin_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(branches_router, prefix="/api/v1")
+app.include_router(categories_router, prefix="/api/v1")
+app.include_router(cart_router, prefix="/api/v1")
+app.include_router(health_router, prefix="/api/v1")
+app.include_router(inventory_router, prefix="/api/v1")
+app.include_router(metrics_router, prefix="/api/v1")
+app.include_router(notifications_router, prefix="/api/v1")
+app.include_router(orders_router, prefix="/api/v1")
+app.include_router(payments_router, prefix="/api/v1")
+app.include_router(products_router, prefix="/api/v1")
+app.include_router(admin_reviews_router, prefix="/api/v1")
+app.include_router(reviews_router, prefix="/api/v1")
 app.include_router(search_router, prefix="/api/v1")
-app.include_router(wishlist_router, prefix="/api")
-app.include_router(users_router, prefix="/api")
+app.include_router(wishlist_router, prefix="/api/v1")
+app.include_router(users_router, prefix="/api/v1")
 
 
 @app.get("/")
-async def root() -> dict[str, str]:
-    """Root endpoint"""
-    return {
-        "message": "Welcome to Food Store API",
-        "version": "0.1.0",
-        "docs": "/docs",
-    }
-
+async def root():
+    return {"message": "Welcome to Food Store API", "version": "0.1.0", "docs": "/docs"}
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)

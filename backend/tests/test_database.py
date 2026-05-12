@@ -9,17 +9,17 @@ from app.models import User
 
 
 @pytest.mark.asyncio
-async def test_database_connection(get_test_db_session: AsyncSession) -> None:
+async def test_database_connection(db_session: AsyncSession) -> None:
     """Test basic database connection."""
-    session = get_test_db_session
+    session = db_session
     result = await session.execute(text("SELECT 1"))
     assert result.scalar() == 1
 
 
 @pytest.mark.asyncio
-async def test_user_creation_and_query(get_test_db_session: AsyncSession) -> None:
+async def test_user_creation_and_query(db_session: AsyncSession) -> None:
     """Test creating and querying a user."""
-    session = get_test_db_session
+    session = db_session
 
     # Create a user
     user = User(
@@ -40,9 +40,9 @@ async def test_user_creation_and_query(get_test_db_session: AsyncSession) -> Non
 
 
 @pytest.mark.asyncio
-async def test_database_isolation(get_test_db_session: AsyncSession) -> None:
+async def test_database_isolation(db_session: AsyncSession) -> None:
     """Test transaction isolation - changes don't leak between sessions."""
-    session = get_test_db_session
+    session = db_session
 
     # Create a user in one session
     user = User(
@@ -59,9 +59,9 @@ async def test_database_isolation(get_test_db_session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio
-async def test_unique_constraint_violation(get_test_db_session: AsyncSession) -> None:
+async def test_unique_constraint_violation(db_session: AsyncSession) -> None:
     """Test that unique constraints are enforced."""
-    session = get_test_db_session
+    session = db_session
 
     # Create first user
     user1 = User(

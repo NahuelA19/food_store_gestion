@@ -1,38 +1,20 @@
-/**
- * useProduct hook - Fetch single product details
- */
-
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { productApi } from "../api/productApi";
-import { Product } from "../types/product";
 
 export function useProduct(productId?: number) {
-  const [product, setProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["product", productId],
+    queryFn: () => productApi.getProduct(productId!),
+    enabled: !!productId,
+  });
 
-  useEffect(() => {
-    if (!productId) {
-      setProduct(null);
-      return;
-    }
-
-    const fetchProduct = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await productApi.getProduct(productId);
-        setProduct(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch product");
-        setProduct(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProduct();
-  }, [productId]);
-
-  return { product, isLoading, error };
+  return {
+    product: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error
+      ? query.error instanceof Error
+        ? query.error.message
+        : "Failed to fetch product"
+      : null,
+  };
 }

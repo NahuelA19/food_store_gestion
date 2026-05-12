@@ -10,7 +10,7 @@ client = TestClient(app)
 
 def test_health_check():
     """Test health check endpoint"""
-    response = client.get("/api/health/")
+    response = client.get("/api/v1/health/")
 
     assert response.status_code == 200
     data = response.json()
@@ -20,7 +20,7 @@ def test_health_check():
 
 def test_health_response_shape():
     """Health response includes all observability fields."""
-    response = client.get("/api/health/")
+    response = client.get("/api/v1/health/")
     assert response.status_code == 200
     data = response.json()
     assert "version" in data
@@ -34,7 +34,7 @@ def test_health_response_shape():
 
 def test_health_db_fallback_on_no_connection():
     """Health DB check does not crash when no database is available."""
-    response = client.get("/api/health/")
+    response = client.get("/api/v1/health/")
     assert response.status_code == 200
     # Without a real DB, the catch sets database="error"
     assert response.json()["database"] in ("ok", "error")
@@ -42,7 +42,7 @@ def test_health_db_fallback_on_no_connection():
 
 def test_metrics_endpoint():
     """Metrics endpoint returns Prometheus-format text."""
-    response = client.get("/api/metrics")
+    response = client.get("/api/v1/metrics")
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/plain")
     text = response.text
@@ -55,11 +55,11 @@ def test_metrics_endpoint():
 def test_metrics_excludes_self():
     """Metrics endpoint does not track its own request."""
     # First call resets counters
-    client.get("/api/metrics")
+    client.get("/api/v1/metrics")
     # Verify /metrics path never appears in metrics output
-    response = client.get("/api/metrics")
+    response = client.get("/api/v1/metrics")
     assert response.status_code == 200
-    assert 'path="/api/metrics"' not in response.text
+    assert 'path="/api/v1/metrics"' not in response.text
 
 
 def test_sentry_skipped_without_dsn(caplog):
@@ -81,7 +81,7 @@ def test_sentry_skipped_without_dsn(caplog):
 
 def test_liveness():
     """Test liveness probe"""
-    response = client.get("/api/health/live")
+    response = client.get("/api/v1/health/live")
 
     assert response.status_code == 200
     assert response.json()["status"] == "alive"
@@ -89,7 +89,7 @@ def test_liveness():
 
 def test_readiness():
     """Test readiness probe"""
-    response = client.get("/api/health/ready")
+    response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 200
     assert response.json()["status"] == "ready"

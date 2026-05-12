@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Numeric
+from sqlalchemy import ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
@@ -36,6 +36,10 @@ class OrderItem(Base):
         Numeric(10, 2),
         nullable=False,
     )
+
+    # Snapshot fields (for auditability)
+    nombre_snapshot: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    precio_snapshot: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
 
     # Relationships
     order: Mapped["Order"] = relationship("Order", back_populates="items")

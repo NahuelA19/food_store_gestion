@@ -166,7 +166,7 @@ async def test_mark_all_as_read(db_session: AsyncSession, test_user: User) -> No
 
 @pytest.mark.asyncio
 async def test_get_notifications_endpoint(async_client: AsyncClient, test_user: User) -> None:
-    """Test GET /api/notifications/ endpoint."""
+    """Test GET /api/v1/notifications/ endpoint."""
     # Get auth token
     from app.auth import create_access_token
 
@@ -174,7 +174,7 @@ async def test_get_notifications_endpoint(async_client: AsyncClient, test_user: 
     headers = {"Authorization": f"Bearer {token}"}
 
     # List should be empty initially
-    response = await async_client.get("/api/notifications/", headers=headers)
+    response = await async_client.get("/api/v1/notifications/", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["total_count"] == 0
@@ -183,13 +183,13 @@ async def test_get_notifications_endpoint(async_client: AsyncClient, test_user: 
 
 @pytest.mark.asyncio
 async def test_get_unread_count_endpoint(async_client: AsyncClient, db_session: AsyncSession, test_user: User) -> None:
-    """Test GET /api/notifications/unread-count endpoint."""
+    """Test GET /api/v1/notifications/unread-count endpoint."""
     from app.auth import create_access_token
 
     token = create_access_token(data={"user_id": test_user.id, "email": test_user.email})
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = await async_client.get("/api/notifications/unread-count", headers=headers)
+    response = await async_client.get("/api/v1/notifications/unread-count", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "unread_count" in data
@@ -198,16 +198,16 @@ async def test_get_unread_count_endpoint(async_client: AsyncClient, db_session: 
 @pytest.mark.asyncio
 async def test_notifications_require_auth(async_client: AsyncClient) -> None:
     """Test notification endpoints return 401 without auth."""
-    response = await async_client.get("/api/notifications/")
+    response = await async_client.get("/api/v1/notifications/")
     assert response.status_code == 401
 
-    response = await async_client.get("/api/notifications/unread-count")
+    response = await async_client.get("/api/v1/notifications/unread-count")
     assert response.status_code == 401
 
-    response = await async_client.patch("/api/notifications/1/read")
+    response = await async_client.patch("/api/v1/notifications/1/read")
     assert response.status_code == 401
 
-    response = await async_client.patch("/api/notifications/read-all")
+    response = await async_client.patch("/api/v1/notifications/read-all")
     assert response.status_code == 401
 
 

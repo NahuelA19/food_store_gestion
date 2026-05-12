@@ -9,16 +9,17 @@ from sqlalchemy import ForeignKey, Numeric, String
 
 if TYPE_CHECKING:
     from app.models.category import Category
+    from app.models.ingrediente import Ingrediente
     from app.models.inventory import Inventory
     from app.models.review import Review
     from app.models.wishlist import WishlistItem
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin
+from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 
 
-class Product(Base, TimestampMixin):
+class Product(Base, SoftDeleteMixin, TimestampMixin):
     """Product model for the e-commerce catalog."""
 
     __tablename__ = "products"
@@ -48,6 +49,13 @@ class Product(Base, TimestampMixin):
     )
     wishlist_items: Mapped[list["WishlistItem"]] = relationship(  # noqa: F821
         "WishlistItem", back_populates="product", cascade="all, delete-orphan"
+    )
+
+    ingredientes: Mapped[list["Ingrediente"]] = relationship(  # noqa: F821
+        "Ingrediente",
+        secondary="producto_ingredientes",
+        back_populates="productos",
+        lazy="selectin",
     )
 
     def __repr__(self) -> str:

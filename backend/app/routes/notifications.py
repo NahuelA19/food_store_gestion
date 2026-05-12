@@ -4,9 +4,9 @@ import logging
 from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_current_user, get_db
+from app.core.uow import UnitOfWork
+from app.dependencies import get_current_user, get_uow
 from app.models.user import User
 from app.schemas.notification import (
     NotificationListResponse,
@@ -31,11 +31,11 @@ async def list_notifications(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     unread: bool = Query(False, description="Filter by unread only"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> NotificationListResponse:
     """List notifications for the current user (paginated)."""
     items, total_count, unread_count = await get_user_notifications(
-        db=db,
+        uow=uow,
         user_id=current_user.id,
         page=page,
         limit=limit,
@@ -56,10 +56,10 @@ async def list_notifications(
 @router.get("/unread-count", response_model=UnreadCountResponse)
 async def get_unread_notification_count(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> UnreadCountResponse:
     """Get the unread notification count for the current user."""
-    count = await get_unread_count(db=db, user_id=current_user.id)
+    count = await get_unread_count(uow=uow, user_id=current_user.id)
     return UnreadCountResponse(unread_count=count)
 
 
@@ -67,11 +67,11 @@ async def get_unread_notification_count(
 async def mark_notification_read(
     notification_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> NotificationResponse:
     """Mark a single notification as read."""
     notif = await mark_as_read(
-        db=db,
+        uow=uow,
         notification_id=notification_id,
         user_id=current_user.id,
     )
@@ -86,8 +86,8 @@ async def mark_notification_read(
 @router.patch("/read-all", response_model=dict)
 async def mark_all_notifications_read(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> dict:
     """Mark all unread notifications as read."""
-    updated = await mark_all_as_read(db=db, user_id=current_user.id)
+    updated = await mark_all_as_read(uow=uow, user_id=current_user.id)
     return {"updated": updated}

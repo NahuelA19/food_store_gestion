@@ -59,4 +59,19 @@ class AuthResponse(BaseModel):
     last_name: Optional[str] = Field(None, description="Last name")
     phone: Optional[str] = Field(None, description="Phone number")
     access_token: str = Field(..., description="JWT access token")
+    refresh_token: str | None = Field(None, description="JWT refresh token")
+    token_type: str = Field("bearer", description="Token type")
+
+
+class RefreshTokenRequest(BaseModel):
+    """Refresh token request body."""
+
+    refresh_token: str = Field(..., description="Refresh token")
+
+
+class RefreshTokenResponse(BaseModel):
+    """Token refresh response with new token pair."""
+
+    access_token: str = Field(..., description="New JWT access token")
+    refresh_token: str = Field(..., description="New refresh token")
     token_type: str = Field("bearer", description="Token type")

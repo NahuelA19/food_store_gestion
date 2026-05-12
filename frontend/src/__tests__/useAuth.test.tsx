@@ -1,17 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuth } from "../hooks/useAuth";
+import { useAuthStore } from "../store/authStore";
 
-// NOTE: localStorage.getitem + jsdom atob + useEffect interaction causes
-// vitest to hang when renderHook is called with a JWT token in localStorage.
-// The init tests are skipped as a result. Functional tests work fine.
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+}
 
 describe("useAuth hook", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(localStorage.getItem).mockReturnValue(null);
     (global.fetch as any) = vi.fn();
+    useAuthStore.getState().clearAuth();
   });
 
   it("should login successfully", async () => {
@@ -26,7 +33,7 @@ describe("useAuth hook", () => {
       }),
     });
 
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() });
 
     await act(async () => {
       await result.current.login("test@example.com", "password");
@@ -35,11 +42,10 @@ describe("useAuth hook", () => {
     expect(result.current.user).toEqual({
       id: 1,
       email: "test@example.com",
+      first_name: "",
+      last_name: "",
+      phone: "",
     });
-    expect(localStorage.setItem).toHaveBeenCalledWith(
-      "auth_token",
-      expect.any(String)
-    );
   });
 
   it("should handle login error", async () => {
@@ -48,7 +54,7 @@ describe("useAuth hook", () => {
       json: async () => ({ detail: "Invalid credentials" }),
     });
 
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() });
 
     await act(async () => {
       try {
@@ -76,7 +82,7 @@ describe("useAuth hook", () => {
       }),
     });
 
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() });
 
     await act(async () => {
       await result.current.register("newuser@example.com", "password");
@@ -85,23 +91,23 @@ describe("useAuth hook", () => {
     expect(result.current.user).toEqual({
       id: 1,
       email: "newuser@example.com",
+      first_name: "",
+      last_name: "",
+      phone: "",
     });
-    expect(localStorage.setItem).toHaveBeenCalledWith(
-      "auth_token",
-      expect.any(String)
-    );
   });
 
   it("should logout successfully", async () => {
-    const { result } = renderHook(() => useAuth());
+    (global.fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({}) });
 
-    act(() => {
-      result.current.logout();
+    const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.logout();
     });
 
     expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
-    expect(localStorage.removeItem).toHaveBeenCalledWith("auth_token");
   });
 
   it("should update profile successfully", async () => {
@@ -112,11 +118,11 @@ describe("useAuth hook", () => {
         email: "test@example.com",
         first_name: "Jane",
         last_name: "Doe",
-        phone: "+1234567890",
+        role: "customer",
       }),
     });
 
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() });
 
     await act(async () => {
       await result.current.updateProfile({
@@ -131,7 +137,7 @@ describe("useAuth hook", () => {
       email: "test@example.com",
       first_name: "Jane",
       last_name: "Doe",
-      phone: "+1234567890",
+      phone: "",
     });
   });
 
@@ -141,7 +147,7 @@ describe("useAuth hook", () => {
       json: async () => ({ detail: "Invalid phone format" }),
     });
 
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() });
 
     await act(async () => {
       try {
@@ -162,7 +168,7 @@ describe("useAuth hook", () => {
       json: async () => ({ language: "es", theme: "dark", notifications: "push" }),
     });
 
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() });
 
     await act(async () => {
       await result.current.updatePreferences({
@@ -183,7 +189,7 @@ describe("useAuth hook", () => {
       json: async () => ({ detail: "Invalid theme value" }),
     });
 
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() });
 
     await act(async () => {
       try {

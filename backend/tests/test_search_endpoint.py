@@ -17,14 +17,14 @@ async def client():
 @pytest.mark.asyncio
 async def test_search_endpoint_exists(client: AsyncClient):
     """Test that search endpoint exists."""
-    response = await client.get("/api/v1/products/search")
+    response = await client.get("/api/v1/v1/products/search")
     assert response.status_code in [200, 422, 400]  # Endpoint should exist
 
 
 @pytest.mark.asyncio
 async def test_search_with_empty_results(client: AsyncClient, db_session):
     """Test search returning empty results."""
-    response = await client.get("/api/v1/products/search?q=nonexistent123xyz")
+    response = await client.get("/api/v1/v1/products/search?q=nonexistent123xyz")
     assert response.status_code == 200
     data = response.json()
     assert data["items"] == []
@@ -35,19 +35,19 @@ async def test_search_with_empty_results(client: AsyncClient, db_session):
 async def test_search_parameters_validation(client: AsyncClient):
     """Test parameter validation."""
     # Test invalid limit
-    response = await client.get("/api/v1/products/search?limit=101")
+    response = await client.get("/api/v1/v1/products/search?limit=101")
     assert response.status_code == 400
 
     # Test invalid page
-    response = await client.get("/api/v1/products/search?page=0")
+    response = await client.get("/api/v1/v1/products/search?page=0")
     assert response.status_code == 400
 
     # Test invalid sort_by
-    response = await client.get("/api/v1/products/search?sort_by=invalid")
+    response = await client.get("/api/v1/v1/products/search?sort_by=invalid")
     assert response.status_code == 400
 
     # Test invalid order
-    response = await client.get("/api/v1/products/search?order=invalid")
+    response = await client.get("/api/v1/v1/products/search?order=invalid")
     assert response.status_code == 400
 
 
@@ -55,7 +55,7 @@ async def test_search_parameters_validation(client: AsyncClient):
 async def test_search_price_range_validation(client: AsyncClient):
     """Test price range validation."""
     # Test min > max (invalid)
-    response = await client.get("/api/v1/products/search?min_price=100&max_price=10")
+    response = await client.get("/api/v1/v1/products/search?min_price=100&max_price=10")
     assert response.status_code == 400
     assert "min_price must be <= max_price" in response.json()["detail"]
 
@@ -63,7 +63,7 @@ async def test_search_price_range_validation(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_search_pagination(client: AsyncClient):
     """Test pagination parameters."""
-    response = await client.get("/api/v1/products/search?page=1&limit=20")
+    response = await client.get("/api/v1/v1/products/search?page=1&limit=20")
     assert response.status_code == 200
     data = response.json()
     assert "pagination" in data
@@ -74,7 +74,7 @@ async def test_search_pagination(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_search_response_schema(client: AsyncClient):
     """Test response schema structure."""
-    response = await client.get("/api/v1/products/search")
+    response = await client.get("/api/v1/v1/products/search")
     assert response.status_code == 200
     data = response.json()
 

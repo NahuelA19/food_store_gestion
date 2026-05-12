@@ -16,10 +16,10 @@ interface CartContextType {
   isLoading: boolean;
   error: string | null;
   fetchCart: () => Promise<void>;
-  addItem: (productId: number, quantity: number) => Promise<void>;
-  updateQuantity: (itemId: number, quantity: number) => Promise<void>;
-  removeItem: (itemId: number) => Promise<void>;
-  clearCart: () => Promise<void>;
+  addItem: (productId: number, quantity: number) => Promise<CartResponse>;
+  updateQuantity: (itemId: number, quantity: number) => Promise<CartResponse>;
+  removeItem: (itemId: number) => Promise<CartResponse>;
+  clearCart: () => Promise<CartResponse>;
   checkout: (shippingData: CheckoutRequest) => Promise<CheckoutResponse>;
 }
 

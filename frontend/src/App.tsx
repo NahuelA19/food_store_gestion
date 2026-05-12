@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
 import { HomePage } from "./pages/HomePage";
 import { CartPage } from "./pages/CartPage";
@@ -15,12 +14,13 @@ import { OrderDetailPage } from "./pages/OrderDetailPage";
 import { BranchesPage } from "./pages/BranchesPage";
 import { BranchDetailPage } from "./pages/BranchDetailPage";
 import { EmployeesPage } from "./pages/EmployeesPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import PaymentFailurePage from "./pages/PaymentFailurePage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
         <DashboardLayout>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -65,9 +65,10 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/payment/success" element={<PaymentSuccessPage />} />
+            <Route path="/payment/failure" element={<PaymentFailurePage />} />
           </Routes>
         </DashboardLayout>
-      </AuthProvider>
     </BrowserRouter>
   );
 }

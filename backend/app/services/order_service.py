@@ -10,13 +10,17 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.uow import UnitOfWork
+
 from app.models.cart import Cart
+from app.models.historial_estado_pedido import HistorialEstadoPedido
 from app.models.inventory import Inventory
 from app.models.order import Order, OrderStatus, PaymentStatus
 from app.models.order_item import OrderItem
 from app.models.product import Product
 from app.schemas.cart import CheckoutRequest
 from app.schemas.order import (
+    HistorialResponse,
     OrderDetailResponse,
     OrderItemResponse,
     OrderListResponse,
@@ -27,22 +31,85 @@ from app.services.recommendation_service import recommendation_service
 
 logger = logging.getLogger(__name__)
 
-# Valid status transitions for admin updates
-VALID_TRANSITIONS: dict[OrderStatus, list[OrderStatus]] = {
-    OrderStatus.PAYMENT_PENDING: [OrderStatus.PAID, OrderStatus.PAYMENT_FAILED, OrderStatus.CANCELLED],
-    OrderStatus.PAYMENT_FAILED: [OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED],
-    OrderStatus.PAID: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
-    OrderStatus.CONFIRMED: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
-    OrderStatus.SHIPPED: [OrderStatus.DELIVERED],
-    OrderStatus.DELIVERED: [],
-    OrderStatus.CANCELLED: [],
+# FSM state transitions — keys/values refer to estados_pedido.codigo
+FSM_TRANSITIONS: dict[str, list[str]] = {
+    "PENDIENTE": ["PAGO_PENDIENTE", "CANCELADO"],
+    "PAGO_PENDIENTE": ["PAGADO", "CANCELADO"],
+    "PAGADO": ["CONFIRMADO"],
+    "PAGO_FALLIDO": ["PAGO_PENDIENTE", "CANCELADO"],
+    "CONFIRMADO": ["PREPARANDO", "CANCELADO"],
+    "PREPARANDO": ["LISTO"],
+    "LISTO": ["ENTREGADO"],
+    "ENTREGADO": [],
+    "CANCELADO": [],
 }
+
+# Map FSM codigo → OrderStatus for backward compatibility of the `status` column
+_FSM_TO_STATUS: dict[str, OrderStatus] = {
+    "PENDIENTE": OrderStatus.PENDIENTE,
+    "PAGO_PENDIENTE": OrderStatus.PAYMENT_PENDING,
+    "PAGADO": OrderStatus.PAGADO,
+    "PAGO_FALLIDO": OrderStatus.PAYMENT_FAILED,
+    "CONFIRMADO": OrderStatus.CONFIRMED,
+    "PREPARANDO": OrderStatus.PREPARANDO,
+    "LISTO": OrderStatus.LISTO,
+    "ENTREGADO": OrderStatus.ENTREGADO,
+    "CANCELADO": OrderStatus.CANCELADO,
+}
+
+# Reverse map: OrderStatus → FSM codigo
+_STATUS_TO_FSM: dict[OrderStatus, str] = {v: k for k, v in _FSM_TO_STATUS.items()}
+# Extra aliases (old enum values)
+_STATUS_TO_FSM[OrderStatus.PAYMENT_PENDING] = "PAGO_PENDIENTE"
+_STATUS_TO_FSM[OrderStatus.PAYMENT_FAILED] = "PAGO_FALLIDO"
+_STATUS_TO_FSM[OrderStatus.PAID] = "PAGADO"
+_STATUS_TO_FSM[OrderStatus.CONFIRMED] = "CONFIRMADO"
+_STATUS_TO_FSM[OrderStatus.DELIVERED] = "ENTREGADO"
+_STATUS_TO_FSM[OrderStatus.CANCELLED] = "CANCELADO"
+
+
+async def transition(
+    order: Order,
+    nuevo_estado: str,
+    usuario_id: int | None,
+    session: AsyncSession,
+    motivo: str | None = None,
+) -> None:
+    """Validate and execute a state machine transition for an order."""
+    if not order.estado_codigo:
+        raise HTTPException(
+            status_code=422,
+            detail="El pedido no tiene un estado FSM inicial.",
+        )
+
+    validos = FSM_TRANSITIONS.get(order.estado_codigo, [])
+    if nuevo_estado not in validos:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Transición inválida: {order.estado_codigo} → {nuevo_estado}. "
+                f"Transiciones permitidas: {', '.join(validos) if validos else 'ninguna (estado terminal)'}"
+            ),
+        )
+
+    historial = HistorialEstadoPedido(
+        pedido_id=order.id,
+        estado_desde=order.estado_codigo,
+        estado_hasta=nuevo_estado,
+        usuario_id=usuario_id,
+        motivo=motivo,
+    )
+    session.add(historial)
+    order.estado_codigo = nuevo_estado
+    # Sync legacy status field for backward compatibility
+    if nuevo_estado in _FSM_TO_STATUS:
+        order.status = _FSM_TO_STATUS[nuevo_estado]
 
 
 async def create_order_from_cart(
     cart: Cart,
     body: CheckoutRequest,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> Order:
     """Create an Order and OrderItems from a checked-out cart.
 
@@ -70,6 +137,7 @@ async def create_order_from_cart(
     order = Order(
         user_id=cart.user_id,
         status=OrderStatus.PAYMENT_PENDING,
+        estado_codigo="PENDIENTE",
         total_amount=total_amount,
         payment_status=PaymentStatus.PENDING,
         status_history=[
@@ -81,20 +149,30 @@ async def create_order_from_cart(
             }
         ],
     )
-    db.add(order)
-    await db.flush()  # Get order.id
+    uow.session.add(order)
+    await uow.flush()  # Get order.id
+
+    # Create initial FSM historial entry
+    historial_inicial = HistorialEstadoPedido(
+        pedido_id=order.id,
+        estado_desde=None,
+        estado_hasta="PENDIENTE",
+        usuario_id=cart.user_id,
+        motivo="Pedido creado",
+    )
+    uow.session.add(historial_inicial)
 
     # Create order items and reserve inventory atomically
     for cart_item in cart.items:
         product = cart_item.product
         if product is None:
-            result = await db.execute(
+            result = await uow.session.execute(
                 select(Product).where(Product.id == cart_item.product_id)
             )
             product = result.scalar_one_or_none()
 
         # Check and reserve inventory
-        inv_result = await db.execute(
+        inv_result = await uow.session.execute(
             select(Inventory).where(Inventory.product_id == cart_item.product_id)
         )
         inventory = inv_result.scalar_one_or_none()
@@ -109,18 +187,20 @@ async def create_order_from_cart(
                     ),
                 )
             inventory.reserved_quantity += cart_item.quantity
-            db.add(inventory)
+            uow.session.add(inventory)
 
         order_item = OrderItem(
             order_id=order.id,
             product_id=cart_item.product_id,
             quantity=cart_item.quantity,
             unit_price=cart_item.unit_price,
+            nombre_snapshot=product.name if product else None,
+            precio_snapshot=product.price if product else None,
         )
-        db.add(order_item)
+        uow.session.add(order_item)
 
-    await db.flush()
-    await db.refresh(order)
+    await uow.flush()
+    await uow.refresh(order)
 
     # Invalidate recommendation caches — orders changed
     recommendation_service.invalidate_all()
@@ -132,7 +212,7 @@ async def get_user_orders(
     user_id: int,
     page: int = 1,
     limit: int = 20,
-    db: AsyncSession = None,
+    uow: UnitOfWork = None,
 ) -> OrderListResponse:
     """Get paginated list of orders for a user.
 
@@ -149,14 +229,14 @@ async def get_user_orders(
     limit = min(max(1, limit), 100)
 
     # Get total count
-    count_result = await db.execute(
+    count_result = await uow.session.execute(
         select(func.count(Order.id)).where(Order.user_id == user_id)
     )
     total = count_result.scalar_one()
 
     # Get paginated orders
     offset = (page - 1) * limit
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Order)
         .where(Order.user_id == user_id)
         .order_by(Order.created_at.desc())
@@ -188,7 +268,7 @@ async def get_user_orders(
 async def get_order_detail(
     order_id: int,
     user_id: int,
-    db: AsyncSession,
+    uow: UnitOfWork,
     is_admin: bool = False,
 ) -> OrderDetailResponse:
     """Get order detail with items.
@@ -205,7 +285,7 @@ async def get_order_detail(
     Raises:
         HTTPException 404: Order not found or not owned by user
     """
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Order)
         .where(Order.id == order_id)
         .options(selectinload(Order.items).selectinload(OrderItem.product))
@@ -245,7 +325,6 @@ async def get_order_detail(
         total_amount=order.total_amount,
         status_history=order.status_history,
         payment_status=order.payment_status.value if order.payment_status and hasattr(order.payment_status, "value") else order.payment_status,
-        stripe_payment_intent_id=order.stripe_payment_intent_id,
         payment_method=order.payment_method,
         paid_at=order.paid_at,
         created_at=order.created_at,
@@ -257,7 +336,7 @@ async def get_order_detail(
 async def cancel_order(
     order_id: int,
     user_id: int,
-    db: AsyncSession,
+    uow: UnitOfWork,
     is_admin: bool = False,
 ) -> Order:
     """Cancel a pending order and release reserved inventory.
@@ -275,7 +354,7 @@ async def cancel_order(
         HTTPException 400: Order cannot be cancelled
         HTTPException 404: Order not found
     """
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Order)
         .where(Order.id == order_id)
         .options(selectinload(Order.items))
@@ -294,18 +373,15 @@ async def cancel_order(
             detail=f"Order with id {order_id} not found",
         )
 
-    if order.status not in (OrderStatus.PAYMENT_PENDING, OrderStatus.PAYMENT_FAILED):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot cancel order in status '{order.status.value}'",
-        )
+    # Capture old estado before transition
+    old_estado = order.estado_codigo
 
-    # Update status
-    order.status = OrderStatus.CANCELLED
+    # Use FSM transition (validates state machine internally)
+    await transition(order, "CANCELADO", user_id, uow.session, motivo="Cancelación solicitada")
 
-    # Track status change
+    # Track status change (legacy JSON history for backward compat)
     history_entry = {
-        "from": order.status.value,
+        "from": old_estado,
         "to": OrderStatus.CANCELLED.value,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "by": user_id,
@@ -315,11 +391,11 @@ async def cancel_order(
     order.status_history.append(history_entry)  # type: ignore[union-attr]
 
     # Release reserved inventory
-    await _release_inventory_for_order(order, db)
+    await _release_inventory_for_order(order, uow)
 
-    db.add(order)
-    await db.commit()
-    await db.refresh(order)
+    uow.session.add(order)
+    await uow.flush()
+    await uow.refresh(order)
 
     # Invalidate recommendation caches
     recommendation_service.invalidate_all()
@@ -327,7 +403,7 @@ async def cancel_order(
     # Trigger notification (fire-and-forget — never fail the request)
     try:
         await create_order_notification(
-            db=db,
+            uow=uow,
             order_id=order.id,
             user_id=order.user_id,
             new_status=OrderStatus.CANCELLED,
@@ -342,9 +418,9 @@ async def update_order_status(
     order_id: int,
     new_status: OrderStatus,
     admin_id: int,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> Order:
-    """Update order status with transition validation (admin only).
+    """Update order status with FSM validation (admin only).
 
     Args:
         order_id: Order ID
@@ -358,8 +434,9 @@ async def update_order_status(
     Raises:
         HTTPException 400: Invalid status transition
         HTTPException 404: Order not found
+        HTTPException 422: Invalid FSM transition
     """
-    result = await db.execute(
+    result = await uow.session.execute(
         select(Order)
         .where(Order.id == order_id)
         .options(selectinload(Order.items))
@@ -372,22 +449,30 @@ async def update_order_status(
             detail=f"Order with id {order_id} not found",
         )
 
-    old_status = order.status
-
-    # Validate transition
-    allowed = VALID_TRANSITIONS.get(old_status, [])
-    if new_status not in allowed:
+    # Map requested OrderStatus → FSM codigo
+    nuevo_fsm = _STATUS_TO_FSM.get(new_status)
+    if nuevo_fsm is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot transition from '{old_status.value}' to '{new_status.value}'",
+            detail=f"No se puede transicionar a '{new_status.value}'",
         )
 
-    order.status = new_status
+    # Block manual transition to PAGADO — only allowed via MercadoPago webhook
+    if nuevo_fsm == "PAGADO":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Transición a 'PAGADO' solo permitida vía webhook de MercadoPago",
+        )
 
-    # Track status change
+    old_estado = order.estado_codigo
+
+    # Execute FSM transition
+    await transition(order, nuevo_fsm, admin_id, uow.session, motivo=f"Admin #{admin_id}")
+
+    # Track status change (legacy JSON history for backward compat)
     history_entry = {
-        "from": old_status.value,
-        "to": new_status.value,
+        "from": old_estado,
+        "to": nuevo_fsm,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "by": admin_id,
     }
@@ -395,9 +480,9 @@ async def update_order_status(
         order.status_history = []
     order.status_history.append(history_entry)
 
-    db.add(order)
-    await db.commit()
-    await db.refresh(order)
+    uow.session.add(order)
+    await uow.flush()
+    await uow.refresh(order)
 
     # Invalidate recommendation caches
     recommendation_service.invalidate_all()
@@ -405,9 +490,31 @@ async def update_order_status(
     return order
 
 
+async def get_order_historial(
+    order_id: int,
+    uow: UnitOfWork,
+) -> list[HistorialResponse]:
+    """Get the FSM state transition history for an order.
+
+    Args:
+        order_id: Order ID
+        db: Database session
+
+    Returns:
+        list[HistorialResponse]: Ordered state transitions
+    """
+    result = await uow.session.execute(
+        select(HistorialEstadoPedido)
+        .where(HistorialEstadoPedido.pedido_id == order_id)
+        .order_by(HistorialEstadoPedido.created_at)
+    )
+    entries = result.scalars().all()
+    return [HistorialResponse.model_validate(e) for e in entries]
+
+
 async def _release_inventory_for_order(
     order: Order,
-    db: AsyncSession,
+    uow: UnitOfWork,
 ) -> None:
     """Release reserved inventory for all items in an order.
 
@@ -416,7 +523,7 @@ async def _release_inventory_for_order(
         db: Database session
     """
     for item in order.items:
-        inv_result = await db.execute(
+        inv_result = await uow.session.execute(
             select(Inventory).where(Inventory.product_id == item.product_id)
         )
         inventory = inv_result.scalar_one_or_none()
@@ -424,4 +531,4 @@ async def _release_inventory_for_order(
             inventory.reserved_quantity = max(
                 0, inventory.reserved_quantity - item.quantity
             )
-            db.add(inventory)
+            uow.session.add(inventory)

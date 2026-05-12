@@ -4,7 +4,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useTheme } from "../../context/ThemeContext";
-import { useAuthContext } from "../../context/AuthContext";
+import { useAuthStore } from "../../store/authStore";
+import { useAuth } from "../../hooks/useAuth";
 import { Link } from "react-router-dom";
 import { Icon } from "../ui/Icon";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,8 @@ const BRANCHES = [
 
 export function Topbar({ sidebarCollapsed }: TopbarProps) {
   const { isDark, toggleTheme } = useTheme();
-  const { isAuthenticated, user, logout } = useAuthContext();
+  const { isAuthenticated, user } = useAuthStore();
+  const { logout } = useAuth();
   const { count: wishlistCount } = useWishlist();
   const [branchOpen, setBranchOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);

@@ -12,7 +12,7 @@ import { FavoriteButton } from "../components/wishlist/FavoriteButton";
 import { useProduct } from "../hooks/useProduct";
 import { useProductReviews } from "../hooks/useReviews";
 import { useWishlist } from "../hooks/useWishlist";
-import { useAuthContext } from "../context/AuthContext";
+import { useAuthStore } from "../store/authStore";
 import { useFrequentlyBoughtTogether } from "../hooks/useRecommendations";
 import {
   AlertTriangle,
@@ -33,7 +33,7 @@ export const ProductDetailPage: React.FC = () => {
   const { product, isLoading, error } = useProduct(productId);
   const [quantity, setQuantity] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const { isAuthenticated } = useAuthContext();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { isWishlisted, toggle } = useWishlist();
   const {
     reviews,
