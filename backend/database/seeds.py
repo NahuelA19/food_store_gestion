@@ -166,12 +166,19 @@ async def seed_products(session: AsyncSession) -> None:
         category_id = categories.get(category_name)
         if not category_id:
             continue
+        
+        # Check if product already exists
+        exists = await session.execute(
+            text("SELECT id FROM products WHERE name = :name AND deleted_at IS NULL"),
+            {"name": name}
+        )
+        if exists.fetchone():
+            continue
             
         await session.execute(
             text("""
                 INSERT INTO products (name, description, price, category_id, is_available, image_url, created_at, updated_at)
                 VALUES (:name, :description, :price, :category_id, true, :image_url, :created_at, :updated_at)
-                ON CONFLICT (name) DO NOTHING
             """),
             {
                 "name": name,
