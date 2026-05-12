@@ -175,6 +175,44 @@ foodstore/
 - **[API Documentation](./docs/API.md)** - Backend API endpoints
 - **[Getting Started](./GETTING-STARTED.md)** - First-time developer guide
 - **[Guides](./docs/guides/)** - How-to guides for common tasks
+- **[E2E Testing Guide](./docs/E2E-TESTING-GUIDE.md)** - Complete end-to-end flow verification
+
+## Screenshots
+
+See the complete visual walkthrough of the Food Store interface:
+
+📸 **[Full Screenshot Gallery](./docs/screenshots/README.md)**
+
+The gallery includes 10 key screens:
+1. Login page
+2. Registration page
+3. Product catalog/home
+4. Product detail page
+5. Shopping cart
+6. Checkout process
+7. Order detail page
+8. Order history
+9. Admin dashboard
+10. Admin orders management
+
+Each screenshot includes detailed descriptions of UI elements and features.
+
+## Demo Video
+
+Watch the complete end-to-end flow demonstration:
+
+🎬 **[View Demo Video](https://youtu.be/PLACEHOLDER)** (≥3 minutes)
+
+The demo covers:
+- User registration and authentication
+- Browsing the product catalog
+- Product selection and details
+- Adding items to cart
+- Checkout and shipping
+- Payment integration with MercadoPago
+- Order confirmation and history
+
+**Note**: Replace `PLACEHOLDER` with the actual YouTube or Google Drive link after recording the video.
 
 ## Git Workflow
 

@@ -5,14 +5,72 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
+from app.config import Settings
 from app.core.uow import UnitOfWork
-from app.dependencies import get_uow
+from app.dependencies import get_current_user, get_settings, get_uow
 from app.models.order import Order
-from app.services.payment_service import handle_ipn
+from app.models.user import User
+from app.services.payment_service import create_preference, handle_ipn
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payments", tags=["payments"])
+
+
+@router.post("/preference", status_code=status.HTTP_201_CREATED)
+async def create_payment_preference(
+    order_id: int = Query(..., description="Order ID to create preference for"),
+    current_user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+    uow: UnitOfWork = Depends(get_uow),
+) -> dict[str, str]:
+    """Create a MercadoPago payment preference for an order.
+
+    Requires authentication. Only the order owner or admin can create preferences.
+
+    Args:
+        order_id: ID of the order to create preference for
+        current_user: Authenticated user
+        settings: Application settings
+        uow: Unit of work for database access
+
+    Returns:
+        dict: MercadoPago preference_id and init_point (checkout URL)
+
+    Raises:
+        HTTPException 404: Order not found or not owned by user
+        HTTPException 403: User not authorized
+        HTTPException 500: Payment preference creation failed
+    """
+    result = await uow.session.execute(select(Order).where(Order.id == order_id))
+    order = result.scalar_one_or_none()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order {order_id} not found",
+        )
+
+    # Verify ownership (only order owner or admin can create preference)
+    if order.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to create payment preference for this order",
+        )
+
+    try:
+        preference_id, init_point = await create_preference(order, settings, uow)
+        await uow.commit()
+        return {
+            "preference_id": preference_id,
+            "init_point": init_point,
+        }
+    except ValueError as e:
+        logger.error("Failed to create preference for order %d: %s", order_id, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Payment preference creation failed: {str(e)}",
+        ) from e
 
 
 @router.post("/webhook", status_code=status.HTTP_200_OK)

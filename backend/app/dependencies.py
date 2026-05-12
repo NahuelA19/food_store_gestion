@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.config import Settings, settings
 from app.models.user import User
 from app.core.uow import UnitOfWork
 from app.security.jwt import verify_token
@@ -15,6 +16,12 @@ security = HTTPBearer()
 
 # Alias for convenience
 get_db = get_db_session
+
+
+def get_settings() -> Settings:
+    """Get application settings."""
+    return settings
+
 
 
 async def get_uow(

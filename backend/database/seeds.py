@@ -58,15 +58,23 @@ async def seed_roles(session: AsyncSession) -> None:
 
 async def seed_admin_user(session: AsyncSession) -> None:
     """Create admin user and assign ADMIN role."""
+    from datetime import datetime, timezone
+    
     hashed = get_password_hash("admin123")
+    now = datetime.now(timezone.utc)
     result = await session.execute(
         text("""
-            INSERT INTO users (email, hashed_password, is_active, role, first_name, last_name, phone)
-            VALUES (:email, :password, true, 'admin', 'Admin', 'FoodStore', '+5491112345678')
+            INSERT INTO users (email, hashed_password, is_active, role, first_name, last_name, phone, created_at, updated_at)
+            VALUES (:email, :password, true, 'admin', 'Admin', 'FoodStore', '+5491112345678', :created_at, :updated_at)
             ON CONFLICT (email) DO UPDATE SET is_active = TRUE
             RETURNING id
         """),
-        {"email": "admin@foodstore.com", "password": hashed},
+        {
+            "email": "admin@foodstore.com",
+            "password": hashed,
+            "created_at": now,
+            "updated_at": now,
+        },
     )
     row = result.fetchone()
     if row:
