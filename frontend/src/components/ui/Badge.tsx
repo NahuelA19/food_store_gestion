@@ -16,6 +16,10 @@ const badgeVariants = cva(
         info: "bg-info-bg text-info-text",
         neutral: "bg-surface-alt text-text-secondary border border-border",
         brand: "bg-brand-100 text-brand-700",
+        /* New semantic order states */
+        pending: "bg-pending-bg text-pending",
+        confirmed: "bg-confirmed-bg text-confirmed",
+        preparing: "bg-preparing-bg text-preparing",
       },
       size: {
         default: "text-xs px-2.5 py-0.5",
