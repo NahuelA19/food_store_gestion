@@ -73,13 +73,13 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-   return (
-     <header
-       className={cn(
-         "fixed top-0 right-0 z-30 flex h-16 items-center border-b border-border bg-surface/80 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/70 transition-all duration-300 px-4 sm:px-6",
-         sidebarCollapsed ? "left-[68px]" : "left-60"
-       )}
-     >
+    return (
+      <header
+        className={cn(
+          "glass-light dark:glass-dark fixed top-0 right-0 z-30 flex h-16 items-center border-b border-border transition-all duration-300 px-4 sm:px-6",
+          sidebarCollapsed ? "left-[68px]" : "left-60"
+        )}
+      >
        {/* Logo on mobile */}
        <Link to="/" className="md:hidden flex items-center gap-2 mr-4">
          <img

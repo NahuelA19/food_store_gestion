@@ -25,10 +25,10 @@ function formatRelativeDate(dateStr: string): string {
 
 export function ReviewCard({ review }: ReviewCardProps) {
   return (
-    <div className="rounded-xl border border-border-light bg-surface-alt p-4 transition-colors dark:border-border-dark dark:bg-surface">
+    <div className="glass rounded-xl border border-border p-4 transition-colors">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700 dark:bg-brand-900 dark:text-brand-300">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--color-brand-100)] text-sm font-bold text-[color:var(--color-brand-700)] dark:bg-brand-900 dark:text-brand-300">
             {review.user_name.charAt(0).toUpperCase()}
           </div>
           <div>

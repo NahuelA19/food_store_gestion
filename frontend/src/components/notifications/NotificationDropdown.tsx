@@ -61,14 +61,14 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
   };
 
   return (
-    <div className="absolute right-0 top-full mt-1.5 w-80 rounded-xl border border-border bg-surface-card p-1.5 shadow-dropdown animate-scale-in z-50">
+    <div className="glass absolute right-0 top-full mt-1.5 w-80 rounded-xl border border-border p-1.5 animate-scale-in z-50">
       {recentItems.length > 0 ? (
         <div className="max-h-[400px] overflow-y-auto">
           {recentItems.map((notif) => (
             <button
               key={notif.id}
               onClick={() => handleClick(notif)}
-              className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-200 hover:bg-surface-alt"
+              className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-200 hover:bg-[color:var(--color-surface-alt)]"
             >
               <div className="mt-0.5 shrink-0">
                 <Icon

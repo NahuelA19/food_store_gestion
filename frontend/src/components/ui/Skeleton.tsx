@@ -17,7 +17,7 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        "animate-shimmer bg-gradient-to-r from-surface-alt via-border/50 to-surface-alt bg-[length:200%_100%] motion-reduce:animate-none motion-reduce:bg-surface-alt",
+        "animate-shimmer bg-gradient-to-r from-[color:var(--color-surface-alt)] via-border/50 to-[color:var(--color-surface-alt)] bg-[length:200%_100%] motion-reduce:animate-none motion-reduce:bg-[color:var(--color-surface-alt)]",
         variant === "text" && "h-4 w-full rounded-md",
         variant === "circle" && "rounded-full",
         variant === "rect" && "rounded-xl",
@@ -31,7 +31,7 @@ export function Skeleton({
 
 export function SkeletonCard() {
   return (
-    <div className="rounded-xl border border-border-light bg-surface-card p-4 space-y-3">
+    <div className="glass rounded-xl border border-border p-4 space-y-3">
       <Skeleton variant="rect" className="h-40 w-full" />
       <Skeleton className="h-4 w-3/4" />
       <Skeleton className="h-3 w-1/2" />

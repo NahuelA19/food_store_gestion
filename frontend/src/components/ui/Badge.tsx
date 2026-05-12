@@ -10,16 +10,16 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        success: "bg-success-bg text-success-text",
-        warning: "bg-warning-bg text-warning-text",
-        danger: "bg-danger-bg text-danger-text",
-        info: "bg-info-bg text-info-text",
+        success: "bg-[color:var(--color-success-bg)] text-[color:var(--color-success-text)]",
+        warning: "bg-[color:var(--color-warning-bg)] text-[color:var(--color-warning-text)]",
+        danger: "bg-[color:var(--color-danger-bg)] text-[color:var(--color-danger-text)]",
+        info: "bg-[color:var(--color-info-bg)] text-[color:var(--color-info-text)]",
         neutral: "bg-surface-alt text-text-secondary border border-border",
         brand: "bg-brand-100 text-brand-700",
-        /* New semantic order states */
-        pending: "bg-pending-bg text-pending",
-        confirmed: "bg-confirmed-bg text-confirmed",
-        preparing: "bg-preparing-bg text-preparing",
+        /* Semantic order states with design system tokens */
+        pending: "bg-[color:var(--color-pending-bg)] text-[color:var(--color-pending-text)] font-semibold",
+        confirmed: "bg-[color:var(--color-confirmed-bg)] text-[color:var(--color-confirmed-text)] font-semibold",
+        preparing: "bg-[color:var(--color-preparing-bg)] text-[color:var(--color-preparing-text)] font-semibold",
       },
       size: {
         default: "text-xs px-2.5 py-0.5",

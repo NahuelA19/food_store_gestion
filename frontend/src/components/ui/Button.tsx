@@ -7,22 +7,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-brand-500)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 select-none",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-text-on-primary shadow-sm hover:bg-primary-hover hover:shadow-md active:scale-[0.98]",
+          "bg-[color:var(--color-primary)] text-[color:var(--color-text-on-brand)] shadow-sm hover:bg-[color:var(--color-primary-hover)] hover:shadow-md active:scale-[0.98]",
         destructive:
-          "bg-danger text-white shadow-sm hover:bg-danger/90 hover:shadow-md active:scale-[0.98]",
+          "bg-[color:var(--color-danger)] text-white shadow-sm hover:bg-[color:var(--color-danger-text)] hover:shadow-md active:scale-[0.98]",
         outline:
-          "border-2 border-border bg-surface-card text-text-primary hover:bg-surface-alt hover:border-brand-400 active:scale-[0.98]",
+          "border-2 border-border bg-surface-card text-text-primary hover:bg-surface-alt hover:border-[color:var(--color-brand-400)] active:scale-[0.98]",
         secondary:
           "bg-surface-alt text-text-primary border border-border hover:bg-border/50 active:scale-[0.98]",
         ghost:
           "text-text-secondary hover:bg-surface-alt hover:text-text-primary active:scale-[0.98]",
         link:
-          "text-primary underline-offset-4 hover:underline hover:text-primary-hover",
+          "text-[color:var(--color-primary)] underline-offset-4 hover:underline hover:text-[color:var(--color-primary-hover)]",
       },
       size: {
         default: "h-10 px-4 py-2",

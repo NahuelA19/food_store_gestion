@@ -34,11 +34,11 @@ function ProductCardItem({ product, onClick }: { product: Product; onClick: () =
               className="h-16 w-16 shrink-0 rounded-lg object-cover"
               onError={() => setImgError(true)}
             />
-          ) : (
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-surface-alt">
-              <Icon icon={Package} className="text-text-secondary" />
-            </div>
-          )}
+           ) : (
+             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-[color:var(--color-surface-alt)]">
+               <Icon icon={Package} className="text-text-secondary" />
+             </div>
+           )}
           <div className="min-w-0 flex-1">
             <h3 className="truncate font-display text-base font-semibold text-text-primary">
               {product.name}
@@ -49,9 +49,9 @@ function ProductCardItem({ product, onClick }: { product: Product; onClick: () =
               </p>
             )}
             <div className="mt-2 flex items-center gap-3">
-              <span className="font-display text-lg font-bold text-brand-600">
-                ${parseFloat(product.price.toString()).toFixed(2)}
-              </span>
+             <span className="font-display text-lg font-bold text-[color:var(--color-primary)]">
+                 ${parseFloat(product.price.toString()).toFixed(2)}
+               </span>
               {product.inventory && (
                 <Badge variant={inStock ? "success" : "warning"} size="sm">
                   {inStock
@@ -98,10 +98,10 @@ export function SearchResults({
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface-alt">
-          <Icon icon={Search} size={24} className="text-text-muted" />
-        </div>
+       <div className="flex flex-col items-center justify-center py-16 text-center">
+         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--color-surface-alt)]">
+           <Icon icon={Search} size={24} className="text-text-muted" />
+         </div>
         <p className="mt-4 font-display text-lg font-semibold text-text-primary">
           No products found
         </p>
