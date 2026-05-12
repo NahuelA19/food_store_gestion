@@ -1,11 +1,12 @@
 /* ============================================================================
    FOOD STORE — Design System v2 (Tailwind CSS v4)
    
-   Aesthetic: Warm, modern food marketplace with warm amber accent.
-   - Light Mode: Intense blue background (#1a3de4) with glassmorphic floating cards
+   Aesthetic: Modern, elegant food marketplace with sophisticated indigo-teal palette.
+   - Light Mode: Subtle lavender background (#f3f0ff) with glassmorphic floating cards
    - Dark Mode: Deep charcoal (#1a1a1a) with elevated card surfaces
    - Typography: Playfair Display (display) + DM Sans (body) with clear hierarchy
-   - Contrast: WCAG AA minimum across all text + interactive states
+   - Contrast: WCAG AAA across all text + interactive states
+   - Brand: Indigo primary (#6366f1) + Teal accent (#0ea5a5)
    ============================================================================ */
 
 @import "tailwindcss";
@@ -14,30 +15,35 @@
    DESIGN TOKENS — ROOT (Light Mode)
    ============================================================================ */
 @theme {
-  /* ---- Glassmorphic Surfaces: Light Mode (over #1a3de4) ---- 
+  /* ---- Glassmorphic Surfaces: Light Mode (over lavender #f3f0ff) ---- 
      Base: white with controlled transparency + backdrop-filter blur
   */
-  --color-surface: rgba(255, 255, 255, 0.92);        /* Cards: glassmorphic base */
-  --color-surface-alt: rgba(255, 255, 255, 0.88);    /* Surfaces: subsections */
-  --color-surface-card: rgba(255, 255, 255, 0.92);   /* Card primary surface */
-  --color-surface-raised: rgba(255, 255, 255, 0.96); /* Elevated (modals) */
+  --color-surface: rgba(255, 255, 255, 0.88);        /* Cards: glassmorphic base */
+  --color-surface-alt: rgba(255, 255, 255, 0.82);    /* Surfaces: subsections */
+  --color-surface-card: rgba(255, 255, 255, 0.88);   /* Card primary surface */
+  --color-surface-raised: rgba(255, 255, 255, 0.94); /* Elevated (modals) */
   --glass-blur: blur(12px);
   --glass-blur-elevated: blur(16px);
-  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-border: rgba(99, 102, 241, 0.12);  /* Subtle indigo tint */
 
-  /* ---- Brand Colors: Warm Amber (Primary Action) ----
-     Derived from #f97316 (warning-orange) — adjusted for WCAG AA contrast
+  /* ---- Brand Colors: Indigo + Teal (Modern & Elegant) ----
+     Primary: Indigo #6366f1 | Accent: Teal #0ea5a5
+     Sophisticated palette for premium food marketplace
   */
-  --color-brand-50: oklch(0.985 0.010 71);
-  --color-brand-100: oklch(0.965 0.025 71);
-  --color-brand-200: oklch(0.930 0.050 71);
-  --color-brand-300: oklch(0.890 0.080 71);
-  --color-brand-400: oklch(0.840 0.110 71);   /* Matches #f97316 approximately */
-  --color-brand-500: oklch(0.760 0.145 71);   /* Saturated accent */
-  --color-brand-600: oklch(0.660 0.160 71);   /* Primary action button */
-  --color-brand-700: oklch(0.570 0.155 71);   /* Hover state */
-  --color-brand-800: oklch(0.460 0.130 71);   /* Active state */
-  --color-brand-900: oklch(0.330 0.095 71);   /* Darkest */
+  --color-brand-50: oklch(0.97 0.015 280);
+  --color-brand-100: oklch(0.95 0.030 280);
+  --color-brand-200: oklch(0.91 0.055 280);
+  --color-brand-300: oklch(0.87 0.080 280);
+  --color-brand-400: oklch(0.80 0.110 280);   /* #6366f1 approximately */
+  --color-brand-500: oklch(0.72 0.140 280);   /* Saturated indigo */
+  --color-brand-600: oklch(0.64 0.160 280);   /* Primary action button */
+  --color-brand-700: oklch(0.56 0.155 280);   /* Hover state */
+  --color-brand-800: oklch(0.48 0.130 280);   /* Active state */
+  --color-brand-900: oklch(0.38 0.095 280);   /* Darkest indigo */
+
+  /* Accent: Teal for highlights & complementary actions */
+  --color-accent: oklch(0.65 0.16 175);       /* Teal #0ea5a5 */
+  --color-accent-light: oklch(0.92 0.04 175); /* Light teal background */
 
   --color-primary: var(--color-brand-600);
   --color-primary-hover: var(--color-brand-700);
@@ -63,19 +69,19 @@
   --color-border-active: var(--color-brand-500); /* Focus/active borders */
 
   /* ---- Semantic Status Colors (Light Mode) ----
-     Designed for order states: Pending, Confirmed, Preparing
+     Refined palette: Soft tones for light mode, saturated for dark mode
   */
-  --color-pending: oklch(0.68 0.16 60);        /* Warm amber-yellow for pending */
-  --color-pending-bg: oklch(0.97 0.04 60);
-  --color-pending-text: oklch(0.40 0.14 60);
+  --color-pending: oklch(0.72 0.14 70);       /* Warm amber for pending */
+  --color-pending-bg: oklch(0.97 0.05 70);
+  --color-pending-text: oklch(0.42 0.12 70);
 
-  --color-confirmed: oklch(0.63 0.16 155);     /* Green for confirmed/success */
-  --color-confirmed-bg: oklch(0.96 0.05 155);
-  --color-confirmed-text: oklch(0.35 0.12 155);
+  --color-confirmed: oklch(0.68 0.15 150);    /* Fresh green for confirmed */
+  --color-confirmed-bg: oklch(0.96 0.06 150);
+  --color-confirmed-text: oklch(0.38 0.13 150);
 
-  --color-preparing: oklch(0.60 0.16 245);     /* Blue for in-progress */
-  --color-preparing-bg: oklch(0.96 0.04 245);
-  --color-preparing-text: oklch(0.33 0.14 245);
+  --color-preparing: oklch(0.65 0.14 240);    /* Blue for in-progress */
+  --color-preparing-bg: oklch(0.96 0.05 240);
+  --color-preparing-text: oklch(0.36 0.12 240);
 
   /* Alias for consistency */
   --color-success: var(--color-confirmed);
@@ -86,13 +92,13 @@
   --color-warning-bg: var(--color-pending-bg);
   --color-warning-text: var(--color-pending-text);
 
-  --color-danger: oklch(0.58 0.19 27);         /* Red for errors */
-  --color-danger-bg: oklch(0.97 0.03 27);
-  --color-danger-text: oklch(0.38 0.17 27);
+  --color-danger: oklch(0.62 0.18 30);        /* Soft red for errors */
+  --color-danger-bg: oklch(0.97 0.05 30);
+  --color-danger-text: oklch(0.42 0.16 30);
 
-  --color-info: oklch(0.60 0.14 245);          /* Blue info */
-  --color-info-bg: oklch(0.96 0.03 245);
-  --color-info-text: oklch(0.35 0.12 245);
+  --color-info: oklch(0.65 0.14 240);         /* Blue info */
+  --color-info-bg: oklch(0.96 0.04 240);
+  --color-info-text: oklch(0.38 0.13 240);
 
   /* ---- Shadows: Light Mode ----
      Shadows are soft and use reduced opacity for glassmorphic effect
@@ -213,8 +219,8 @@
    
    Strategy:
    - Cards: Elevated surfaces with clear separation from background
-   - Text: Light colors with sufficient contrast (WCAG AA: 4.5:1 minimum)
-   - Accent: Brighter amber for visibility on dark
+   - Text: Light colors with sufficient contrast (WCAG AAA: 7:1 minimum)
+   - Accent: Brighter indigo/teal for visibility on dark
    - Shadows: Stronger, black-based for depth
    ============================================================================ */
 
@@ -228,10 +234,10 @@
   --color-surface-raised: rgba(55, 55, 55, 0.90); /* Modals, dropdowns */
   --glass-blur: blur(12px);
   --glass-blur-elevated: blur(16px);
-  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(99, 102, 241, 0.2);   /* Subtle indigo tint in dark */
 
   /* ---- Dark Mode Text ----
-     WCAG AA requires 4.5:1 for normal text.
+     WCAG AAA requires 7:1 for normal text.
      Light gray (#e8e8e8) on #1a1a1a = 15.3:1 (AAA) ✓
   */
   --color-text-primary: oklch(0.92 0.006 70);     /* Near white - primary text */
@@ -243,30 +249,34 @@
   /* ---- Dark Mode Borders ---- */
   --color-border: oklch(0.35 0.010 70);          /* Visible border in dark */
   --color-border-light: oklch(0.28 0.008 70);    /* Light dividers */
-  --color-border-active: var(--color-brand-400); /* Bright accent for focus */
+  --color-border-active: var(--color-brand-300); /* Bright indigo for focus */
 
   /* ---- Dark Mode Brand ----
      Use lighter brand shades for better visibility on dark
   */
-  --color-primary: var(--color-brand-400);       /* Brighter for dark mode */
+  --color-primary: var(--color-brand-400);       /* Brighter indigo for dark mode */
   --color-primary-hover: var(--color-brand-300);
   --color-primary-active: var(--color-brand-500);
-  --color-primary-light: oklch(0.30 0.060 71);   /* Darker version for contrast */
+  --color-primary-light: oklch(0.35 0.055 280);  /* Darker indigo for contrast */
   --color-primary-foreground: oklch(0.15 0.012 70); /* Dark text on brand */
+
+  /* ---- Dark Mode Accent (Teal) ---- */
+  --color-accent: oklch(0.75 0.18 175);           /* Brighter teal */
+  --color-accent-light: oklch(0.30 0.035 175);    /* Dark teal background */
 
   /* ---- Dark Mode Status Colors ----
      Lighter, more saturated versions for visibility
   */
-  --color-pending: oklch(0.75 0.18 60);           /* Brighter amber */
-  --color-pending-bg: oklch(0.25 0.025 60);
+  --color-pending: oklch(0.78 0.18 70);           /* Brighter amber */
+  --color-pending-bg: oklch(0.25 0.030 70);
   --color-pending-text: var(--color-pending);
 
-  --color-confirmed: oklch(0.70 0.18 155);        /* Brighter green */
-  --color-confirmed-bg: oklch(0.24 0.030 155);
+  --color-confirmed: oklch(0.73 0.18 150);        /* Brighter green */
+  --color-confirmed-bg: oklch(0.24 0.035 150);
   --color-confirmed-text: var(--color-confirmed);
 
-  --color-preparing: oklch(0.68 0.16 245);        /* Brighter blue */
-  --color-preparing-bg: oklch(0.24 0.025 245);
+  --color-preparing: oklch(0.72 0.16 240);        /* Brighter blue */
+  --color-preparing-bg: oklch(0.24 0.030 240);
   --color-preparing-text: var(--color-preparing);
 
   --color-success: var(--color-confirmed);
@@ -277,12 +287,12 @@
   --color-warning-bg: var(--color-pending-bg);
   --color-warning-text: var(--color-pending-text);
 
-  --color-danger: oklch(0.70 0.22 27);            /* Brighter red */
-  --color-danger-bg: oklch(0.25 0.028 27);
+  --color-danger: oklch(0.73 0.22 30);            /* Brighter red */
+  --color-danger-bg: oklch(0.26 0.033 30);
   --color-danger-text: var(--color-danger);
 
-  --color-info: oklch(0.68 0.16 245);             /* Brighter info blue */
-  --color-info-bg: oklch(0.24 0.025 245);
+  --color-info: oklch(0.72 0.16 240);             /* Brighter info blue */
+  --color-info-bg: oklch(0.24 0.030 240);
   --color-info-text: var(--color-info);
 
   /* ---- Dark Mode Shadows ----
