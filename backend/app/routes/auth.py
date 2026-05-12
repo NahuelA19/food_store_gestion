@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import update
 from sqlalchemy.future import select
 
 from app.models.auth import (
@@ -193,8 +194,15 @@ async def refresh_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Check if revoked
+    # Check if revoked → replay attack detected
     if stored_token.revoked_at is not None:
+        # RN-AU05: revoke ALL tokens for this user on replay attack
+        await session.execute(
+            update(RefreshToken)
+            .where(RefreshToken.user_id == stored_token.user_id)
+            .values(revoked_at=datetime.now(timezone.utc))
+        )
+        await session.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token has been revoked",

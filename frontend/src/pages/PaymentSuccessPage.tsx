@@ -14,7 +14,7 @@ export default function PaymentSuccessPage() {
     if (paymentId) {
       // Opcional: notificar al backend
     }
-  }, []);
+  }, [params, setStatus]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
