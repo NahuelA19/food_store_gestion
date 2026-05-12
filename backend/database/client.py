@@ -48,9 +48,26 @@ def get_engine() -> AsyncEngine:
 
 
 async def init_engine() -> AsyncEngine:
-    """Initialize the database engine (call during app startup)."""
+    """Initialize the database engine and run seeds (call during app startup)."""
     global _engine
     _engine = create_engine()
+    
+    # Run seeds after engine is initialized
+    from database.seeds import run_seeds
+    from sqlalchemy.ext.asyncio import AsyncSession
+    
+    session_factory = __import__('sqlalchemy.ext.asyncio', fromlist=['async_sessionmaker']).async_sessionmaker(
+        _engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autoflush=False,
+        autocommit=False,
+    )
+    
+    async with session_factory() as session:
+        await run_seeds(session)
+        await session.commit()
+    
     return _engine
 
 
