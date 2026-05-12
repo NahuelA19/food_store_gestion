@@ -439,9 +439,10 @@
      In light mode, headings use white (#ffffff) for excellent contrast
      against the lavender/indigo background. This ensures "Panel de Control",
      "Products", and other titles are clearly visible.
+     Using !important to override text-text-primary utility class.
   */
   h1, h2, h3, h4, h5, h6 {
-    color: #ffffff;
+    color: #ffffff !important;
   }
 }
 
