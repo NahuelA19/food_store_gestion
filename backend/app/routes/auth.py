@@ -3,9 +3,11 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import update
 from sqlalchemy.future import select
 
+from app.core.uow import UnitOfWork
+from app.dependencies import get_uow
 from app.models.auth import (
     AuthResponse,
     LoginRequest,
@@ -19,7 +21,6 @@ from app.security.jwt import create_access_token, create_refresh_token, hash_tok
 from app.security.limiter import limiter
 from app.security.password import get_password_hash, validate_password_strength, verify_password
 from app.validation import DEFAULT_PREFERENCES
-from database.session import get_db_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -27,13 +28,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     body: RegisterRequest,
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> AuthResponse:
     """Register a new user.
 
     Args:
         body: Registration request with email, password, and optional profile fields
-        session: Database session
+        uow: Unit of Work for database transactions
 
     Returns:
         AuthResponse with user info, JWT access token, and refresh token
@@ -51,7 +52,7 @@ async def register(
         )
 
     # Check if email already exists
-    result = await session.execute(select(User).where(User.email == body.email.lower()))
+    result = await uow.session.execute(select(User).where(User.email == body.email.lower()))
     existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(
@@ -69,8 +70,8 @@ async def register(
         last_name=body.last_name,
         phone=body.phone,
     )
-    session.add(new_user)
-    await session.flush()
+    uow.session.add(new_user)
+    await uow.flush()
 
     # Initialize default preferences
     for pref_key, pref_value in DEFAULT_PREFERENCES.items():
@@ -79,14 +80,14 @@ async def register(
             pref_key=pref_key,
             pref_value=pref_value,
         )
-        session.add(pref)
+        uow.session.add(pref)
 
     # Generate token pair
     access_token = create_access_token(data={"user_id": new_user.id, "email": new_user.email})
-    raw_refresh = await create_refresh_token(new_user.id, session)
+    raw_refresh = await create_refresh_token(new_user.id, uow.session)
 
-    await session.commit()
-    await session.refresh(new_user)
+    await uow.commit()
+    await uow.refresh(new_user)
 
     return AuthResponse(
         id=new_user.id,
@@ -105,7 +106,7 @@ async def register(
 async def login(
     request: Request,
     body: LoginRequest,
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> AuthResponse:
     """Login with email and password.
 
@@ -114,7 +115,7 @@ async def login(
     Args:
         request: FastAPI request (required by slowapi limiter)
         body: Login request with email and password
-        session: Database session
+        uow: Unit of Work for database transactions
 
     Returns:
         AuthResponse with user info, JWT access token, and refresh token
@@ -124,7 +125,7 @@ async def login(
         HTTPException 403: Account is inactive
     """
     # Find user by email
-    result = await session.execute(select(User).where(User.email == body.email.lower()))
+    result = await uow.session.execute(select(User).where(User.email == body.email.lower()))
     user = result.scalar_one_or_none()
 
     # Check if user exists and password is correct
@@ -144,9 +145,9 @@ async def login(
 
     # Generate token pair
     access_token = create_access_token(data={"user_id": user.id, "email": user.email})
-    raw_refresh = await create_refresh_token(user.id, session)
+    raw_refresh = await create_refresh_token(user.id, uow.session)
 
-    await session.commit()
+    await uow.commit()
 
     return AuthResponse(
         id=user.id,
@@ -163,7 +164,7 @@ async def login(
 @router.post("/refresh", response_model=RefreshTokenResponse)
 async def refresh_token(
     body: RefreshTokenRequest,
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> RefreshTokenResponse:
     """Refresh an access token using a valid refresh token (rotation).
 
@@ -172,7 +173,7 @@ async def refresh_token(
 
     Args:
         body: Request with the refresh token
-        session: Database session
+        uow: Unit of Work for database transactions
 
     Returns:
         RefreshTokenResponse with new access_token, refresh_token, and token_type
@@ -181,7 +182,7 @@ async def refresh_token(
         HTTPException 401: Invalid, expired, or revoked refresh token
     """
     token_hash = hash_token(body.refresh_token)
-    result = await session.execute(
+    result = await uow.session.execute(
         select(RefreshToken).where(RefreshToken.token_hash == token_hash)
     )
     stored_token = result.scalar_one_or_none()
@@ -193,8 +194,15 @@ async def refresh_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Check if revoked
+    # Check if revoked → replay attack detected
     if stored_token.revoked_at is not None:
+        # RN-AU05: revoke ALL tokens for this user on replay attack
+        await uow.session.execute(
+            update(RefreshToken)
+            .where(RefreshToken.user_id == stored_token.user_id)
+            .values(revoked_at=datetime.now(timezone.utc))
+        )
+        await uow.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token has been revoked",
@@ -214,9 +222,9 @@ async def refresh_token(
 
     # Create new token pair
     new_access = create_access_token(data={"user_id": stored_token.user_id})
-    new_refresh = await create_refresh_token(stored_token.user_id, session)
+    new_refresh = await create_refresh_token(stored_token.user_id, uow.session)
 
-    await session.commit()
+    await uow.commit()
 
     return RefreshTokenResponse(
         access_token=new_access,
@@ -228,13 +236,13 @@ async def refresh_token(
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(
     body: RefreshTokenRequest,
-    session: AsyncSession = Depends(get_db_session),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> dict[str, str]:
     """Revoke a refresh token.
 
     Args:
         body: Request with the refresh token to revoke
-        session: Database session
+        uow: Unit of Work for database transactions
 
     Returns:
         Dict with success message
@@ -243,7 +251,7 @@ async def logout(
         HTTPException 404: Token not found or already revoked
     """
     token_hash = hash_token(body.refresh_token)
-    result = await session.execute(
+    result = await uow.session.execute(
         select(RefreshToken).where(RefreshToken.token_hash == token_hash)
     )
     stored_token = result.scalar_one_or_none()
@@ -261,6 +269,6 @@ async def logout(
         )
 
     stored_token.revoked_at = datetime.now(timezone.utc)
-    await session.commit()
+    await uow.commit()
 
     return {"message": "Logged out successfully"}

@@ -9,15 +9,12 @@ from app.models.estado_pedido import EstadoPedido
 
 @pytest.fixture
 async def seed_estados(db_session: AsyncSession) -> None:
-    """Seed estados_pedido table with all required FSM states."""
+    """Seed estados_pedido table with the 6 FSM v6 states."""
     estados = [
         EstadoPedido(codigo="PENDIENTE", descripcion="Pedido creado", es_terminal=False),
-        EstadoPedido(codigo="PAGO_PENDIENTE", descripcion="Esperando pago", es_terminal=False),
-        EstadoPedido(codigo="PAGADO", descripcion="Pago confirmado", es_terminal=False),
-        EstadoPedido(codigo="PAGO_FALLIDO", descripcion="Pago fallido", es_terminal=False),
-        EstadoPedido(codigo="CONFIRMADO", descripcion="Pedido confirmado", es_terminal=False),
-        EstadoPedido(codigo="PREPARANDO", descripcion="Preparando pedido", es_terminal=False),
-        EstadoPedido(codigo="LISTO", descripcion="Pedido listo para retirar", es_terminal=False),
+        EstadoPedido(codigo="CONFIRMADO", descripcion="Pago confirmado", es_terminal=False),
+        EstadoPedido(codigo="EN_PREP", descripcion="Preparando pedido", es_terminal=False),
+        EstadoPedido(codigo="EN_CAMINO", descripcion="En camino a delivery", es_terminal=False),
         EstadoPedido(codigo="ENTREGADO", descripcion="Pedido entregado", es_terminal=True),
         EstadoPedido(codigo="CANCELADO", descripcion="Pedido cancelado", es_terminal=True),
     ]
@@ -28,7 +25,7 @@ async def seed_estados(db_session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 class TestOrderFSM:
-    """Test FSM state machine transitions for orders."""
+    """Test FSM state machine transitions for orders (6-state spec)."""
 
     @pytest.fixture
     async def setup_data(
@@ -170,87 +167,206 @@ class TestOrderFSM:
         )
         assert cancel_resp.status_code == 200
         data = cancel_resp.json()
-        assert data["status"] == "cancelled"
+        assert data["status"] == "cancelado"
 
-    async def test_fsm_valid_transition_pipeline(
+    async def test_fsm_valid_admin_pipeline(
         self,
         async_client: AsyncClient,
+        db_session: AsyncSession,
         admin_setup: dict,
     ):
-        """Admin can walk through a valid transition pipeline."""
+        """Admin can walk through CONFIRMADO → EN_PREP → EN_CAMINO → ENTREGADO."""
         order_id = admin_setup["order_id"]
         admin_headers = admin_setup["admin_headers"]
 
-        # PENDIENTE → PAGO_PENDIENTE
+        # Manually set to CONFIRMADO (simulating IPN webhook) since admin endpoint blocks it
+        from app.models.order import Order
+        order = await db_session.get(Order, order_id)
+        order.estado_codigo = "CONFIRMADO"
+        order.status = "confirmado"
+        await db_session.commit()
+
+        # CONFIRMADO → EN_PREP
         resp = await async_client.patch(
             f"/api/v1/orders/{order_id}/status",
-            json={"status": "pago_pendiente"},
+            json={"status": "en_prep"},
             headers=admin_headers,
         )
-        assert resp.status_code == 200, f"PAGO_PENDIENTE failed: {resp.json()}"
+        assert resp.status_code == 200, f"EN_PREP failed: {resp.json()}"
+        assert resp.json()["status"] == "en_prep"
 
-        # PAGO_PENDIENTE → CANCELADO (valid from any non-terminal with cancel)
-        # Actually let's do PAGO_PENDIENTE → CONFIRMADO is INVALID
-        # PAGO_PENDIENTE only allows PAGADO or CANCELADO
-        # Let's try CONFIRMADO from PAGO_PENDIENTE → should fail
+        # EN_PREP → EN_CAMINO
         resp = await async_client.patch(
             f"/api/v1/orders/{order_id}/status",
-            json={"status": "confirmado"},
+            json={"status": "en_camino"},
             headers=admin_headers,
         )
-        assert resp.status_code in (400, 422), "CONFIRMADO from PAGO_PENDIENTE should fail"
+        assert resp.status_code == 200, f"EN_CAMINO failed: {resp.json()}"
+        assert resp.json()["status"] == "en_camino"
 
-        # Now go back to PAGO_PENDIENTE → CANCELADO
+        # EN_CAMINO → ENTREGADO
         resp = await async_client.patch(
             f"/api/v1/orders/{order_id}/status",
-            json={"status": "cancelled"},
+            json={"status": "entregado"},
             headers=admin_headers,
         )
-        assert resp.status_code == 200, f"CANCELADO failed: {resp.json()}"
-        assert resp.json()["status"] == "cancelled"
+        assert resp.status_code == 200, f"ENTREGADO failed: {resp.json()}"
+        assert resp.json()["status"] == "entregado"
 
-    async def test_fsm_invalid_transition_direct(
+    async def test_fsm_valid_cancel_from_confirmado(
         self,
         async_client: AsyncClient,
+        db_session: AsyncSession,
         admin_setup: dict,
     ):
-        """PENDIENTE → CONFIRMADO directly (without going through PAGO_PENDIENTE) is invalid."""
+        """CONFIRMADO → CANCELADO is valid."""
         order_id = admin_setup["order_id"]
         admin_headers = admin_setup["admin_headers"]
 
-        # Try to go from PENDIENTE directly to CONFIRMADO
+        # Manually set to CONFIRMADO
+        from app.models.order import Order
+        order = await db_session.get(Order, order_id)
+        order.estado_codigo = "CONFIRMADO"
+        order.status = "confirmado"
+        await db_session.commit()
+
         resp = await async_client.patch(
             f"/api/v1/orders/{order_id}/status",
-            json={"status": "confirmado"},
-            headers=admin_headers,
-        )
-        assert resp.status_code in (400, 422), "PENDIENTE → CONFIRMADO should be invalid"
-
-    async def test_fsm_block_pagado_via_admin(
-        self,
-        async_client: AsyncClient,
-        admin_setup: dict,
-    ):
-        """PAGADO transition is blocked via admin endpoint."""
-        order_id = admin_setup["order_id"]
-        admin_headers = admin_setup["admin_headers"]
-
-        # PENDIENTE → PAGO_PENDIENTE (valid)
-        resp = await async_client.patch(
-            f"/api/v1/orders/{order_id}/status",
-            json={"status": "pago_pendiente"},
+            json={"status": "cancelado"},
             headers=admin_headers,
         )
         assert resp.status_code == 200
+        assert resp.json()["status"] == "cancelado"
 
-        # PAGO_PENDIENTE → PAGADO via admin (BLOCKED - only via MP webhook)
+    async def test_fsm_valid_cancel_from_en_prep(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        admin_setup: dict,
+    ):
+        """EN_PREP → CANCELADO is valid."""
+        order_id = admin_setup["order_id"]
+        admin_headers = admin_setup["admin_headers"]
+
+        # Manually set to EN_PREP
+        from app.models.order import Order
+        order = await db_session.get(Order, order_id)
+        order.estado_codigo = "EN_PREP"
+        order.status = "en_prep"
+        await db_session.commit()
+
         resp = await async_client.patch(
             f"/api/v1/orders/{order_id}/status",
-            json={"status": "pagado"},
+            json={"status": "cancelado"},
+            headers=admin_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "cancelado"
+
+    async def test_fsm_block_confirmado_via_admin(
+        self,
+        async_client: AsyncClient,
+        admin_setup: dict,
+    ):
+        """CONFIRMADO transition is blocked via admin endpoint (only via IPN)."""
+        order_id = admin_setup["order_id"]
+        admin_headers = admin_setup["admin_headers"]
+
+        # PENDIENTE → CONFIRMADO via admin (BLOCKED - only via MP webhook)
+        resp = await async_client.patch(
+            f"/api/v1/orders/{order_id}/status",
+            json={"status": "confirmado"},
             headers=admin_headers,
         )
         assert resp.status_code == 400
-        assert "PAGADO" in resp.json()["detail"]
+        assert "CONFIRMADO" in resp.json()["detail"]
+
+    async def test_fsm_invalid_pendiente_to_entregado(
+        self,
+        async_client: AsyncClient,
+        admin_setup: dict,
+    ):
+        """PENDIENTE → ENTREGADO directly is invalid."""
+        order_id = admin_setup["order_id"]
+        admin_headers = admin_setup["admin_headers"]
+
+        resp = await async_client.patch(
+            f"/api/v1/orders/{order_id}/status",
+            json={"status": "entregado"},
+            headers=admin_headers,
+        )
+        assert resp.status_code in (400, 422), "PENDIENTE → ENTREGADO should be invalid"
+
+    async def test_fsm_invalid_confirmado_to_entregado(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        admin_setup: dict,
+    ):
+        """CONFIRMADO → ENTREGADO (skipping EN_PREP/EN_CAMINO) is invalid."""
+        order_id = admin_setup["order_id"]
+        admin_headers = admin_setup["admin_headers"]
+
+        # Manually set to CONFIRMADO
+        from app.models.order import Order
+        order = await db_session.get(Order, order_id)
+        order.estado_codigo = "CONFIRMADO"
+        order.status = "confirmado"
+        await db_session.commit()
+
+        resp = await async_client.patch(
+            f"/api/v1/orders/{order_id}/status",
+            json={"status": "entregado"},
+            headers=admin_headers,
+        )
+        assert resp.status_code in (400, 422), "CONFIRMADO → ENTREGADO should be invalid"
+
+    async def test_fsm_terminal_entregado_rejects_any(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        admin_setup: dict,
+    ):
+        """ENTREGADO (terminal) rejects any transition."""
+        order_id = admin_setup["order_id"]
+        admin_headers = admin_setup["admin_headers"]
+
+        # Manually set to ENTREGADO
+        from app.models.order import Order
+        order = await db_session.get(Order, order_id)
+        order.estado_codigo = "ENTREGADO"
+        order.status = "entregado"
+        await db_session.commit()
+
+        resp = await async_client.patch(
+            f"/api/v1/orders/{order_id}/status",
+            json={"status": "cancelado"},
+            headers=admin_headers,
+        )
+        assert resp.status_code in (400, 422), "ENTREGADO → anything should be invalid"
+
+    async def test_fsm_terminal_cancelado_rejects_any(
+        self,
+        async_client: AsyncClient,
+        admin_setup: dict,
+    ):
+        """CANCELADO (terminal) rejects any transition."""
+        order_id = admin_setup["order_id"]
+        admin_headers = admin_setup["admin_headers"]
+
+        # First cancel via user endpoint
+        await async_client.post(
+            f"/api/v1/orders/{order_id}/cancel",
+            headers=admin_setup["user_headers"],
+        )
+
+        # Try any transition on CANCELADO
+        resp = await async_client.patch(
+            f"/api/v1/orders/{order_id}/status",
+            json={"status": "en_prep"},
+            headers=admin_headers,
+        )
+        assert resp.status_code in (400, 422), "CANCELADO → anything should be invalid"
 
     async def test_fsm_historial_recorded(
         self,
@@ -286,6 +402,7 @@ class TestOrderFSM:
     async def test_fsm_historial_admin_pipeline(
         self,
         async_client: AsyncClient,
+        db_session: AsyncSession,
         admin_setup: dict,
     ):
         """Historial correctly records multiple admin transitions."""
@@ -293,10 +410,17 @@ class TestOrderFSM:
         admin_headers = admin_setup["admin_headers"]
         user_headers = admin_setup["user_headers"]
 
-        # PENDIENTE → PAGO_PENDIENTE
+        # Manually set to CONFIRMADO
+        from app.models.order import Order
+        order = await db_session.get(Order, order_id)
+        order.estado_codigo = "CONFIRMADO"
+        order.status = "confirmado"
+        await db_session.commit()
+
+        # CONFIRMADO → EN_PREP
         await async_client.patch(
             f"/api/v1/orders/{order_id}/status",
-            json={"status": "pago_pendiente"},
+            json={"status": "en_prep"},
             headers=admin_headers,
         )
 
@@ -307,12 +431,14 @@ class TestOrderFSM:
         )
         assert resp.status_code == 200
         entries = resp.json()
-        assert len(entries) >= 2
+        assert len(entries) >= 3
 
-        # Check the transition
+        # Check the transitions
         assert entries[0]["estado_hasta"] == "PENDIENTE"
         assert entries[1]["estado_desde"] == "PENDIENTE"
-        assert entries[1]["estado_hasta"] == "PAGO_PENDIENTE"
+        assert entries[1]["estado_hasta"] == "CONFIRMADO"
+        assert entries[2]["estado_desde"] == "CONFIRMADO"
+        assert entries[2]["estado_hasta"] == "EN_PREP"
 
     async def test_fsm_snapshots_copied(
         self,
@@ -364,7 +490,7 @@ class TestCheckoutAndOrders:
     """Test checkout flow and order management."""
 
     @pytest.fixture
-    async def setup_data(self, async_client: AsyncClient) -> dict:
+    async def setup_data(self, async_client: AsyncClient, seed_estados: None) -> dict:
         """Create test user, category, product, and add item to cart.
 
         Returns dict with auth_headers, cart_id, product_id, etc.
@@ -441,7 +567,7 @@ class TestCheckoutAndOrders:
         assert result["order_id"] is not None  # Real order_id, not None
         assert float(result["total"]) > 0
         assert result["cart_id"] == data["cart_id"]
-        assert result["client_secret"] is not None  # Stripe PaymentIntent client_secret
+        assert result["preference_id"] is not None  # MP preference ID
 
     async def test_checkout_empty_cart_fails(
         self,
@@ -509,7 +635,7 @@ class TestCheckoutAndOrders:
         data = resp.json()
         assert data["total"] >= 1
         assert len(data["items"]) >= 1
-        assert data["items"][0]["status"] == "payment_pending"
+        assert data["items"][0]["status"] == "pendiente"
 
     async def test_order_detail(
         self,
@@ -533,7 +659,7 @@ class TestCheckoutAndOrders:
         assert resp.status_code == 200
         data = resp.json()
         assert data["id"] == order_id
-        assert data["status"] == "payment_pending"
+        assert data["status"] == "pendiente"
         assert len(data["items"]) >= 1
         assert data["items"][0]["product_id"] == setup_data["product_id"]
 
@@ -587,7 +713,7 @@ class TestCheckoutAndOrders:
         )
         assert cancel_resp.status_code == 200
         data = cancel_resp.json()
-        assert data["status"] == "cancelled"
+        assert data["status"] == "cancelado"
 
     async def test_cancel_non_pending_order_fails(
         self,

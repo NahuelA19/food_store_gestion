@@ -422,7 +422,7 @@ async def checkout_cart(
     cart_response = await get_cart_response(cart)
 
     # Create order with items and reserve inventory
-    order = await create_order_from_cart(cart, body, uow)
+    order = await create_order_from_cart(cart, body, uow, direccion_entrega_id=body.direccion_entrega_id)
 
     # Mark cart as checked_out
     cart.status = "checked_out"

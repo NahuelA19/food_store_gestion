@@ -9,16 +9,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.middleware.metrics import MetricsMiddleware
+from app.config import settings
 from app.routes.admin import router as admin_router
 from app.routes.admin_reviews import router as admin_reviews_router
 from app.routes.auth import router as auth_router
 from app.routes.branches import router as branches_router
 from app.routes.cart import router as cart_router
+from app.routes.direcciones_entrega import router as direcciones_router
 from app.routes.categories import router as categories_router
-from app.routes.health import router as health_router
 from app.routes.inventory import router as inventory_router
-from app.routes.metrics import router as metrics_router
 from app.routes.notifications import router as notifications_router
 from app.routes.orders import router as orders_router
 from app.routes.payments import router as payments_router
@@ -63,8 +62,13 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-app.add_middleware(MetricsMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.add_middleware(RequestLoggingMiddleware)
 
 # Include routers
@@ -73,9 +77,8 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(branches_router, prefix="/api/v1")
 app.include_router(categories_router, prefix="/api/v1")
 app.include_router(cart_router, prefix="/api/v1")
-app.include_router(health_router, prefix="/api/v1")
+app.include_router(direcciones_router, prefix="/api/v1")
 app.include_router(inventory_router, prefix="/api/v1")
-app.include_router(metrics_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(orders_router, prefix="/api/v1")
 app.include_router(payments_router, prefix="/api/v1")

@@ -17,6 +17,9 @@ from app.models.product import Product
 from app.models.producto_ingrediente import ProductoIngrediente
 from app.models.refresh_token import RefreshToken
 from app.models.review import Review
+from app.models.role import Role
+from app.models.usuario_rol import UsuarioRol
+from app.models.direccion_entrega import DireccionEntrega
 from app.models.user import User
 from app.models.wishlist import WishlistItem
 
@@ -41,4 +44,7 @@ __all__ = [
     "Inventory",
     "Order",
     "OrderItem",
+    "Role",
+    "UsuarioRol",
+    "DireccionEntrega",
 ]

@@ -41,6 +41,7 @@ class CheckoutRequest(BaseModel):
     shipping_address: str = Field(..., min_length=1, max_length=500)
     shipping_method: str = Field(default="standard")
     notes: str | None = Field(None, max_length=1000)
+    direccion_entrega_id: int | None = None
 
 
 class CartResponse(BaseModel):

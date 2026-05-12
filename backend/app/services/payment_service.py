@@ -28,7 +28,7 @@ async def handle_ipn(
     if mp_status == "approved":
         await transition(
             order,
-            "PAGADO",
+            "CONFIRMADO",
             usuario_id=None,
             session=uow.session,
             motivo="Pago confirmado vía MercadoPago IPN",
@@ -37,7 +37,7 @@ async def handle_ipn(
     elif mp_status == "rejected":
         await transition(
             order,
-            "PAGO_FALLIDO",
+            "CANCELADO",
             usuario_id=None,
             session=uow.session,
             motivo="Pago rechazado vía MercadoPago IPN",

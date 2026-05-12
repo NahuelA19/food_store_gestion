@@ -27,42 +27,32 @@ from app.schemas.order import (
     OrderResponse,
 )
 from app.services.notification_service import create_order_notification
-from app.services.recommendation_service import recommendation_service
 
 logger = logging.getLogger(__name__)
 
 # FSM state transitions — keys/values refer to estados_pedido.codigo
 FSM_TRANSITIONS: dict[str, list[str]] = {
-    "PENDIENTE": ["PAGO_PENDIENTE", "CANCELADO"],
-    "PAGO_PENDIENTE": ["PAGADO", "CANCELADO"],
-    "PAGADO": ["CONFIRMADO"],
-    "PAGO_FALLIDO": ["PAGO_PENDIENTE", "CANCELADO"],
-    "CONFIRMADO": ["PREPARANDO", "CANCELADO"],
-    "PREPARANDO": ["LISTO"],
-    "LISTO": ["ENTREGADO"],
-    "ENTREGADO": [],
-    "CANCELADO": [],
+    "PENDIENTE": ["CONFIRMADO", "CANCELADO"],       # Pago via IPN → CONFIRMADO
+    "CONFIRMADO": ["EN_PREP", "CANCELADO"],          # Admin prepara o cancela
+    "EN_PREP": ["EN_CAMINO", "CANCELADO"],           # Sale a delivery o se cancela
+    "EN_CAMINO": ["ENTREGADO"],                      # Se entrega (terminal)
+    "ENTREGADO": [],                                  # Terminal
+    "CANCELADO": [],                                  # Terminal
 }
 
 # Map FSM codigo → OrderStatus for backward compatibility of the `status` column
 _FSM_TO_STATUS: dict[str, OrderStatus] = {
     "PENDIENTE": OrderStatus.PENDIENTE,
-    "PAGO_PENDIENTE": OrderStatus.PAYMENT_PENDING,
-    "PAGADO": OrderStatus.PAGADO,
-    "PAGO_FALLIDO": OrderStatus.PAYMENT_FAILED,
-    "CONFIRMADO": OrderStatus.CONFIRMED,
-    "PREPARANDO": OrderStatus.PREPARANDO,
-    "LISTO": OrderStatus.LISTO,
+    "CONFIRMADO": OrderStatus.CONFIRMADO,
+    "EN_PREP": OrderStatus.EN_PREP,
+    "EN_CAMINO": OrderStatus.EN_CAMINO,
     "ENTREGADO": OrderStatus.ENTREGADO,
     "CANCELADO": OrderStatus.CANCELADO,
 }
 
 # Reverse map: OrderStatus → FSM codigo
 _STATUS_TO_FSM: dict[OrderStatus, str] = {v: k for k, v in _FSM_TO_STATUS.items()}
-# Extra aliases (old enum values)
-_STATUS_TO_FSM[OrderStatus.PAYMENT_PENDING] = "PAGO_PENDIENTE"
-_STATUS_TO_FSM[OrderStatus.PAYMENT_FAILED] = "PAGO_FALLIDO"
-_STATUS_TO_FSM[OrderStatus.PAID] = "PAGADO"
+# Extra aliases (old enum values mapping to new FSM states)
 _STATUS_TO_FSM[OrderStatus.CONFIRMED] = "CONFIRMADO"
 _STATUS_TO_FSM[OrderStatus.DELIVERED] = "ENTREGADO"
 _STATUS_TO_FSM[OrderStatus.CANCELLED] = "CANCELADO"
@@ -110,6 +100,7 @@ async def create_order_from_cart(
     cart: Cart,
     body: CheckoutRequest,
     uow: UnitOfWork,
+    direccion_entrega_id: int | None = None,
 ) -> Order:
     """Create an Order and OrderItems from a checked-out cart.
 
@@ -136,14 +127,14 @@ async def create_order_from_cart(
     # Create the order
     order = Order(
         user_id=cart.user_id,
-        status=OrderStatus.PAYMENT_PENDING,
+        status=OrderStatus.PENDIENTE,
         estado_codigo="PENDIENTE",
         total_amount=total_amount,
         payment_status=PaymentStatus.PENDING,
         status_history=[
             {
                 "from": None,
-                "to": OrderStatus.PAYMENT_PENDING.value,
+                "to": OrderStatus.PENDIENTE.value,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "by": cart.user_id,
             }
@@ -151,6 +142,22 @@ async def create_order_from_cart(
     )
     uow.session.add(order)
     await uow.flush()  # Get order.id
+
+    # Handle shipping address snapshot
+    if direccion_entrega_id:
+        from app.models.direccion_entrega import DireccionEntrega
+        direccion = await uow.direcciones.get(direccion_entrega_id)
+        if not direccion:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Dirección no encontrada")
+        if direccion.usuario_id != cart.user_id:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="La dirección no pertenece al usuario")
+        order.direccion_entrega_id = direccion.id
+        order.direccion_snapshot = {
+            "direccion": direccion.direccion,
+            "ciudad": direccion.ciudad,
+            "provincia": direccion.provincia,
+            "codigo_postal": direccion.codigo_postal,
+        }
 
     # Create initial FSM historial entry
     historial_inicial = HistorialEstadoPedido(
@@ -201,9 +208,6 @@ async def create_order_from_cart(
 
     await uow.flush()
     await uow.refresh(order)
-
-    # Invalidate recommendation caches — orders changed
-    recommendation_service.invalidate_all()
 
     return order
 
@@ -382,7 +386,7 @@ async def cancel_order(
     # Track status change (legacy JSON history for backward compat)
     history_entry = {
         "from": old_estado,
-        "to": OrderStatus.CANCELLED.value,
+        "to": OrderStatus.CANCELADO.value,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "by": user_id,
     }
@@ -397,16 +401,13 @@ async def cancel_order(
     await uow.flush()
     await uow.refresh(order)
 
-    # Invalidate recommendation caches
-    recommendation_service.invalidate_all()
-
     # Trigger notification (fire-and-forget — never fail the request)
     try:
         await create_order_notification(
             uow=uow,
             order_id=order.id,
             user_id=order.user_id,
-            new_status=OrderStatus.CANCELLED,
+            new_status=OrderStatus.CANCELADO,
         )
     except Exception as e:
         logger.error("Failed to create notification for order %d: %s", order.id, e)
@@ -457,11 +458,11 @@ async def update_order_status(
             detail=f"No se puede transicionar a '{new_status.value}'",
         )
 
-    # Block manual transition to PAGADO — only allowed via MercadoPago webhook
-    if nuevo_fsm == "PAGADO":
+    # Block manual transition to CONFIRMADO — only allowed via MercadoPago webhook
+    if nuevo_fsm == "CONFIRMADO":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Transición a 'PAGADO' solo permitida vía webhook de MercadoPago",
+            detail="Transición a 'CONFIRMADO' solo permitida vía webhook de MercadoPago",
         )
 
     old_estado = order.estado_codigo
@@ -483,9 +484,6 @@ async def update_order_status(
     uow.session.add(order)
     await uow.flush()
     await uow.refresh(order)
-
-    # Invalidate recommendation caches
-    recommendation_service.invalidate_all()
 
     return order
 

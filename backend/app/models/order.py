@@ -7,7 +7,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -15,6 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.estado_pedido import EstadoPedido
 
 if TYPE_CHECKING:
+    from app.models.direccion_entrega import DireccionEntrega
     from app.models.historial_estado_pedido import HistorialEstadoPedido
     from app.models.notification import Notification
     from app.models.order_item import OrderItem
@@ -34,7 +35,7 @@ class PaymentStatus(str, Enum):
 
 
 class OrderStatus(str, Enum):
-    """Order status enumeration (FSM v5)."""
+    """Order status enumeration (FSM v6 — 6 states)."""
 
     PENDIENTE = "pendiente"
     PAGO_PENDIENTE = "pago_pendiente"
@@ -45,6 +46,8 @@ class OrderStatus(str, Enum):
     PAYMENT_FAILED = "payment_failed"
     CONFIRMADO = "confirmado"
     CONFIRMED = "confirmed"
+    EN_PREP = "en_prep"
+    EN_CAMINO = "en_camino"
     SHIPPED = "shipped"
     PREPARANDO = "preparando"
     LISTO = "listo"
@@ -135,6 +138,18 @@ class Order(Base, TimestampMixin):
         back_populates="pedido",
         cascade="all, delete-orphan",
         lazy="selectin",
+    )
+
+    # Dirección de entrega
+    direccion_entrega_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("direcciones_entrega.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    direccion_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    direccion_entrega: Mapped["DireccionEntrega | None"] = relationship(
+        "DireccionEntrega", back_populates="pedidos"
     )
 
     estado: Mapped["EstadoPedido | None"] = relationship(

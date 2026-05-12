@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ProductCard } from "../components/ProductCard";
 import { ReviewList } from "../components/reviews/ReviewList";
 import { ReviewForm } from "../components/reviews/ReviewForm";
 import { FavoriteButton } from "../components/wishlist/FavoriteButton";
@@ -13,7 +12,6 @@ import { useProduct } from "../hooks/useProduct";
 import { useProductReviews } from "../hooks/useReviews";
 import { useWishlist } from "../hooks/useWishlist";
 import { useAuthStore } from "../store/authStore";
-import { useFrequentlyBoughtTogether } from "../hooks/useRecommendations";
 import {
   AlertTriangle,
   Package,
@@ -43,7 +41,6 @@ export const ProductDetailPage: React.FC = () => {
     setPage: setReviewPage,
     refetch: refetchReviews,
   } = useProductReviews(productId);
-  const { products: frequentlyBought, loading: fbLoading } = useFrequentlyBoughtTogether(product?.id ?? 0);
 
   if (error) {
     return (
@@ -228,26 +225,6 @@ export const ProductDetailPage: React.FC = () => {
           </CardContent>
         </div>
       </Card>
-
-      {frequentlyBought.length > 0 && !fbLoading && (
-        <section className="mt-12 border-t border-border-light pt-10">
-          <h2 className="mb-6 font-display text-2xl font-bold text-primary">
-            Frequently Bought Together
-          </h2>
-          <p className="mb-6 text-sm text-text-muted">
-            Customers who purchased this also bought these items.
-          </p>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {frequentlyBought.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                onClick={() => navigate(`/products/${p.id}`)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Reviews Section */}
       <section className="mt-12 border-t border-border-light pt-10">

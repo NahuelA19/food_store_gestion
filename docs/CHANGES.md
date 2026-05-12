@@ -1,299 +1,182 @@
-# Food Store OPSX Change Map
+# Food Store — Mapa de Changes (TPI v5.0)
 
-Complete roadmap of planned changes for Food Store e-commerce platform. This document syncs with the OpenSpec (OPSX) workflow for systematic development.
-
-## Overview
-
-**Total Changes**: 23 planned
-**Phases**: 6 (from scratch to production)
-**Timeline**: 2-3 months (estimated)
-**Status**: Phase 1 complete ✅, Phase 2 in progress (Change 4 complete, 154/162 tasks, pending PostgreSQL integration)
-
-## Phase 1: Foundation (Weeks 1-2)
-
-Core infrastructure and project setup.
-
-### Change 1: **setup-project-structure** ✅ COMPLETED
-- **Status**: Archived
-- **Duration**: 5-7 days
-- **Description**: Initialize monorepo, dev tools, CI/CD, documentation
-- **Dependencies**: None (prerequisite)
-- **Artifacts**: Complete
-- **Progress**: 65/65 tasks ✓
-- **Archived**: 2026-04-26
-
-### Change 2: **add-database-layer** ✅ COMPLETED
-- **Status**: Archived
-- **Duration**: 3-5 days
-- **Description**: PostgreSQL setup, SQLAlchemy ORM, migrations
-- **Dependencies**: Change 1 ✅
-- **Blocks**: All data-driven changes
-- **Implemented**: 2026-05-06
-- **Archived**: 2026-05-06
-- **Commit**: `5f1d749` - feat(database): add PostgreSQL ORM with SQLAlchemy and Alembic migrations
-- **Artifacts**: 48/48 tasks completed ✓
-
-### Change 3: **implement-authentication** ✅ COMPLETED
-- **Status**: Archived
-- **Duration**: 4-6 days
-- **Description**: JWT auth, user registration, password hashing with bcrypt, frontend login/register UI
-- **Dependencies**: Change 1 ✅, Change 2 ✅
-- **Blocks**: Authorization layer, Change 4 (create-user-service)
-- **Implemented**: 2026-05-06
-- **Archived**: 2026-05-06
-- **Commit**: `b213a09` - feat(auth): implement JWT authentication with registration and login
-- **Artifacts**: proposal.md, design.md, specs (user-auth, auth-middleware, auth-frontend, core-entities), tasks.md ✓
-- **Progress**: 41/52 tasks completed ✓
-- **Pending tasks** (require PostgreSQL running locally):
-  - 7.3: `mypy backend/ --strict` type check
-  - 7.4: Manual verification with curl (register, login, protected endpoint)
-  - 12.x: Integration testing E2E (requires both dev servers)
-  - 14.1: Full test run `npm run test`
-  - 14.3: Manual smoke test
-  - 11.1: useAuth hook tests (removed due to async mock issues)
+> **Objetivo**: Mapa de ruta para alcanzar el 100% de compliance con los 3 documentos de la cátedra:
+> `docs/Integrador.txt`, `docs/Historias_de_usuario.txt`, `docs/Descripcion.txt`.
+>
+> Los changes están organizados por criterio de la **Rúbrica de 200 puntos** del TPI.
+> Los features fuera del TPI que ya están implementados se listan en **Extras**.
 
 ---
 
-## Phase 2: User & Product Management (Weeks 3-5)
-
-Core business entities and operations.
-
-### Change 4: **create-user-service** ✅ COMPLETED
-- **Status**: Implementation complete — code, tests, docs, preferences UI, admin endpoints all done
-- **Duration**: 3-4 days
-- **Description**: User CRUD, profiles, preferences, admin management
-- **Dependencies**: Change 3 ✅
-- **API Endpoints**: 8 (GET/PUT /users/me, GET /users/{id}, GET/PUT /users/me/preferences, DELETE /users/me, GET /users, PATCH /users/{id}/status)
-- **Artifacts**: proposal.md, design.md, specs (5 files), tasks.md (77 tasks) ✓
-- **Progress**: 154/162 tasks completed ✓ (8 pending: require PostgreSQL for integration testing)
-- **Pending**: E2E integration tests (20.1-20.6), migration backcompat verify (1.7) — require PostgreSQL
-- **Implemented**: 2026-05-07
-- **Commits**: 
-  - `7469729` — feat(users): implement user service with profiles, preferences, and frontend
-  - `4f2b9d1` — feat(users): complete user service with admin endpoints, preferences UI, docs
-  - `0b96d28` — chore(users): update task tracking
-
-### Change 5: **create-product-service** (PENDING)
-- **Duration**: 4-5 days
-- **Description**: Product catalog, categories, inventory
-- **Dependencies**: Change 2
-- **API Endpoints**: 6-8
-
-### Change 6: **build-search-and-filtering** (PENDING)
-- **Duration**: 3-4 days
-- **Description**: Full-text search, filters by price/category/rating
-- **Dependencies**: Change 5
-- **Frontend Components**: Search bar, filters
-
-### Change 7: **design-cart-system** (PENDING)
-- **Duration**: 3-4 days
-- **Description**: Shopping cart, quantity management, persistence
-- **Dependencies**: Change 3, 5
-- **Frontend Components**: Cart, cart item
+## 🎯 CAMBIOS TPI — Impactan DIRECTAMENTE en los 200 pts
 
 ---
 
-## Phase 3: Transactions & Payments (Weeks 6-7)
+### FASE TPI-1: Infraestructura y Setup
+**Criterio**: Backend — Estructura y Configuración (10 pts)
 
-Order processing and payment integration.
+| ID | Change | Estado | Pts estimados |
+|:--:|--------|:------:|:-------------:|
+| 1 | `setup-project-structure` | ✅ Archivado TPI | 2 |
+| 2 | `add-database-layer` | ✅ Archivado TPI | 3 |
+| 18 | `migracion-hacia-aprobacion` (UoW, core/, rate limiting, /api/v1) | 🏗️ 125/143 | 5 |
 
-### Change 8: **implement-order-management** (PENDING)
-- **Duration**: 4-5 days
-- **Description**: Order creation, status tracking, history
-- **Dependencies**: Change 4, 5, 7
-- **API Endpoints**: 8-10
-
-### Change 9: **integrate-payment-gateway** (PENDING)
-- **Duration**: 5-6 days
-- **Description**: Stripe/PayPal integration, webhook handling
-- **Dependencies**: Change 8
-- **External Services**: Payment provider API
-
-### Change 10: **create-checkout-flow** (PENDING)
-- **Duration**: 4-5 days
-- **Description**: Multi-step checkout, address validation, confirmation
-- **Dependencies**: Change 8, 9
-- **Frontend Pages**: Checkout flow
+**Pendiente** en `migracion-hacia-aprobacion`:
+- ✅ CORS: cambiar `["*"]` por lista desde variable de entorno
+- ✅ Verificar `alembic upgrade head` en BD limpia (CE-04)
 
 ---
 
-## Phase 4: Features & Polish (Weeks 8-9)
+### FASE TPI-2: Modelo de Datos + UoW + Servicios
+**Criterios**: Modelo de Datos (15 pts) + UoW/Repository (15 pts) + Capa Servicio (15 pts)
 
-Enhanced functionality and user experience.
+| ID | Change | Estado | Pts estimados |
+|:--:|--------|:------:|:-------------:|
+| 3 | `implement-authentication` | ✅ Archivado TPI | 5 |
+| 7 | `implement-shopping-cart` | ✅ Archivado TPI | 5 |
+| 8 | `implement-checkout-and-orders` | ✅ Archivado TPI | 5 |
+| 4 | `create-user-service` | ✅ Archivado TPI | 5 |
+| 5 | `create-product-service` | ✅ Archivado TPI | 5 |
+| 18 | `migracion-hacia-aprobacion` (FSM, soft delete, snapshots) | 🏗️ Completo | 10 |
+| **NUEVO** | `fix-seed-and-entities` | 🆕 **NO INICIADO** | **10** |
 
-### Change 11: **add-product-reviews** (PENDING)
-- **Duration**: 3-4 days
-- **Description**: Reviews, ratings, moderation
-- **Dependencies**: Change 5, 4
-- **API Endpoints**: 4-6
-
-### Change 12: **implement-favorites-wishlist** (PENDING)
-- **Duration**: 2-3 days
-- **Description**: Save favorites, wishlist functionality
-- **Dependencies**: Change 4, 5
-- **Frontend Components**: Favorite button
-
-### Change 13: **build-admin-dashboard** (PENDING)
-- **Duration**: 5-7 days
-- **Description**: Admin panel for products, orders, users
-- **Dependencies**: Change 4, 5, 8
-- **Frontend Pages**: Multiple admin pages
-
-### Change 14: **add-notifications** (PENDING)
-- **Duration**: 3-4 days
-- **Description**: Email notifications, order updates, alerts
-- **Dependencies**: Change 8
-- **External Services**: Email service
-
-### Change 15: **implement-recommendation-engine** (PENDING)
-- **Duration**: 4-5 days
-- **Description**: Basic product recommendations
-- **Dependencies**: Change 5, 11
-- **Algorithm**: Collaborative filtering
+**`fix-seed-and-entities`** — Tareas pendientes:
+- [ ] Crear migración: tabla `roles` (codigo VARCHAR PK, nombre, descripcion)
+- [ ] Crear migración: tabla `usuario_rol` (usuario_id FK, rol_codigo FK, PK compuesta)
+- [ ] Crear migración: tabla `direcciones_entrega` (usuario_id FK, alias, linea1, ciudad, codigo_postal, es_principal BOOLEAN)
+- [ ] Crear modelo `Role` SQLModel
+- [ ] Crear modelo `UsuarioRol` SQLModel
+- [ ] Crear modelo `DireccionEntrega` SQLModel
+- [ ] Agregar `direccion_snapshot` (TEXT) al modelo `Pedido` / `Order`
+- [ ] Actualizar seed: insertar 4 roles (ADMIN, STOCK, PEDIDOS, CLIENT) con `ON CONFLICT DO NOTHING`
+- [ ] Actualizar seed: insertar 1 usuario admin (`admin@foodstore.com` / `Admin1234!`) con rol ADMIN
+- [ ] Actualizar seed: reemplazar estados actuales por los 6 del spec (PENDIENTE, CONFIRMADO, EN_PREP, EN_CAMINO, ENTREGADO, CANCELADO)
+- [ ] Actualizar seed: agregar EFECTIVO y TRANSFERENCIA a formas de pago (total 3: MERCADOPAGO, EFECTIVO, TRANSFERENCIA)
+- [ ] Alinear `FSM_TRANSITIONS` en `order_service.py` a los 6 estados del spec
+- [ ] Migrar `auth.py` de `get_db_session` a `get_uow`
+- [ ] Verificar `require_role` usa los 4 roles exactos del spec (ADMIN, STOCK, PEDIDOS, CLIENT)
 
 ---
 
-## Phase 5: Monitoring & Optimization (Week 10)
+### FASE TPI-3: Controladores REST
+**Criterio**: Controladores REST (15 pts)
 
-Performance, analytics, and reliability.
-
-### Change 16: **setup-monitoring-logging** (PENDING)
-- **Duration**: 2-3 days
-- **Description**: ELK stack / CloudWatch, error tracking
-- **Dependencies**: All previous
-- **External Services**: Monitoring platform
-
-### Change 17: **add-caching-layer** (PENDING)
-- **Duration**: 3-4 days
-- **Description**: Redis caching for products, user sessions
-- **Dependencies**: Change 5, 4
-- **Performance Gain**: 10-50x faster queries
-
-### Change 18: **optimize-database** (PENDING)
-- **Duration**: 2-3 days
-- **Description**: Indexing strategy, query optimization
-- **Dependencies**: Change 2, 8
-- **Performance Metric**: < 100ms queries
-
-### Change 19: **add-analytics** (PENDING)
-- **Duration**: 3-4 days
-- **Description**: User behavior tracking, conversion metrics
-- **Dependencies**: All previous
-- **Tools**: Google Analytics / Mixpanel
+| ID | Change | Estado | Pts estimados |
+|:--:|--------|:------:|:-------------:|
+| 6 | `build-search-and-filtering` | ✅ Archivado TPI | 5 |
+| 18 | `migracion-hacia-aprobacion` (schemas Pydantic, /api/v1) | 🏗️ Completo | 10 |
 
 ---
 
-## Phase 6: Deployment & Scale (Week 11)
+### FASE TPI-4: MercadoPago
+**Criterio**: Backend — MercadoPago (15 pts)
 
-Production deployment and scaling.
+| ID | Change | Estado | Pts estimados |
+|:--:|--------|:------:|:-------------:|
+| **NUEVO** | `fix-mp-webhook-and-stripe` | 🆕 **NO INICIADO** | **15** |
 
-### Change 20: **containerize-application** (PENDING)
-- **Duration**: 2-3 days
-- **Description**: Docker containers, docker-compose
-- **Dependencies**: All previous
-- **Output**: Deployable images
-
-### Change 21: **setup-kubernetes-deployment** (PENDING)
-- **Duration**: 4-5 days
-- **Description**: K8s manifests, autoscaling, health checks
-- **Dependencies**: Change 20
-- **Scalability**: Auto-scale to 10+ pods
-
-### Change 22: **setup-cdn-assets** (PENDING)
-- **Duration**: 2-3 days
-- **Description**: CloudFront / CDN for static assets
-- **Dependencies**: Change 1
-- **Performance Gain**: 50-100ms faster loads
-
-### Change 23: **production-hardening** (PENDING)
-- **Duration**: 3-5 days
-- **Description**: Security, SSL, rate limiting, backups
-- **Dependencies**: All previous
-- **Security Rating**: A+ (SSL Labs)
+**`fix-mp-webhook-and-stripe`** — Tareas pendientes:
+- [ ] Implementar `handle_ipn()` real en `payment_service.py`: consultar API de MP, actualizar tabla `pagos`, disparar FSM
+- [ ] Completar `POST /api/v1/pagos/webhook`: verificar firma, llamar a `handle_ipn()`, retornar 200 rápido
+- [ ] Reemplazar `schemas/payment.py`: eliminar schemas Stripe, crear `PagoResponse`, `MPPreferenceResponse`, `MPWebhookEvent`
+- [ ] Implementar CardPayment embebido con `@mercadopago/sdk-react` en frontend (hoy solo redirect a MP)
+- [ ] Agregar Timeline con polling 30s en `OrderDetailPage.tsx`
+- [ ] Verificar flujo completo en sandbox MP (CE-09)
 
 ---
 
-## Dependency Graph
+### FASE TPI-5: Frontend — Estado Global y Fetching
+**Criterios**: Zustand (10 pts) + TanStack Query (15 pts)
 
-```
-setup-project-structure (1)
-├── add-database-layer (2)
-│   ├── implement-authentication (3)
-│   │   ├── create-user-service (4)
-│   │   ├── design-cart-system (7)
-│   │   └── implement-order-management (8)
-│   │       ├── integrate-payment-gateway (9)
-│   │       ├── create-checkout-flow (10)
-│   │       ├── add-notifications (14)
-│   │       └── setup-monitoring-logging (16)
-│   └── create-product-service (5)
-│       ├── build-search-and-filtering (6)
-│       ├── add-product-reviews (11)
-│       ├── implement-recommendation-engine (15)
-│       └── add-caching-layer (17)
-│           └── optimize-database (18)
-├── build-admin-dashboard (13)
-│   ├── create-user-service (4)
-│   ├── create-product-service (5)
-│   └── implement-order-management (8)
-├── add-analytics (19)
-├── containerize-application (20)
-│   └── setup-kubernetes-deployment (21)
-└── setup-cdn-assets (22)
-    └── production-hardening (23)
-```
-
-## Timeline & Milestones
-
-| Phase | Duration | Milestone | Status |
-|-------|----------|-----------|--------|
-| 1 | 2 weeks | Foundation ready, CI/CD passing | ✅ COMPLETE |
-| 2 | 3 weeks | Core features (products, users, cart, auth) | 🔄 IN PROGRESS (Changes 2, 3 done) |
-| 3 | 2 weeks | Payments & orders working | PENDING |
-| 4 | 2 weeks | Enhanced UX & admin panel | PENDING |
-| 5 | 1 week | Performance & monitoring | PENDING |
-| 6 | 1 week | Production deployment | PENDING |
-
-## Risk Mitigation
-
-| Risk | Impact | Mitigation |
-|------|--------|-----------|
-| Database design mistakes | High | Early schema review, migrations planning |
-| Payment integration issues | High | Sandbox testing, error handling, retry logic |
-| Performance problems | Medium | Caching strategy (Change 17), monitoring (Change 16) |
-| Security vulnerabilities | High | Code review, OWASP guidelines, penetration testing |
-| Team knowledge gaps | Medium | Documentation (Change 1), pair programming |
-
-## Success Metrics
-
-- [ ] Phase 1: All GitHub Actions passing ✅
-- [ ] Phase 2: 50+ API endpoints, products searchable
-- [ ] Phase 3: Orders + payments working end-to-end
-- [ ] Phase 4: Admin dashboard managing all entities
-- [ ] Phase 5: < 100ms API response times, error rate < 0.1%
-- [ ] Phase 6: Deployed on production, 99.9% uptime
-
-## Next Steps
-
-1. ✅ **Complete Change 1** (setup-project-structure) — DONE
-2. ✅ **Complete Change 2** (add-database-layer) — DONE
-3. ✅ **Complete Change 3** (implement-authentication) — DONE (verification pending)
-4. 📋 **Propose Change 4** (create-user-service) — DONE (2026-05-07)
-5. ➜ **Implement Change 4** — NEXT (starting 2026-05-07)
-6. ➜ Continue with Phase 2 changes (5, 6, 7)
-
-### Pending verification for Change 3 (requires PostgreSQL)
-See `docs/CHANGE3-PENDING-TASKS.md` for details on:
-- 7.3: mypy type checking
-- 7.4: Manual curl verification
-- 12.1-12.3: Integration testing
-- 14.1-14.3: Full QA
-
-See `docs/GLOBAL-PENDING-TASKS.md` for project-wide pending task tracking.
-
-See archived tasks at `openspec/changes/archive/2026-05-06-implement-authentication/tasks.md`
+| ID | Change | Estado | Pts estimados |
+|:--:|--------|:------:|:-------------:|
+| 18 | `migracion-hacia-aprobacion` (Zustand stores, TanStack Query hooks, Axios interceptor) | 🏗️ Completo | **25** |
 
 ---
 
-**Last Updated**: 2026-05-06
-**Maintained By**: OPSX Orchestrator
+### FASE TPI-6: Frontend — Cliente + Panel Admin
+**Criterios**: Funcionalidades Cliente (15 pts) + Panel Admin (15 pts)
+
+| ID | Change | Estado | Pts estimados |
+|:--:|--------|:------:|:-------------:|
+| 13 | `frontend-dashboard-redesign` | ✅ Archivado TPI | 8 |
+| 17 | `admin-dashboard-pages` | ✅ Archivado TPI (30/30) | 8 |
+| **NUEVO** | `add-dashboard-graphs-and-cruds` | 🆕 **NO INICIADO** | **14** |
+
+**`add-dashboard-graphs-and-cruds`** — Tareas pendientes:
+- [ ] Instalar `recharts` en frontend
+- [ ] Agregar gráficos al dashboard admin (ventas, pedidos por estado, productos populares)
+- [ ] Crear CRUD de categorías desde frontend admin
+- [ ] Crear CRUD de productos desde frontend admin (con relaciones)
+- [ ] Crear gestión de stock desde frontend admin
+- [ ] Agregar CRUD de direcciones en perfil de usuario
+
+---
+
+### FASE TPI-7: Calidad + Tests
+**Criterios**: Calidad de Código (10 pts) + Bonus Tests (10 pts)
+
+| ID | Change | Estado | Pts estimados |
+|:--:|--------|:------:|:-------------:|
+| 18 | `migracion-hacia-aprobacion` (coverage, CORS, README, screenshots) | 🏗️ **Pendiente tasks 14.x** | **20** |
+
+**Pendiente** en `migracion-hacia-aprobacion`:
+- [ ] 14.2: Subir cobertura de tests a ≥60%
+- [ ] 14.8: Probar sandbox MP end-to-end (CE-09)
+- [ ] 14.9: Verificar screenshots de 10 pantallas (CE-12)
+- [ ] 14.10: Verificar video demo (CE-13)
+- [ ] 14.11: Verificar endpoints Swagger usan `/api/v1`
+- [ ] 14.12: Ejecutar `alembic upgrade head` en BD limpia
+- [ ] 14.13: Ejecutar seed (debe ser idempotente)
+- [ ] 14.14: README con instrucciones claras de setup (CE-02)
+- [ ] CORS: cambiar `["*"]` por `["http://localhost:5173"]` desde config
+
+---
+
+### 📊 Progreso estimado hacia los 200 pts
+
+| Fase | Pts totales | Estado actual | Con cambios nuevos |
+|:----|:-----------:|:-------------:|:------------------:|
+| TPI-1: Infraestructura | 10 | 8 | 10 ✅ |
+| TPI-2: Modelo+UoW+Servicios | 45 | 35 | 45 ✅ |
+| TPI-3: Controladores REST | 15 | 15 | 15 ✅ |
+| TPI-4: MercadoPago | 15 | 4 | 15 ✅ |
+| TPI-5: Frontend Estado | 25 | 25 | 25 ✅ |
+| TPI-6: Frontend Cliente+Admin | 30 | 16 | 30 ✅ |
+| TPI-7: Calidad+Tests | 20 | 10 | 20 ✅ |
+| **TOTAL** | **200** | **~113** | **~160+** 🎯 |
+
+---
+
+## ✨ CAMBIOS EXTRAS — Fuera del TPI
+
+Features ya implementadas que **NO suman puntos en la rúbrica** pero muestran trabajo adicional del equipo.
+
+| Change | Feature | Justificación académica |
+|--------|---------|------------------------|
+| `add-product-reviews` | ⭐ Reseñas con estrellas, moderación admin | Interacción social, engagement de usuarios |
+| `implement-favorites-wishlist` | ❤️ Lista de deseos por usuario | Personalización, retención de clientes |
+| `add-notifications` | 🔔 Notificaciones in-app (campanita + página) | Experiencia de usuario, feedback en tiempo real |
+| `frontend-dashboard-redesign` | 🌙 Dark mode | Accesibilidad, preferencias visuales |
+| ✅ En código | 🏪 **Sucursales / Branches** (CRUD completo + frontend) | Gestión multi-sucursal |
+| ✅ En código | 👥 **Employees** (página en frontend) | Gestión de personal |
+
+> **Nota**: Estos cambios están archivados como completados. El código ya existe en el repositorio y puede ser mostrado como valor agregado durante la defensa del TPI.
+
+---
+
+## 🗑️ Features Eliminadas
+
+Features que estaban implementadas pero fueron eliminadas por no pertenecer al alcance del TPI y no haber sido solicitadas:
+
+| Feature | Motivo de eliminación |
+|---------|----------------------|
+| ~~Recommendation Engine~~ | No está en .txt, código sin uso real |
+| ~~Prometheus Metrics~~ | No está en .txt, requiere infraestructura externa |
+| ~~Health Checks (K8s)~~ | No está en .txt, solo útil con Kubernetes |
+| ~~Email notifications~~ | No está en .txt, funcionalidad no requerida |
+
+---
+
+**Última actualización**: 2026-05-12
+**Mantenido por**: OPSX Orchestrator

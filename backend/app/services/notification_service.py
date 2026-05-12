@@ -1,6 +1,5 @@
 """Notification service for creating, querying, and managing notifications."""
 
-import asyncio
 import logging
 
 from sqlalchemy import func, select, update
@@ -10,7 +9,6 @@ from app.core.uow import UnitOfWork
 from app.models.notification import Notification
 from app.models.order import OrderStatus
 from app.models.user import User, UserPreference
-from app.services.email_service import send_email as async_send_email
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +24,15 @@ _NOTIFICATION_MAP: dict[str, dict] = {
         "title": "Order Confirmed",
         "message": "Your order has been confirmed and is being prepared.",
     },
+    "preparing": {
+        "type": "preparing",
+        "title": "Order Being Prepared",
+        "message": "Your order is being prepared.",
+    },
     "shipped": {
         "type": "shipped",
-        "title": "Order Shipped",
-        "message": "Your order has been shipped and is on its way.",
+        "title": "Order On Its Way",
+        "message": "Your order is on its way.",
     },
     "delivered": {
         "type": "delivered",
@@ -43,11 +46,15 @@ _NOTIFICATION_MAP: dict[str, dict] = {
     },
 }
 
-# Status transition to notification type mapping
+# Status transition to notification type mapping (FSM v6 states)
 _STATUS_TO_NOTIFICATION: dict[OrderStatus, str] = {
-    OrderStatus.PAID: "payment_succeeded",
+    OrderStatus.CONFIRMADO: "order_confirmed",
+    OrderStatus.EN_PREP: "preparing",
+    OrderStatus.EN_CAMINO: "shipped",
+    OrderStatus.ENTREGADO: "delivered",
+    OrderStatus.CANCELADO: "cancelled",
+    # Old enum aliases for backward compat
     OrderStatus.CONFIRMED: "order_confirmed",
-    OrderStatus.SHIPPED: "shipped",
     OrderStatus.DELIVERED: "delivered",
     OrderStatus.CANCELLED: "cancelled",
 }
@@ -146,33 +153,6 @@ async def create_and_send_notification(
 
     # Create in-app notification
     notif = await create_notification(uow, user_id, type, title, message, related_order_id)
-
-    # Send email if preference is "email"
-    if pref == "email":
-        result = await uow.session.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
-        if user and user.email:
-            template_map = {
-                "payment_succeeded": "payment_succeeded.html",
-                "order_confirmed": "order_confirmed.html",
-                "shipped": "order_shipped.html",
-                "delivered": "order_delivered.html",
-                "cancelled": "order_cancelled.html",
-            }
-            template = template_map.get(type, "order_confirmed.html")
-            asyncio.create_task(
-                async_send_email(
-                    to=user.email,
-                    subject=title,
-                    template_name=template,
-                    context={
-                        "title": title,
-                        "message": message,
-                        "order_id": related_order_id,
-                        "user_name": user.name,
-                    },
-                )
-            )
 
     return notif
 

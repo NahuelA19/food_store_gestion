@@ -92,24 +92,30 @@ ALTER TABLE order_items ADD COLUMN nombre_snapshot VARCHAR(255);
 ALTER TABLE order_items ADD COLUMN precio_snapshot NUMERIC(12, 2);
 ```
 
-**Seed de estados_pedido y formas_pago:**
+**Seed de estados_pedido y formas_pago (actualizado a spec):**
 ```python
 # Seed en database/seeds.py
 estados = [
   ("PENDIENTE", "Pedido creado, esperando pago", False),
-  ("PAGO_PENDIENTE", "Esperando confirmación de pago", False),
-  ("PAGADO", "Pago confirmado", False),
-  ("CONFIRMADO", "Confirmado por el local", False),
-  ("PREPARANDO", "En preparación", False),
-  ("LISTO", "Listo para entrega", False),
+  ("CONFIRMADO", "Pago confirmado, pedido aceptado", False),    # Reemplaza PAGADO
+  ("EN_PREP", "En preparación", False),                         # Reemplaza PREPARANDO
+  ("EN_CAMINO", "En camino al cliente", False),                 # Reemplaza LISTO
   ("ENTREGADO", "Entregado al cliente", True),
   ("CANCELADO", "Cancelado", True),
 ]
 formas = [
-  ("MP_CREDIT", "Tarjeta de crédito vía MercadoPago", True),
-  ("MP_DEBIT", "Tarjeta de débito vía MercadoPago", True),
+  ("MERCADOPAGO", "MercadoPago (tarjeta/débito)", True),         # Reemplaza MP_CREDIT/MP_DEBIT
+  ("EFECTIVO", "Pago en efectivo contra entrega", True),
+  ("TRANSFERENCIA", "Transferencia bancaria", True),
+]
+roles = [
+  ("ADMIN", "Administrador", "Acceso total al sistema"),
+  ("STOCK", "Gestor de stock", "Gestiona productos e ingredientes"),
+  ("PEDIDOS", "Gestor de pedidos", "Gestiona pedidos y entregas"),
+  ("CLIENT", "Cliente", "Compra productos y consulta pedidos"),
 ]
 ```
+**Admin user por defecto:** `admin@foodstore.com` / `admin123` con rol `ADMIN` via `usuario_rol`.
 
 ---
 
@@ -235,8 +241,10 @@ async def handle_ipn(payment_id: str, uow: UnitOfWork) -> None:
 ```
 
 ### Endpoint webhook IPN
+> ⚠️ **NO implementado aún** — ver Fase 6.8 en tasks.md. El webhook actual es un STUB. Se implementa en el change `fix-mp-webhook-and-stripe`.
+
 ```python
-# routes/payments.py
+# routes/payments.py — DISEÑO OBJETIVO (no implementado)
 @router.post("/api/v1/pagos/webhook")  # sin auth
 async def ipn_webhook(request: Request, uow=Depends(get_uow)):
     body = await request.json()
@@ -284,17 +292,15 @@ async def login(request: Request, ...):
 
 ## Bloque 5: FSM de Pedidos con Historial
 
-### Mapa de transiciones válidas
+### Mapa de transiciones válidas (6 estados del spec — RN-AU01)
 ```python
 FSM_TRANSITIONS = {
-    "PENDIENTE": ["PAGO_PENDIENTE", "CANCELADO"],
-    "PAGO_PENDIENTE": ["PAGADO", "PAGO_FALLIDO", "CANCELADO"],
-    "PAGADO": ["CONFIRMADO"],         # Solo via webhook IPN
-    "CONFIRMADO": ["PREPARANDO", "CANCELADO"],
-    "PREPARANDO": ["LISTO"],
-    "LISTO": ["ENTREGADO"],
-    "ENTREGADO": [],                  # estado terminal
-    "CANCELADO": [],                  # estado terminal
+    "PENDIENTE": ["CONFIRMADO", "CANCELADO"],          # Pago via IPN → CONFIRMADO (no PAGADO)
+    "CONFIRMADO": ["EN_PREP", "CANCELADO"],            # Admin prepara o cancela
+    "EN_PREP": ["EN_CAMINO", "CANCELADO"],            # Sale a delivery o se cancela
+    "EN_CAMINO": ["ENTREGADO"],                        # Se entrega (terminal)
+    "ENTREGADO": [],                                   # Terminal
+    "CANCELADO": [],                                   # Terminal
 }
 ```
 
@@ -395,10 +401,93 @@ Actualizar `frontend/src/api/*.ts` y `.env` con la nueva base URL: `VITE_API_URL
 
 ---
 
+## Bloque 7: Direcciones de Entrega (NUEVO — Fase 15)
+
+### Modelo
+```python
+# backend/app/models/direccion_entrega.py
+class DireccionEntrega(Base):
+    __tablename__ = "direcciones_entrega"
+    id = Column(Integer, primary_key=True)
+    usuario_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    direccion = Column(Text, nullable=False)
+    ciudad = Column(VARCHAR(100), nullable=False)
+    provincia = Column(VARCHAR(100), nullable=False)
+    codigo_postal = Column(VARCHAR(20))
+    created_at = Column(TIMESTAMPTZ, default=func.now())
+    updated_at = Column(TIMESTAMPTZ, default=func.now(), onupdate=func.now())
+    usuario = relationship("User", back_populates="direcciones")
+```
+
+### Snapshot en Order
+```python
+# Al crear pedido, capturar snapshot de la dirección elegida:
+order.direccion_snapshot = {
+    "direccion": direccion.direccion,
+    "ciudad": direccion.ciudad,
+    "provincia": direccion.provincia,
+    "codigo_postal": direccion.codigo_postal,
+}
+```
+
+---
+
+## Bloque 8: Auth Routes → UoW (NUEVO — Fase 17)
+
+Patrón de migración para `auth.py`: reemplazar `get_db_session` por `get_uow`.
+
+```python
+# ANTES
+@router.post("/register")
+async def register(body: UserCreate, session: AsyncSession = Depends(get_db)):
+    existing = await session.execute(select(User).where(User.email == body.email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(400, "Email ya registrado")
+    user = User(email=body.email, ...)
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+# DESPUÉS
+@router.post("/register")
+async def register(body: UserCreate, uow: UnitOfWork = Depends(get_uow)):
+    existing = await uow.users.get_all({"email": body.email})
+    if existing:
+        raise HTTPException(400, "Email ya registrado")
+    user = User(email=body.email, ...)
+    await uow.users.add(user)
+    await uow.commit()
+    return user
+```
+
+---
+
+## Bloque 9: CORS Configurable (NUEVO — Fase 18)
+
+```python
+# backend/app/config.py
+@cached_property
+def allowed_origins(self) -> list[str]:
+    return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
+
+# backend/app/main.py
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_origins,  # ya no ["*"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+---
+
 ## Checklist de Entrega Pendiente
 
 - **CE-12**: Tomar screenshots de 10 pantallas y guardar en `docs/screenshots/`
 - **CE-13**: Grabar video demo de ≥3 min mostrando el flujo completo y agregar enlace en README
+- **CE-02**: Instrucciones claras de setup en README
 
 ---
 
@@ -414,4 +503,8 @@ Actualizar `frontend/src/api/*.ts` y `.env` con la nueva base URL: `VITE_API_URL
 8. Frontend: instalar deps, crear stores Zustand
 9. Frontend: migrar hooks a TanStack Query
 10. Frontend: reemplazar checkout con MercadoPago Brick/SDK
-11. Screenshots + video demo
+11. **Seed roles + admin user + DireccionEntrega (Fase 15)** ← NUEVO
+12. **Alinear FSM a 6 estados del spec (Fase 16)** ← NUEVO
+13. **Migrar auth routes a UoW (Fase 17)** ← NUEVO
+14. **CORS configurable (Fase 18)** ← NUEVO
+15. Screenshots + video demo + aumentar cobertura ≥60%

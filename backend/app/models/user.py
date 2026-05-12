@@ -6,11 +6,13 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.models.cart import Cart
+    from app.models.direccion_entrega import DireccionEntrega
     from app.models.notification import Notification
     from app.models.order import Order
     from app.models.refresh_token import RefreshToken
     from app.models.historial_estado_pedido import HistorialEstadoPedido
     from app.models.review import Review
+    from app.models.role import Role
     from app.models.wishlist import WishlistItem
 
 from sqlalchemy import DateTime, ForeignKey, String
@@ -62,6 +64,13 @@ class User(Base, SoftDeleteMixin, TimestampMixin):
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="selectin",
+    )
+
+    roles: Mapped[list["Role"]] = relationship(  # noqa: F821
+        secondary="usuario_rol", back_populates="usuarios"
+    )
+    direcciones: Mapped[list["DireccionEntrega"]] = relationship(  # noqa: F821
+        "DireccionEntrega", back_populates="usuario", cascade="all, delete-orphan"
     )
 
     # No cascade: history is append-only and keeps usuario_id nullable (ON DELETE SET NULL).

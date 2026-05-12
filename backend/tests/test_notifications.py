@@ -15,9 +15,6 @@ from app.services.notification_service import (
     mark_all_as_read,
     mark_as_read,
 )
-from app.services.email_service import get_email_config
-
-
 @pytest.fixture
 def test_user(db_session: AsyncSession) -> User:
     """Create a test user with default preferences."""
@@ -211,11 +208,4 @@ async def test_notifications_require_auth(async_client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-@pytest.mark.asyncio
-async def test_email_config_defaults() -> None:
-    """Test email config loads defaults."""
-    config = get_email_config()
-    assert config.host == "smtp.mailtrap.io"
-    assert config.port == 587
-    assert config.from_email == "noreply@foodstore.com"
-    assert config.from_name == "Food Store"
+

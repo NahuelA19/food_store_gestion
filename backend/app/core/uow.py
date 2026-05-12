@@ -15,6 +15,8 @@ from app.models.wishlist import WishlistItem
 from app.models.branch import Branch
 from app.models.historial_estado_pedido import HistorialEstadoPedido
 from app.models.refresh_token import RefreshToken
+from app.models.role import Role
+from app.models.direccion_entrega import DireccionEntrega
 
 
 class UnitOfWork:
@@ -40,6 +42,8 @@ class UnitOfWork:
         self.branches = BaseRepository(Branch, session)
         self.refresh_tokens = BaseRepository(RefreshToken, session)
         self.historial = BaseRepository(HistorialEstadoPedido, session)
+        self.roles = BaseRepository(Role, session)
+        self.direcciones = BaseRepository(DireccionEntrega, session)
 
     async def __aenter__(self):
         return self
