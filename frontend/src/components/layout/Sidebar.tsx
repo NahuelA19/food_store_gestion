@@ -8,6 +8,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useAuth } from "../../hooks/useAuth";
 import { Icon } from "../ui/Icon";
 import { cn } from "@/lib/utils";
+import logoImg from "../../assets/images/logo.png";
 import {
   LayoutDashboard,
   Package,
@@ -18,7 +19,6 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Store,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -69,14 +69,21 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           collapsed ? "justify-center" : "gap-3"
         )}
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500 text-white shadow-sm">
-          <Icon icon={Store} size={18} />
-        </div>
-        {!collapsed && (
-          <span className="font-display text-lg font-bold tracking-tight text-text-primary">
-            Food Store
-          </span>
-        )}
+        <Link to="/" className="flex items-center gap-3 group">
+          <img
+            src={logoImg}
+            alt="Food Store"
+            className={cn(
+              "shrink-0 object-contain transition-transform duration-200 group-hover:scale-105",
+              collapsed ? "h-9 w-9" : "h-12 w-12"
+            )}
+          />
+          {!collapsed && (
+            <span className="font-display text-lg font-bold tracking-tight text-text-primary truncate">
+              Food Store
+            </span>
+          )}
+        </Link>
       </div>
 
       {/* Nav Sections */}

@@ -200,6 +200,15 @@
   body {
     @apply bg-surface text-text-primary font-sans antialiased;
     font-feature-settings: "kern" 1, "ss01" 1, "cv05" 1;
+    background-image: url("./assets/images/fondo-light.png");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+
+  body.dark {
+    background-image: url("./assets/images/fondo-darkmode.png");
   }
 
   /* ---- Typography Base ---- */

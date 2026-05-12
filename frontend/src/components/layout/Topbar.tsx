@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useWishlist } from "../../hooks/useWishlist";
 import { useNotifications } from "../../hooks/useNotifications";
 import { NotificationDropdown } from "../notifications/NotificationDropdown";
+import logoImg from "../../assets/images/logo.png";
 import {
   Sun,
   Moon,
@@ -72,14 +73,26 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  return (
-    <header
-      className={cn(
-        "fixed top-0 right-0 z-30 flex h-16 items-center border-b border-border bg-surface/80 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/70 transition-all duration-300 px-4 sm:px-6",
-        sidebarCollapsed ? "left-[68px]" : "left-60"
-      )}
-    >
-      {/* Branch Selector */}
+   return (
+     <header
+       className={cn(
+         "fixed top-0 right-0 z-30 flex h-16 items-center border-b border-border bg-surface/80 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/70 transition-all duration-300 px-4 sm:px-6",
+         sidebarCollapsed ? "left-[68px]" : "left-60"
+       )}
+     >
+       {/* Logo on mobile */}
+       <Link to="/" className="md:hidden flex items-center gap-2 mr-4">
+         <img
+           src={logoImg}
+           alt="Food Store"
+           className="h-8 w-8 object-contain"
+         />
+         <span className="font-display text-sm font-bold text-text-primary">
+           Food Store
+         </span>
+       </Link>
+
+       {/* Branch Selector */}
       <div ref={branchRef} className="relative">
         <button
           onClick={() => setBranchOpen(!branchOpen)}

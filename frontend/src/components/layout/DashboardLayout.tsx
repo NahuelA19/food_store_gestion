@@ -28,7 +28,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const effectiveCollapsed = isMobile ? false : sidebarCollapsed;
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface/85 dark:bg-surface/85">
       {/* Sidebar — overlay on mobile */}
       {isMobile && mobileOpen && (
         <>
