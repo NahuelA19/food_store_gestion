@@ -434,12 +434,21 @@
   ::selection {
     @apply bg-brand-300 text-brand-900;
   }
+
+  /* ---- Light Mode: Heading Colors (High Contrast) ----
+     In light mode, headings use white (#ffffff) for excellent contrast
+     against the lavender/indigo background. This ensures "Panel de Control",
+     "Products", and other titles are clearly visible.
+  */
+  h1, h2, h3, h4, h5, h6 {
+    color: #ffffff;
+  }
 }
 
 
 /* ============================================================================
-   UTILITY CLASSES
-   ============================================================================ */
+    UTILITY CLASSES
+    ============================================================================ */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
