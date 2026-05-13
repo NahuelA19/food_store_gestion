@@ -455,6 +455,14 @@
   small {
     color: #ffffff !important; /* White for visibility on lavender/blue background */
   }
+
+  /* ---- Light Mode: Secondary Descriptions (paragraphs) ----
+     Paragraphs with text-text-secondary class (like product descriptions)
+     should be white for visibility on lavender background
+  */
+  p.text-text-secondary {
+    color: #ffffff !important;
+  }
 }
 
 
