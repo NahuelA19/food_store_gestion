@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { UserForm } from "../components/UserForm";
 import { PreferencesPanel } from "../components/PreferencesPanel";
+import { DireccionesPanel } from "../components/DireccionesPanel";
 import {
   Card,
   CardHeader,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { User, Settings, Package } from "lucide-react";
+import { User, Settings, Package, MapPin } from "lucide-react";
 
 interface UserPreferences {
   language: string;
@@ -18,11 +19,12 @@ interface UserPreferences {
   notifications: string;
 }
 
-type Tab = "perfil" | "preferencias" | "ordenes";
+type Tab = "perfil" | "preferencias" | "direcciones" | "ordenes";
 
 const TABS: { key: Tab; label: string; icon: React.ComponentType }[] = [
   { key: "perfil", label: "Perfil", icon: User },
   { key: "preferencias", label: "Preferencias", icon: Settings },
+  { key: "direcciones", label: "Direcciones", icon: MapPin },
   { key: "ordenes", label: "Órdenes", icon: Package },
 ];
 
@@ -209,6 +211,17 @@ export function ProfilePage() {
                 No preferences found
               </p>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "direcciones" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Direcciones de Entrega</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DireccionesPanel />
           </CardContent>
         </Card>
       )}

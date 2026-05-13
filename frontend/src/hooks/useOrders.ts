@@ -26,6 +26,7 @@ export function useOrder(id: number) {
     queryKey: ["order", id],
     queryFn: () => orderApi.getOrder(id),
     enabled: !!id,
+    refetchInterval: 30000,
   });
 
   return {

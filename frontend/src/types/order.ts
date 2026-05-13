@@ -19,8 +19,19 @@ export interface Order {
   items?: OrderItem[];
 }
 
+export interface StatusHistoryEntry {
+  id: number;
+  estado_desde: string | null;
+  estado_hasta: string;
+  motivo: string | null;
+  created_at: string;
+}
+
 export interface OrderDetail extends Order {
   payment_status: string | null;
+  payment_method?: string | null;
+  paid_at?: string | null;
+  status_history?: StatusHistoryEntry[];
   items: OrderItem[];
 }
 

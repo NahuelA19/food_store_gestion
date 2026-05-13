@@ -22,6 +22,7 @@ import {
   CheckCircle,
   MessageSquare,
   Star,
+  Pencil,
 } from "lucide-react";
 
 export const ProductDetailPage: React.FC = () => {
@@ -131,7 +132,17 @@ export const ProductDetailPage: React.FC = () => {
                   </p>
                 )}
               </div>
-              {isAuthenticated && (
+              <div className="flex items-center gap-2">
+                {useAuthStore.getState().user?.role === "admin" && (
+                  <Link
+                    to={`/products/${product.id}/edit`}
+                    className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm font-semibold text-text-secondary transition-all hover:border-brand-300 hover:text-brand-600"
+                  >
+                    <Pencil size={16} />
+                    Editar
+                  </Link>
+                )}
+                {isAuthenticated && (
                 <FavoriteButton
                   isWishlisted={isWishlisted(product.id)}
                   onToggle={() => toggle(product.id)}
@@ -139,6 +150,7 @@ export const ProductDetailPage: React.FC = () => {
                 />
               )}
             </div>
+          </div>
 
             {product.description && (
               <p className="text-lg leading-relaxed text-text-secondary">

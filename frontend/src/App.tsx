@@ -7,7 +7,9 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { CreateProductPage } from "./pages/CreateProductPage";
+import { EditProductPage } from "./pages/EditProductPage";
 import { CreateCategoryPage } from "./pages/CreateCategoryPage";
+import { EditCategoryPage } from "./pages/EditCategoryPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { WishlistPage } from "./pages/WishlistPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
@@ -44,6 +46,22 @@ function App() {
               }
             />
             <Route path="/products/:id" element={<ProductDetailPage />} />
+            <Route
+              path="/products/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EditProductPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/categories/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EditCategoryPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/branches" element={<BranchesPage />} />

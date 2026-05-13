@@ -19,6 +19,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  PlusCircle,
+  FolderPlus,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -35,6 +37,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
   };
+
+  const isAdmin = user?.role === "admin";
 
   const navSections = [
     {
@@ -53,6 +57,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         { to: "/settings", label: "Configuración", icon: Settings },
       ],
     },
+    ...(isAdmin
+      ? [
+          {
+            title: "Admin",
+            links: [
+              { to: "/products/new", label: "Nuevo Producto", icon: PlusCircle },
+              { to: "/categories/new", label: "Nueva Categoría", icon: FolderPlus },
+            ],
+          },
+        ]
+      : []),
   ];
 
   return (

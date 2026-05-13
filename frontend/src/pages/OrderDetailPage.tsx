@@ -2,36 +2,46 @@
  * OrderDetailPage — Full order detail with status management
  */
 
-import { useState, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Card, CardContent } from "../components/ui/Card";
-import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
-import { Skeleton } from "../components/ui/Skeleton";
-import { Icon } from "../components/ui/Icon";
-import { useOrder, useUpdateOrderStatus } from "../hooks/useOrders";
-import type { OrderStatus } from "../types/order";
-import {
-  ArrowLeft,
-  ChevronDown,
-  User,
-  Package,
-  CreditCard,
-} from "lucide-react";
+import { useState, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Card, CardContent } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { Skeleton } from '../components/ui/Skeleton';
+import { Icon } from '../components/ui/Icon';
+import { useOrder, useUpdateOrderStatus } from '../hooks/useOrders';
+import type { OrderStatus, StatusHistoryEntry } from '../types/order';
+import { ArrowLeft, ChevronDown, User, Package, CreditCard, Clock } from 'lucide-react';
 
-const STATUS_FLOW: OrderStatus[] = ["payment_pending", "paid", "confirmed", "shipped", "delivered"];
+const STATUS_FLOW: OrderStatus[] = ['payment_pending', 'paid', 'confirmed', 'shipped', 'delivered'];
 
-const STATUS_CONFIG: Record<string, { label: string; variant: "warning" | "info" | "neutral" | "success" | "danger" }> = {
-  payment_pending: { label: "Pendiente de Pago", variant: "warning" },
-  payment_failed: { label: "Pago Fallido", variant: "danger" },
-  paid: { label: "Pagado", variant: "info" },
-  pending: { label: "Pendiente", variant: "warning" },
-  confirmed: { label: "Confirmado", variant: "info" },
-  preparing: { label: "Preparando", variant: "neutral" },
-  ready: { label: "Listo", variant: "success" },
-  shipped: { label: "Enviado", variant: "info" },
-  delivered: { label: "Entregado", variant: "success" },
-  cancelled: { label: "Cancelado", variant: "danger" },
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; variant: 'warning' | 'info' | 'neutral' | 'success' | 'danger' }
+> = {
+  payment_pending: { label: 'Pendiente de Pago', variant: 'warning' },
+  payment_failed: { label: 'Pago Fallido', variant: 'danger' },
+  paid: { label: 'Pagado', variant: 'info' },
+  pending: { label: 'Pendiente', variant: 'warning' },
+  confirmed: { label: 'Confirmado', variant: 'info' },
+  preparing: { label: 'Preparando', variant: 'neutral' },
+  ready: { label: 'Listo', variant: 'success' },
+  shipped: { label: 'Enviado', variant: 'info' },
+  delivered: { label: 'Entregado', variant: 'success' },
+  cancelled: { label: 'Cancelado', variant: 'danger' },
+};
+
+const STATUS_DOT_COLOR: Record<string, string> = {
+  payment_pending: '#f59e0b',
+  payment_failed: '#ef4444',
+  paid: '#3b82f6',
+  pending: '#f59e0b',
+  confirmed: '#3b82f6',
+  preparing: '#6b7280',
+  ready: '#10b981',
+  shipped: '#3b82f6',
+  delivered: '#10b981',
+  cancelled: '#ef4444',
 };
 
 export function OrderDetailPage() {
@@ -40,7 +50,7 @@ export function OrderDetailPage() {
   const { order: apiOrder, isLoading, error } = useOrder(orderId);
   const { updateStatus, isLoading: isUpdating } = useUpdateOrderStatus();
 
-  const [currentStatus, setCurrentStatus] = useState<string>("");
+  const [currentStatus, setCurrentStatus] = useState<string>('');
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
 
@@ -67,9 +77,7 @@ export function OrderDetailPage() {
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-alt mb-4">
           <Icon icon={Package} size={28} className="text-text-muted" />
         </div>
-        <p className="text-lg font-semibold text-text-primary">
-          Pedido no encontrado
-        </p>
+        <p className="text-lg font-semibold text-text-primary">Pedido no encontrado</p>
         <p className="text-sm text-text-muted mt-1">
           {error ? error : `El pedido #${id} no existe`}
         </p>
@@ -83,13 +91,10 @@ export function OrderDetailPage() {
     );
   }
 
-  const nextStatuses = STATUS_FLOW.slice(
-    STATUS_FLOW.indexOf(resolvedStatus as OrderStatus) + 1
-  );
+  const nextStatuses = STATUS_FLOW.slice(STATUS_FLOW.indexOf(resolvedStatus as OrderStatus) + 1);
 
-  const isAtEnd =
-    resolvedStatus === "delivered" || resolvedStatus === "cancelled";
-  const availableStatuses = isAtEnd ? [] : [...nextStatuses, "cancelled" as OrderStatus];
+  const isAtEnd = resolvedStatus === 'delivered' || resolvedStatus === 'cancelled';
+  const availableStatuses = isAtEnd ? [] : [...nextStatuses, 'cancelled' as OrderStatus];
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
     setStatusOpen(false);
@@ -98,7 +103,7 @@ export function OrderDetailPage() {
       await updateStatus({ id: order!.id, status: newStatus });
       setCurrentStatus(newStatus);
     } catch (err) {
-      setStatusError(err instanceof Error ? err.message : "Error al actualizar estado");
+      setStatusError(err instanceof Error ? err.message : 'Error al actualizar estado');
     }
   };
 
@@ -116,15 +121,13 @@ export function OrderDetailPage() {
       {/* Order header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-text-primary">
-            Pedido #{order.id}
-          </h1>
+          <h1 className="font-display text-2xl font-bold text-text-primary">Pedido #{order.id}</h1>
           <p className="text-sm text-text-muted mt-1">
-            {new Date(order.created_at).toLocaleString("es-AR")}
+            {new Date(order.created_at).toLocaleString('es-AR')}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant={STATUS_CONFIG[resolvedStatus]?.variant || "neutral"} size="default">
+          <Badge variant={STATUS_CONFIG[resolvedStatus]?.variant || 'neutral'} size="default">
             <span className="sr-only">Estado: </span>
             {STATUS_CONFIG[resolvedStatus]?.label || resolvedStatus}
           </Badge>
@@ -148,7 +151,7 @@ export function OrderDetailPage() {
                       disabled={isUpdating}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-alt hover:text-text-primary transition-all duration-200 disabled:opacity-50"
                     >
-                      <Badge variant={STATUS_CONFIG[s]?.variant || "neutral"} size="sm">
+                      <Badge variant={STATUS_CONFIG[s]?.variant || 'neutral'} size="sm">
                         {STATUS_CONFIG[s]?.label || s}
                       </Badge>
                     </button>
@@ -159,6 +162,116 @@ export function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Status Timeline */}
+      <Card>
+        <CardContent className="p-5">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">
+              <Clock size={18} />
+            </div>
+            <div>
+              <h3 className="font-display text-base font-bold text-text-primary">
+                Historial de Estado
+              </h3>
+              <p className="text-xs text-text-muted mt-0.5">
+                Actualizado automáticamente cada 30 segundos
+              </p>
+            </div>
+          </div>
+
+          {order.status_history && order.status_history.length > 0 ? (
+            <div className="relative pl-6">
+              {(() => {
+                const sortedHistory = [...order.status_history].sort(
+                  (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                );
+                const latestIndex = sortedHistory.length - 1;
+
+                return sortedHistory.map((entry: StatusHistoryEntry, index: number) => {
+                  const isLatest = index === latestIndex;
+                  const config = STATUS_CONFIG[entry.estado_hasta] || {
+                    label: entry.estado_hasta,
+                    variant: 'neutral' as const,
+                  };
+                  const dotColor = STATUS_DOT_COLOR[entry.estado_hasta] || '#6b7280';
+
+                  return (
+                    <div
+                      key={entry.id}
+                      className={`relative pb-6 last:pb-0 ${!isLatest ? 'opacity-60' : ''}`}
+                    >
+                      {index !== latestIndex && (
+                        <div
+                          className="absolute left-[-19px] top-4 w-0.5 h-full bg-border"
+                          style={{ marginLeft: '3px' }}
+                        />
+                      )}
+
+                      <div className="absolute left-[-20px] top-0 flex items-center justify-center">
+                        {isLatest ? (
+                          <div className="relative">
+                            <div
+                              className="absolute inset-0 rounded-full"
+                              style={{
+                                backgroundColor: dotColor,
+                                opacity: 0.3,
+                                animation: 'status-pulse-ring 2s ease-out infinite',
+                              }}
+                            />
+                            <div
+                              className="relative w-4 h-4 rounded-full border-2 border-white shadow-md"
+                              style={{
+                                backgroundColor: dotColor,
+                                animation: 'status-pulse 2s ease-in-out infinite',
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className="w-3 h-3 rounded-full border-2 border-white shadow-sm"
+                            style={{ backgroundColor: dotColor }}
+                          />
+                        )}
+                      </div>
+
+                      <div className="ml-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant={config.variant} size={isLatest ? 'default' : 'sm'}>
+                            {isLatest && <span className="font-bold mr-1">●</span>}
+                            {config.label}
+                          </Badge>
+                          {isLatest && (
+                            <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">
+                              Estado actual
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-text-muted mt-1">
+                          {new Date(entry.created_at).toLocaleString('es-AR')}
+                        </p>
+                        {entry.motivo && (
+                          <p className="text-sm text-text-secondary mt-1.5 italic">
+                            {String.fromCharCode(8220)}
+                            {entry.motivo}
+                            {String.fromCharCode(8221)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-sm text-text-muted">
+                No hay historial de cambios de estado disponible
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Two column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -211,9 +324,7 @@ export function OrderDetailPage() {
           {/* Customer Info */}
           <Card>
             <CardContent className="p-5 space-y-4">
-              <h3 className="font-display text-base font-bold text-text-primary">
-                Cliente
-              </h3>
+              <h3 className="font-display text-base font-bold text-text-primary">Cliente</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">
@@ -232,9 +343,7 @@ export function OrderDetailPage() {
           {/* Order Summary */}
           <Card>
             <CardContent className="p-5">
-              <h3 className="font-display text-base font-bold text-text-primary mb-4">
-                Resumen
-              </h3>
+              <h3 className="font-display text-base font-bold text-text-primary mb-4">Resumen</h3>
               <div className="space-y-2">
                 <div className="border-t border-border pt-2 mt-2">
                   <div className="flex justify-between">
@@ -257,10 +366,10 @@ export function OrderDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-text-primary">
-                    {order.payment_status ? `Pago: ${order.payment_status}` : "Estado de pago"}
+                    {order.payment_status ? `Pago: ${order.payment_status}` : 'Estado de pago'}
                   </p>
                   <p className="text-xs text-text-muted">
-                    {order.updated_at ? new Date(order.updated_at).toLocaleString("es-AR") : ""}
+                    {order.updated_at ? new Date(order.updated_at).toLocaleString('es-AR') : ''}
                   </p>
                 </div>
               </div>
