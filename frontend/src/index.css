@@ -457,11 +457,11 @@
   }
 
   /* ---- Light Mode: Secondary Navigation Elements ----
-     Icons and text in inactive sidebar nav items need to be darker
-     for visibility on lavender background
+     Secondary text (sidebar labels, section titles) must be white for visibility
+     on lavender background
   */
   .text-text-secondary {
-    color: #2d3748 !important; /* Very dark gray for contrast */
+    color: #ffffff !important; /* White for consistency and visibility */
   }
 }
 
