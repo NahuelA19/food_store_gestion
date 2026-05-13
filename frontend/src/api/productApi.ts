@@ -2,6 +2,7 @@
  * Product and Inventory API client
  */
 
+import { useAuthStore } from "../store/authStore";
 import {
   Category,
   CreateCategoryPayload,
@@ -14,6 +15,17 @@ import {
 } from "../types/product";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+
+function getAuthHeaders(): Record<string, string> {
+  const token = useAuthStore.getState().accessToken;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 export const productApi = {
   // Categories
@@ -32,7 +44,7 @@ export const productApi = {
   async createCategory(payload: CreateCategoryPayload): Promise<Category> {
     const response = await fetch(`${API_BASE_URL}/categories/`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error("Failed to create category");
@@ -42,7 +54,7 @@ export const productApi = {
   async updateCategory(id: number, payload: UpdateCategoryPayload): Promise<Category> {
     const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error("Failed to update category");
@@ -52,6 +64,7 @@ export const productApi = {
   async deleteCategory(id: number): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/categories/${id}`, {
       method: "DELETE",
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete category");
   },
@@ -95,7 +108,7 @@ export const productApi = {
   async createProduct(payload: CreateProductPayload): Promise<Product> {
     const response = await fetch(`${API_BASE_URL}/products/`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error("Failed to create product");
@@ -105,7 +118,7 @@ export const productApi = {
   async updateProduct(id: number, payload: UpdateProductPayload): Promise<Product> {
     const response = await fetch(`${API_BASE_URL}/products/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
     if (!response.ok) throw new Error("Failed to update product");
@@ -115,6 +128,7 @@ export const productApi = {
   async deleteProduct(id: number): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/products/${id}`, {
       method: "DELETE",
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to delete product");
   },
@@ -128,7 +142,7 @@ export const productApi = {
   async toggleAvailability(id: number): Promise<Product> {
     const response = await fetch(`${API_BASE_URL}/products/${id}/availability`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("Failed to toggle availability");
     return response.json();
@@ -154,7 +168,7 @@ export const productApi = {
   ): Promise<Inventory> {
     const response = await fetch(`${API_BASE_URL}/inventory/${productId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         stock_quantity: stockQuantity,
         low_stock_threshold: lowStockThreshold,
@@ -167,10 +181,20 @@ export const productApi = {
   async reserveInventory(productId: number, quantity: number): Promise<Inventory> {
     const response = await fetch(`${API_BASE_URL}/inventory/${productId}/reserve`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ quantity }),
     });
     if (!response.ok) throw new Error("Failed to reserve inventory");
+    return response.json();
+  },
+
+  async addStock(productId: number, quantity: number): Promise<Product> {
+    const response = await fetch(`${API_BASE_URL}/products/${productId}/stock`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ quantity }),
+    });
+    if (!response.ok) throw new Error("Failed to add stock");
     return response.json();
   },
 

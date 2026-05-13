@@ -1,9 +1,10 @@
+import { useAuthStore } from "../store/authStore";
 import type { OrderDetail, OrderListResponse, OrderStatus } from "../types/order";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem("auth_token");
+  const token = useAuthStore.getState().accessToken;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -33,7 +34,7 @@ export const orderApi = {
   },
 
   async getOrder(id: number): Promise<OrderDetail> {
-    const response = await fetch(`${API_BASE_URL}/admin/orders/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<OrderDetail>(response);

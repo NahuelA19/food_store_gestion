@@ -31,14 +31,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }
   };
 
-  const isOutOfStock =
-    product.inventory && product.inventory.available_quantity === 0;
-  const isLowStock =
-    product.inventory &&
-    product.inventory.available_quantity > 0 &&
-    product.inventory.available_quantity <= product.inventory.low_stock_threshold;
+  const stockQty = product.inventory?.stock_quantity ?? 0;
+  const isOutOfStock = stockQty === 0;
+  const isLowStock = product.inventory
+    ? stockQty > 0 && stockQty <= product.inventory.low_stock_threshold
+    : false;
 
-  const maxQuantity = product.inventory?.available_quantity || 1;
+  const maxQuantity = stockQty || 1;
 
   return (
     <Card
@@ -102,21 +101,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="mb-3 flex flex-wrap gap-1">
           {isOutOfStock && (
             <Badge variant="danger" role="status" aria-label="Out of stock">
-              Out of Stock
+              Sin stock
             </Badge>
           )}
           {isLowStock && (
             <Badge
               variant="warning"
               role="status"
-              aria-label={`Low stock: ${product.inventory?.available_quantity} remaining`}
+              aria-label={`Low stock: ${stockQty} remaining`}
             >
-              Low Stock
+              Quedan pocos ({stockQty})
             </Badge>
           )}
           {!isOutOfStock && !isLowStock && product.is_available && (
             <Badge variant="success" role="status" aria-label="In stock">
-              In Stock
+              En stock ({stockQty})
             </Badge>
           )}
         </div>

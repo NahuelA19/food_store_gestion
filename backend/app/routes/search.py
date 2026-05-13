@@ -130,6 +130,7 @@ async def search_and_filter_products(
                 category_id=p.category_id,
                 category=p.category,
                 is_available=p.is_available,
+                image_url=p.image_url,
                 inventory=p.inventory,
                 reviews=summary,
                 created_at=p.created_at,

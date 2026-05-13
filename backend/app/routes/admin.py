@@ -16,6 +16,7 @@ from app.models.product import Product
 from app.models.user import User
 from app.schemas.dashboard import DashboardStatsResponse
 from app.schemas.order import (
+    HistorialResponse,
     OrderDetailResponse,
     OrderItemResponse,
     OrderListResponse,
@@ -124,12 +125,19 @@ async def admin_get_order_detail(
         for item in order.items
     ]
 
+    # Use the FSM historial table instead of the legacy JSON field
+    status_history = []
+    if order.historial:
+        status_history = [
+            HistorialResponse.model_validate(h) for h in order.historial
+        ]
+
     return OrderDetailResponse(
         id=order.id,
         user_id=order.user_id,
         status=order.status.value if hasattr(order.status, "value") else order.status,
         total_amount=order.total_amount,
-        status_history=order.status_history,
+        status_history=status_history,
         payment_status=order.payment_status.value if order.payment_status and hasattr(order.payment_status, "value") else order.payment_status,
         payment_method=order.payment_method,
         paid_at=order.paid_at,

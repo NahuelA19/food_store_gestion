@@ -55,6 +55,7 @@ export interface CreateProductPayload {
   category_id: number;
   is_available?: boolean;
   image_url?: string;
+  stock_quantity?: number;
 }
 
 export interface UpdateProductPayload {

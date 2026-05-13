@@ -1,9 +1,10 @@
+import { useAuthStore } from "../store/authStore";
 import type { Branch, BranchListResponse, CreateBranchPayload, UpdateBranchPayload } from "../types/branch";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem("auth_token");
+  const token = useAuthStore.getState().accessToken;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };

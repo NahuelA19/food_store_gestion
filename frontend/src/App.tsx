@@ -21,18 +21,19 @@ import { EmployeesPage } from "./pages/EmployeesPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailurePage from "./pages/PaymentFailurePage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { SettingsPage } from "./pages/SettingsPage";
 
 function App() {
   return (
     <BrowserRouter>
         <DashboardLayout>
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+            <Route path="/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
             <Route
               path="/categories/new"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="admin">
                   <CreateCategoryPage />
                 </ProtectedRoute>
               }
@@ -40,16 +41,16 @@ function App() {
             <Route
               path="/products/new"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="admin">
                   <CreateProductPage />
                 </ProtectedRoute>
               }
             />
-            <Route path="/products/:id" element={<ProductDetailPage />} />
+            <Route path="/products/:id" element={<ProtectedRoute><ProductDetailPage /></ProtectedRoute>} />
             <Route
               path="/products/:id/edit"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="admin">
                   <EditProductPage />
                 </ProtectedRoute>
               }
@@ -57,16 +58,20 @@ function App() {
             <Route
               path="/categories/:id/edit"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="admin">
                   <EditCategoryPage />
                 </ProtectedRoute>
               }
             />
-            <Route path="/orders" element={<OrdersPage />} />
-            <Route path="/orders/:id" element={<OrderDetailPage />} />
-            <Route path="/branches" element={<BranchesPage />} />
-            <Route path="/branches/:id" element={<BranchDetailPage />} />
-            <Route path="/employees" element={<EmployeesPage />} />
+            <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+            <Route path="/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
+            <Route path="/branches" element={<ProtectedRoute><BranchesPage /></ProtectedRoute>} />
+            <Route path="/branches/:id" element={<ProtectedRoute><BranchDetailPage /></ProtectedRoute>} />
+            <Route path="/employees" element={
+              <ProtectedRoute requiredRole="admin">
+                <EmployeesPage />
+              </ProtectedRoute>
+            } />
             <Route
               path="/wishlist"
               element={
@@ -98,6 +103,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
                 </ProtectedRoute>
               }
             />

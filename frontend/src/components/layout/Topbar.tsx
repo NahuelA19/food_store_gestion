@@ -2,7 +2,7 @@
  * Topbar — Horizontal bar with branch selector, theme toggle, and user menu
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuthStore } from "../../store/authStore";
 import { useAuth } from "../../hooks/useAuth";
@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { useWishlist } from "../../hooks/useWishlist";
 import { useNotifications } from "../../hooks/useNotifications";
 import { NotificationDropdown } from "../notifications/NotificationDropdown";
+import { branchApi } from "../../api/branchApi";
+import type { Branch } from "../../types/branch";
 import logoImg from "../../assets/images/logo.png";
 import {
   Sun,
@@ -30,11 +32,7 @@ interface TopbarProps {
   sidebarCollapsed: boolean;
 }
 
-const BRANCHES = [
-  { id: 1, name: "Sucursal Central", address: "Av. Corrientes 1234" },
-  { id: 2, name: "Sucursal Norte", address: "Av. Cabildo 5678" },
-  { id: 3, name: "Sucursal Sur", address: "Av. Boedo 9012" },
-];
+const STORAGE_KEY = "food-store-active-branch";
 
 export function Topbar({ sidebarCollapsed }: TopbarProps) {
   const { isDark, toggleTheme } = useTheme();
@@ -42,7 +40,8 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
   const { logout } = useAuth();
   const { count: wishlistCount } = useWishlist();
   const [branchOpen, setBranchOpen] = useState(false);
-  const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const branchRef = useRef<HTMLDivElement>(null);
@@ -73,6 +72,25 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Load branches from API and restore saved selection
+  useEffect(() => {
+    branchApi.getBranches().then((data) => {
+      const items = data.items ?? [];
+      setBranches(items);
+      const savedId = localStorage.getItem(STORAGE_KEY);
+      const saved = savedId ? items.find((b) => String(b.id) === savedId) : null;
+      setSelectedBranch(saved || items[0] || null);
+    }).catch(() => {
+      // Fallback: no branches loaded
+    });
+  }, []);
+
+  const handleBranchChange = useCallback((branch: Branch) => {
+    setSelectedBranch(branch);
+    localStorage.setItem(STORAGE_KEY, String(branch.id));
+    setBranchOpen(false);
+  }, []);
+
     return (
       <header
         className={cn(
@@ -93,14 +111,14 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
        </Link>
 
        {/* Branch Selector */}
-      <div ref={branchRef} className="relative">
+       <div ref={branchRef} className="relative">
         <button
           onClick={() => setBranchOpen(!branchOpen)}
           className="flex items-center gap-2.5 rounded-xl border border-border bg-surface-card px-3.5 py-2 text-sm font-semibold text-text-primary hover:border-brand-300 transition-all duration-200"
         >
           <Building2 size={16} className="text-text-muted" />
-          <span className="hidden sm:inline">{selectedBranch.name}</span>
-          <span className="sm:hidden">{selectedBranch.name.split(" ")[1]}</span>
+          <span className="hidden sm:inline">{selectedBranch?.name ?? "Sucursal"}</span>
+          <span className="sm:hidden">{selectedBranch?.name?.split(" ")[1] ?? "..."}</span>
           <ChevronDown
             size={14}
             className={cn(
@@ -112,27 +130,28 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
 
         {branchOpen && (
           <div className="absolute left-0 top-full mt-1.5 w-64 rounded-xl border border-border bg-surface-card p-1.5 shadow-dropdown animate-scale-in z-50">
-            {BRANCHES.map((branch) => (
-              <button
-                key={branch.id}
-                onClick={() => {
-                  setSelectedBranch(branch);
-                  setBranchOpen(false);
-                }}
-                className={cn(
-                  "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-200",
-                  selectedBranch.id === branch.id
-                    ? "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
-                    : "text-text-secondary hover:bg-surface-alt hover:text-text-primary"
-                )}
-              >
-                <Building2 size={16} className="mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold">{branch.name}</p>
-                  <p className="text-xs text-text-muted">{branch.address}</p>
-                </div>
-              </button>
-            ))}
+            {branches.length === 0 ? (
+              <div className="px-3 py-2 text-sm text-text-muted">No hay sucursales</div>
+            ) : (
+              branches.map((branch) => (
+                <button
+                  key={branch.id}
+                  onClick={() => handleBranchChange(branch)}
+                  className={cn(
+                    "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-200",
+                    selectedBranch?.id === branch.id
+                      ? "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
+                      : "text-text-secondary hover:bg-surface-alt hover:text-text-primary"
+                  )}
+                >
+                  <Building2 size={16} className="mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold">{branch.name}</p>
+                    <p className="text-xs text-text-muted">{branch.address}</p>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         )}
       </div>

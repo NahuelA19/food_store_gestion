@@ -2,9 +2,11 @@
 Food Store API - Main Application
 """
 
+import json
 import logging
 import os
 from contextlib import asynccontextmanager
+from decimal import Decimal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

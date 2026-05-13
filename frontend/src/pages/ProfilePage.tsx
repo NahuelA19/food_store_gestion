@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useAuthStore } from "../store/authStore";
 import { UserForm } from "../components/UserForm";
 import { PreferencesPanel } from "../components/PreferencesPanel";
 import { DireccionesPanel } from "../components/DireccionesPanel";
@@ -50,7 +51,7 @@ export function ProfilePage() {
       setPrefsError(null);
 
       try {
-        const token = localStorage.getItem("auth_token");
+        const token = useAuthStore.getState().accessToken;
         const response = await fetch(
           `${import.meta.env.VITE_API_URL || "http://localhost:8000/api"}/users/me/preferences`,
           {

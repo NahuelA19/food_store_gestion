@@ -38,6 +38,7 @@ class OrderStatus(str, Enum):
     """Order status enumeration (FSM v6 — 6 states)."""
 
     PENDIENTE = "pendiente"
+    PENDING = "pending"
     PAGO_PENDIENTE = "pago_pendiente"
     PAYMENT_PENDING = "payment_pending"
     PAGADO = "pagado"

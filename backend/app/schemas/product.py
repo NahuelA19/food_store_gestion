@@ -6,10 +6,11 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import BaseResponseModel
 from app.schemas.review import ReviewSummary
 
 
-class CategoryResponse(BaseModel):
+class CategoryResponse(BaseResponseModel):
     """Category response model."""
 
     id: int
@@ -18,10 +19,8 @@ class CategoryResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
 
-
-class InventoryResponse(BaseModel):
+class InventoryResponse(BaseResponseModel):
     """Inventory response model with calculated fields."""
 
     id: int
@@ -33,8 +32,6 @@ class InventoryResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
-
 
 class ProductCreate(BaseModel):
     """Product creation schema."""
@@ -45,6 +42,13 @@ class ProductCreate(BaseModel):
     category_id: int = Field(..., gt=0)
     is_available: bool = Field(default=True)
     image_url: str | None = Field(None, max_length=2048)
+    stock_quantity: int | None = Field(None, ge=0)
+
+
+class StockUpdate(BaseModel):
+    """Schema for adding stock to an existing product."""
+
+    quantity: int = Field(..., gt=0)
 
 
 class ProductUpdate(BaseModel):
@@ -58,7 +62,7 @@ class ProductUpdate(BaseModel):
     image_url: str | None = None
 
 
-class ProductResponse(BaseModel):
+class ProductResponse(BaseResponseModel):
     """Product response model with nested category."""
 
     id: int
@@ -69,13 +73,12 @@ class ProductResponse(BaseModel):
     category: CategoryResponse
     is_available: bool
     image_url: str | None = None
+    inventory: InventoryResponse | None = None
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
 
-
-class ProductDetailResponse(BaseModel):
+class ProductDetailResponse(BaseResponseModel):
     """Product detail response including inventory and review information."""
 
     id: int
@@ -90,5 +93,3 @@ class ProductDetailResponse(BaseModel):
     reviews: ReviewSummary | None = None
     created_at: datetime
     updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)

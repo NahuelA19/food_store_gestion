@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Warehouse,
+  Plus,
 } from "lucide-react";
 
 /* ─── Inline Select ─── */
@@ -168,6 +169,16 @@ export function EditProductPage() {
     mutationFn: (data: { stock_quantity: number; low_stock_threshold: number }) =>
       productApi.updateInventory(productId, data.stock_quantity, data.low_stock_threshold),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory", productId] });
+      queryClient.invalidateQueries({ queryKey: ["product", productId] });
+    },
+  });
+
+  const [addStockQty, setAddStockQty] = useState("");
+  const addStockMutation = useMutation({
+    mutationFn: (quantity: number) => productApi.addStock(productId, quantity),
+    onSuccess: () => {
+      setAddStockQty("");
       queryClient.invalidateQueries({ queryKey: ["inventory", productId] });
       queryClient.invalidateQueries({ queryKey: ["product", productId] });
     },
@@ -593,6 +604,53 @@ export function EditProductPage() {
                   </>
                 )}
               </Button>
+
+              {/* Add Stock Section */}
+              <hr className="border-border" />
+              <div>
+                <p className="text-sm font-semibold text-text-primary mb-2">
+                  Agregar Stock
+                </p>
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <Input
+                      label="Cantidad"
+                      type="number"
+                      value={addStockQty}
+                      onChange={(e) => setAddStockQty(e.target.value)}
+                      placeholder="0"
+                      min="1"
+                    />
+                  </div>
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                      const qty = parseInt(addStockQty);
+                      if (qty > 0) addStockMutation.mutate(qty);
+                    }}
+                    disabled={addStockMutation.isPending || !addStockQty || parseInt(addStockQty) <= 0}
+                  >
+                    {addStockMutation.isPending ? (
+                      <Loader2 size={16} className="mr-2 animate-spin" />
+                    ) : (
+                      <Plus size={16} className="mr-2" />
+                    )}
+                    Agregar Stock
+                  </Button>
+                </div>
+                {addStockMutation.isSuccess && (
+                  <p className="mt-2 text-xs font-semibold text-emerald-600">
+                    Stock agregado correctamente
+                  </p>
+                )}
+                {addStockMutation.isError && (
+                  <p className="mt-2 text-xs font-semibold text-danger">
+                    {addStockMutation.error instanceof Error
+                      ? addStockMutation.error.message
+                      : "Error al agregar stock"}
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </CardContent>

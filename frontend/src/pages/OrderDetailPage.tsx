@@ -72,15 +72,31 @@ export function OrderDetailPage() {
   }
 
   if (!order || error) {
+    const is403 = error?.includes("Admin privileges required") || error?.includes("403");
+    const is404 = error?.includes("not found") || error?.includes("no existe");
+    const isNetwork = error?.includes("Failed to fetch") || error?.includes("NetworkError");
+
+    let title = "Pedido no encontrado";
+    let message = error ?? `El pedido #${id} no existe`;
+
+    if (is403) {
+      title = "Sin permisos";
+      message = "No tenés permisos para ver este pedido";
+    } else if (isNetwork) {
+      title = "Error de conexión";
+      message = "No se pudo conectar con el servidor. Intentá de nuevo.";
+    } else if (is404) {
+      title = "Pedido no encontrado";
+      message = error ?? `El pedido #${id} no existe`;
+    }
+
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-alt mb-4">
           <Icon icon={Package} size={28} className="text-text-muted" />
         </div>
-        <p className="text-lg font-semibold text-text-primary">Pedido no encontrado</p>
-        <p className="text-sm text-text-muted mt-1">
-          {error ? error : `El pedido #${id} no existe`}
-        </p>
+        <p className="text-lg font-semibold text-text-primary">{title}</p>
+        <p className="text-sm text-text-muted mt-1">{message}</p>
         <Link to="/orders">
           <Button variant="ghost" className="mt-4 gap-2">
             <ArrowLeft size={16} />

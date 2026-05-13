@@ -221,6 +221,140 @@ async def seed_inventory(session: AsyncSession) -> None:
         )
 
 
+async def seed_branches(session: AsyncSession) -> None:
+    """Seed branches."""
+    from datetime import datetime, timezone
+    
+    now = datetime.now(timezone.utc)
+    branches = [
+        ("Casa Central", "Av. Corrientes 1234, CABA", "+541112345678", "central@foodstore.com"),
+        ("Sucursal Norte", "Av. Cabildo 2345, CABA", "+541187654321", "norte@foodstore.com"),
+        ("Sucursal Sur", "Av. Boedo 890, CABA", "+541156789012", "sur@foodstore.com"),
+        ("Sucursal Oeste", "Av. Rivadavia 5678, CABA", "+541134567890", "oeste@foodstore.com"),
+    ]
+    
+    for name, address, phone, email in branches:
+        exists = await session.execute(
+            text("SELECT id FROM branches WHERE name = :name"),
+            {"name": name},
+        )
+        if exists.fetchone():
+            continue
+        await session.execute(
+            text("""
+                INSERT INTO branches (name, address, phone, email, is_active, created_at, updated_at)
+                VALUES (:name, :address, :phone, :email, true, :created_at, :updated_at)
+            """),
+            {
+                "name": name,
+                "address": address,
+                "phone": phone,
+                "email": email,
+                "created_at": now,
+                "updated_at": now,
+            },
+        )
+
+
+async def seed_orders(session: AsyncSession) -> None:
+    """Seed demo orders."""
+    from datetime import datetime, timezone, timedelta
+    import json
+    
+    now = datetime.now(timezone.utc)
+    
+    # Check if orders already exist
+    result = await session.execute(text("SELECT COUNT(*) FROM orders"))
+    if result.scalar() > 0:
+        return
+    
+    # Get admin user
+    result = await session.execute(text("SELECT id FROM users WHERE email = 'admin@foodstore.com'"))
+    admin_row = result.fetchone()
+    if not admin_row:
+        return
+    admin_id = admin_row[0]
+    
+    # Get products for order items
+    result = await session.execute(text("SELECT id, price, name FROM products WHERE deleted_at IS NULL LIMIT 5"))
+    products = result.fetchall()
+    if not products:
+        return
+    
+    orders_data = [
+        {
+            "status": "delivered",
+            "estado_codigo": "ENTREGADO",
+            "total": sum(p[1] for p in products[:3]),
+            "created": now - timedelta(days=3),
+            "payment_status": "approved",
+            "payment_method": "MERCADOPAGO",
+            "paid_at": now - timedelta(days=3),
+        },
+        {
+            "status": "confirmed",
+            "estado_codigo": "CONFIRMADO",
+            "total": products[0][1] * 2,
+            "created": now - timedelta(days=1),
+            "payment_status": "approved",
+            "payment_method": "MERCADOPAGO",
+            "paid_at": now - timedelta(days=1),
+        },
+        {
+            "status": "pending",
+            "estado_codigo": "PENDIENTE",
+            "total": products[1][1] + products[2][1],
+            "created": now,
+            "payment_status": "pending",
+            "payment_method": "EFECTIVO",
+            "paid_at": None,
+        },
+    ]
+    
+    for odata in orders_data:
+        result = await session.execute(
+            text("""
+                INSERT INTO orders (user_id, status, total_amount, created_at, updated_at, 
+                    payment_status, payment_method, paid_at, estado_codigo, status_history)
+                VALUES (:user_id, :status, :total, :created_at, :created_at,
+                    :payment_status, :payment_method, :paid_at, :estado_codigo, :status_history)
+                RETURNING id
+            """),
+            {
+                "user_id": admin_id,
+                "status": odata["status"],
+                "total": str(odata["total"]),
+                "created_at": odata["created"],
+                "payment_status": odata["payment_status"],
+                "payment_method": odata["payment_method"],
+                "paid_at": odata["paid_at"],
+                "estado_codigo": odata["estado_codigo"],
+                "status_history": json.dumps([{
+                    "estado": odata["estado_codigo"],
+                    "fecha": odata["created"].isoformat(),
+                }]),
+            },
+        )
+        order_id = result.fetchone()[0]
+        
+        # Add order items
+        for i, p in enumerate(products[:2]):
+            await session.execute(
+                text("""
+                    INSERT INTO order_items (order_id, product_id, quantity, unit_price, nombre_snapshot, precio_snapshot)
+                    VALUES (:order_id, :product_id, :quantity, :unit_price, :nombre, :precio)
+                """),
+                {
+                    "order_id": order_id,
+                    "product_id": p[0],
+                    "quantity": i + 1,
+                    "unit_price": str(p[1]),
+                    "nombre": p[2],
+                    "precio": str(p[1]),
+                },
+            )
+
+
 async def seed_test_user(session: AsyncSession) -> None:
     """Create a test user for testing."""
     from datetime import datetime, timezone
@@ -264,4 +398,6 @@ async def run_seeds(session: AsyncSession) -> None:
     await seed_categories(session)
     await seed_products(session)
     await seed_inventory(session)
+    await seed_branches(session)
+    await seed_orders(session)
     await seed_test_user(session)

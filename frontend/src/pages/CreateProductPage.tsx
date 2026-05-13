@@ -132,6 +132,7 @@ export function CreateProductPage() {
   const [price, setPrice] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
+  const [stockQuantity, setStockQuantity] = useState("");
 
   // Image upload state
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -174,7 +175,7 @@ export function CreateProductPage() {
 
   // Mutation
   const mutation = useMutation({
-    mutationFn: (data: { name: string; description?: string; image_url?: string; price: number; category_id: number; is_available: boolean }) =>
+    mutationFn: (data: { name: string; description?: string; image_url?: string; price: number; category_id: number; is_available: boolean; stock_quantity?: number }) =>
       productApi.createProduct(data),
     onSuccess: () => {
       // Invalidate products query so the list reflects the new product
@@ -222,6 +223,7 @@ export function CreateProductPage() {
       price: parseFloat(price),
       category_id: parseInt(categoryId),
       is_available: isAvailable,
+      stock_quantity: stockQuantity ? parseInt(stockQuantity) : undefined,
     });
   }
 
@@ -408,6 +410,17 @@ export function CreateProductPage() {
                 placeholder="Select a category..."
               />
             </div>
+
+            {/* Stock Quantity */}
+            <Input
+              label="Stock Inicial"
+              type="number"
+              value={stockQuantity}
+              onChange={(e) => setStockQuantity(e.target.value)}
+              placeholder="0"
+              min="0"
+              helperText="Cantidad inicial en inventario (opcional)"
+            />
 
             {/* Availability toggle */}
             <div className="flex items-center gap-3">

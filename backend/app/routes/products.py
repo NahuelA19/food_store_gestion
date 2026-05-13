@@ -10,16 +10,18 @@ from sqlalchemy.orm import selectinload
 
 from app.config import Settings
 from app.core.uow import UnitOfWork
-from app.dependencies import get_current_user_optional, get_uow, get_settings
+from app.dependencies import get_admin_user, get_current_user_optional, get_uow, get_settings
 from app.models.category import Category
 from app.models.inventory import Inventory
 from app.models.product import Product
+from app.models.user import User
 from app.services.review_service import get_review_summary
 from app.schemas.product import (
     ProductCreate,
     ProductDetailResponse,
     ProductResponse,
     ProductUpdate,
+    StockUpdate,
 )
 from app.utils.storage import save_upload, delete_file
 
@@ -42,6 +44,7 @@ def _product_to_detail_dict(product: Product) -> dict:
         "category_id": product.category_id,
         "category": product.category,
         "is_available": product.is_available,
+        "image_url": product.image_url,
         "inventory": product.inventory,
         "reviews": None,
         "created_at": product.created_at,
@@ -161,6 +164,7 @@ async def get_product(
 @router.post("/", response_model=ProductDetailResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     body: ProductCreate,
+    current_user: User = Depends(get_admin_user),
     uow: UnitOfWork = Depends(get_uow),
 ) -> ProductDetailResponse:
     """Create a new product."""
@@ -190,8 +194,8 @@ async def create_product(
     uow.session.add(product)
     await uow.flush()
 
-    # Auto-create inventory with 0 stock
-    inventory = Inventory(product_id=product.id, stock_quantity=0)
+    # Auto-create inventory with stock_quantity or 0
+    inventory = Inventory(product_id=product.id, stock_quantity=body.stock_quantity or 0)
     uow.session.add(inventory)
 
     await uow.flush()
@@ -201,10 +205,52 @@ async def create_product(
     return response
 
 
+@router.patch("/{product_id}/stock", response_model=ProductDetailResponse)
+async def add_product_stock(
+    product_id: int,
+    body: StockUpdate,
+    current_user: User = Depends(get_admin_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> ProductDetailResponse:
+    """Add stock quantity to an existing product."""
+    result = await uow.session.execute(
+        select(Product)
+        .where(
+            and_(
+                Product.id == product_id,
+                Product.deleted_at.is_(None),
+            )
+        )
+        .options(
+            selectinload(Product.category),
+            selectinload(Product.inventory),
+            selectinload(Product.reviews),
+        )
+    )
+    product = result.scalar_one_or_none()
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with id {product_id} not found",
+        )
+
+    if not product.inventory:
+        inventory = Inventory(product_id=product.id, stock_quantity=body.quantity)
+        uow.session.add(inventory)
+    else:
+        product.inventory.stock_quantity += body.quantity
+
+    uow.session.add(product)
+    await uow.flush()
+    await uow.refresh(product, ["category", "inventory"])
+    return ProductDetailResponse.model_validate(_product_to_detail_dict(product))
+
+
 @router.put("/{product_id}", response_model=ProductDetailResponse)
 async def update_product(
     product_id: int,
     body: ProductUpdate,
+    current_user: User = Depends(get_admin_user),
     uow: UnitOfWork = Depends(get_uow),
 ) -> ProductDetailResponse:
     """Update a product."""
@@ -266,6 +312,7 @@ async def update_product(
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: int,
+    current_user: User = Depends(get_admin_user),
     uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     """Soft-delete a product."""
@@ -330,6 +377,7 @@ async def get_related_products(
 @router.put("/{product_id}/availability", response_model=ProductDetailResponse)
 async def toggle_availability(
     product_id: int,
+    current_user: User = Depends(get_admin_user),
     uow: UnitOfWork = Depends(get_uow),
 ) -> ProductDetailResponse:
     """Toggle product availability."""

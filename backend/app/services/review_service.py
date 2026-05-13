@@ -60,7 +60,7 @@ async def create_review(
         rating=data.rating,
         title=data.title,
         comment=data.comment,
-        is_approved=False,
+        is_approved=True,
     )
     uow.session.add(review)
     await uow.flush()

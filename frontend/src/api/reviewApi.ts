@@ -2,12 +2,13 @@
  * Review API client
  */
 
+import { useAuthStore } from "../store/authStore";
 import type { Review, ReviewCreate, ReviewListResponse, ReviewUpdate } from "../types/review";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem("token");
+  const token = useAuthStore.getState().accessToken;
   if (token) {
     return { Authorization: `Bearer ${token}` };
   }

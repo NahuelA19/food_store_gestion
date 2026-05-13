@@ -100,31 +100,8 @@ export function ReviewList({
               {summary.total_count === 1 ? "review" : "reviews"}
             </span>
 
-            {/* Distribution bars */}
-            <div className="ml-auto space-y-1">
-              {[5, 4, 3, 2, 1].map((star) => {
-                const count = summary.distribution[star] ?? 0;
-                const pct =
-                  summary.total_count > 0
-                    ? (count / summary.total_count) * 100
-                    : 0;
-                return (
-                  <div key={star} className="flex items-center gap-2 text-xs">
-                    <span className="w-4 text-right text-text-muted">
-                      {star}
-                    </span>
-                    <Star size={10} className="fill-amber-400 text-amber-400" />
-                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-border-light dark:bg-border-dark">
-                      <div
-                        className="h-full rounded-full bg-amber-400 transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="w-4 text-text-muted">{count}</span>
-                  </div>
-                );
-              })}
-            </div>
+            {/* Distribution bars — hidden until backend provides distribution data */}
+            
           </div>
         ) : (
           <p className="text-text-muted">No reviews yet</p>
