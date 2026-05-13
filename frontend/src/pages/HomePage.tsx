@@ -13,6 +13,7 @@ import { useDashboardStats } from "../hooks/useDashboard";
 import { useOrders } from "../hooks/useOrders";
 import { useBranches } from "../hooks/useBranches";
 import type { Branch } from "../types/branch";
+import { OrdersByStatusChart } from "../components/OrdersByStatusChart";
 import {
   ShoppingBag,
   Package,
@@ -438,36 +439,19 @@ export function HomePage() {
           </Card>
         </div>
 
-        {/* Activity Feed */}
+        {/* Orders by Status Chart */}
         <div className="space-y-4">
           <h2 className="font-display text-lg font-bold text-text-primary">
-            Actividad Reciente
+            Estado de Pedidos
           </h2>
           <Card>
-            <CardContent className="p-4 space-y-3">
-              {recentOrders.length > 0 ? (
-                recentOrders.slice(0, 3).map((order) => (
-                  <div
-                    key={order.id}
-                    className="flex items-start gap-3 pb-3 border-b border-border last:border-0 last:pb-0"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
-                      <Icon icon={ShoppingBag} size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm text-text-primary">
-                        Pedido #{order.id} — {order.customer}
-                      </p>
-                      <p className="text-xs text-text-muted mt-0.5">
-                        ${order.total.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                ))
+            <CardContent className="p-4">
+              {stats ? (
+                <OrdersByStatusChart data={stats.orders_by_status} />
               ) : (
-                <p className="text-sm text-text-muted text-center py-4">
-                  Sin actividad reciente
-                </p>
+                <div className="flex h-64 items-center justify-center">
+                  <p className="text-sm text-text-muted">Cargando datos...</p>
+                </div>
               )}
             </CardContent>
           </Card>

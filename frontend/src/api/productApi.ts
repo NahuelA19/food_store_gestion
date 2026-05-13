@@ -173,4 +173,30 @@ export const productApi = {
     if (!response.ok) throw new Error("Failed to reserve inventory");
     return response.json();
   },
+
+  // Image upload
+  async uploadImage(file: File): Promise<{ url: string; path: string }> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${API_BASE_URL}/products/upload-image`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Upload failed" }));
+      throw new Error(error.detail || "Failed to upload image");
+    }
+
+    return response.json();
+  },
+
+  async deleteImage(path: string): Promise<void> {
+    const params = new URLSearchParams({ path });
+    const response = await fetch(`${API_BASE_URL}/products/upload-image?${params}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error("Failed to delete image");
+  },
 };

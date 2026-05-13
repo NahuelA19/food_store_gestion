@@ -1,17 +1,19 @@
 """Product API routes for the Food Store."""
 
+import logging
+
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import selectinload
 
+from app.config import Settings
 from app.core.uow import UnitOfWork
-from app.dependencies import get_current_user_optional, get_uow
+from app.dependencies import get_current_user_optional, get_uow, get_settings
 from app.models.category import Category
 from app.models.inventory import Inventory
 from app.models.product import Product
-from app.models.user import User
 from app.services.review_service import get_review_summary
 from app.schemas.product import (
     ProductCreate,
@@ -19,6 +21,9 @@ from app.schemas.product import (
     ProductResponse,
     ProductUpdate,
 )
+from app.utils.storage import save_upload, delete_file
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -354,3 +359,83 @@ async def toggle_availability(
     await uow.flush()
     await uow.refresh(product, ["category", "inventory"])
     return ProductDetailResponse.model_validate(_product_to_detail_dict(product))
+
+
+@router.post("/upload-image", status_code=status.HTTP_201_CREATED)
+async def upload_product_image(
+    file: UploadFile,
+    settings: Settings = Depends(get_settings),
+) -> dict[str, str]:
+    """Upload a product image.
+
+    Accepts image files (jpg, jpeg, png, webp, gif) up to 5MB.
+    Returns the URL of the uploaded image.
+
+    Args:
+        file: Image file to upload
+        settings: App settings (for base_url)
+
+    Returns:
+        dict: URL to the uploaded image
+
+    Raises:
+        HTTPException 400: Invalid file type or size
+        HTTPException 500: Internal server error
+    """
+    try:
+        # Save the file
+        url_path = await save_upload(file, subfolder="products")
+        
+        # Generate full URL
+        full_url = f"{settings.base_url}{url_path}" if settings.base_url else url_path
+        
+        logger.info("Product image uploaded: %s", full_url)
+        
+        return {
+            "url": full_url,
+            "path": url_path,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to upload product image: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to upload image",
+        )
+
+
+@router.delete("/upload-image")
+async def delete_product_image(
+    path: str = Query(..., description="Image URL or path to delete"),
+) -> dict[str, str]:
+    """Delete a product image.
+
+    Args:
+        path: URL or path to the image to delete
+
+    Returns:
+        dict: Confirmation message
+
+    Raises:
+        HTTPException 404: File not found
+    """
+    # Extract relative path from full URL if needed
+    relative_path = path
+    if path.startswith("http"):
+        # Extract path from full URL
+        for prefix in ["/uploads/", "/api/v1/uploads/"]:
+            if prefix in path:
+                relative_path = path.split(prefix)[1]
+                break
+    
+    success = delete_file(relative_path)
+    
+    if success:
+        logger.info("Product image deleted: %s", path)
+        return {"message": "Image deleted successfully"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found",
+        )

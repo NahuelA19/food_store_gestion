@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # API
     api_title: str = "Food Store API"
     api_version: str = "0.1.0"
+    base_url: str = "http://localhost:8000"  # Used for MP back_urls, image uploads
 
     # Database
     database_url: str

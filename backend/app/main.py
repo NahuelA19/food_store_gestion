@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.routes.admin import router as admin_router
@@ -88,6 +89,13 @@ app.include_router(admin_reviews_router, prefix="/api/v1")
 app.include_router(reviews_router, prefix="/api/v1")
 app.include_router(wishlist_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
+
+# Serve uploaded files (create upload directory if it doesn't exist)
+import os
+from pathlib import Path as PathLibPath
+upload_dir = os.getenv("UPLOAD_DIR", "/tmp/foodstore_uploads")
+PathLibPath(upload_dir).mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
 
 @app.get("/")

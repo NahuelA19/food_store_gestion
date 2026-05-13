@@ -133,6 +133,42 @@ export function CreateProductPage() {
   const [categoryId, setCategoryId] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
 
+  // Image upload state
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+
+  // Handle image file selection and upload
+  async function handleImageFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      setImageUploadError("Invalid file type. Allowed: JPG, PNG, WebP, GIF");
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setImageUploadError("File too large. Maximum size is 5MB");
+      return;
+    }
+
+    setImageUploadError(null);
+    setIsUploadingImage(true);
+
+    try {
+      const result = await productApi.uploadImage(file);
+      setImageUrl(result.url);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed";
+      setImageUploadError(message);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -276,15 +312,79 @@ export function CreateProductPage() {
               placeholder="A brief description of the product..."
             />
 
-            {/* Image URL */}
-            <Input
-              label="Image URL"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://example.com/product-image.jpg"
-              maxLength={2048}
-              helperText="Optional. Paste a URL for the product image."
-            />
+            {/* Image Upload */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-text-primary">
+                Product Image
+              </label>
+              
+              {/* File input */}
+              <div className="flex items-center gap-3">
+                <label
+                  htmlFor="image-upload"
+                  className={`flex h-11 items-center justify-center rounded-lg border-2 border-dashed px-4 py-2 text-sm font-medium transition-all duration-200 cursor-pointer ${
+                    isUploadingImage
+                      ? "border-brand-300 bg-brand-50 cursor-wait"
+                      : "border-border hover:border-brand-300 hover:bg-surface-card"
+                  }`}
+                >
+                  {isUploadingImage ? (
+                    <span className="flex items-center gap-2 text-brand-600">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Uploading...
+                    </span>
+                  ) : (
+                    <span className="text-text-secondary">Choose file...</span>
+                  )}
+                </label>
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleImageFileSelect}
+                  disabled={isUploadingImage}
+                  className="hidden"
+                />
+                
+                {/* Show current image URL or clear button */}
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl("")}
+                    className="text-sm text-danger hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Image URL text input (for manual URL or shows uploaded URL) */}
+              <Input
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://example.com/product-image.jpg (or upload above)"
+                maxLength={2048}
+                helperText="Optional. Paste a URL or upload a file above (max 5MB)."
+                error={imageUploadError || undefined}
+              />
+
+              {/* Preview uploaded image */}
+              {imageUrl && (
+                <div className="mt-2 flex items-center gap-3">
+                  <img
+                    src={imageUrl}
+                    alt="Product preview"
+                    className="h-20 w-20 rounded-lg object-cover border border-border"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                  <span className="text-xs text-text-secondary">
+                    Image preview
+                  </span>
+                </div>
+              )}
+            </div>
 
             {/* Price + Category row */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
