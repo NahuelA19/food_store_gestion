@@ -444,6 +444,24 @@
   h1, h2, h3, h4, h5, h6 {
     color: #ffffff !important;
   }
+
+  /* ---- Light Mode: Muted Text Colors (Secondary Descriptions) ----
+     Paragraphs with text-text-muted class need darker gray for visibility
+     on lavender background (e.g. "Gestiona los pedidos de todas las sucursales")
+  */
+  p.text-text-muted,
+  .text-text-muted,
+  small {
+    color: #4a5568 !important; /* Darker gray: ~oklch(0.42) equivalent */
+  }
+
+  /* ---- Light Mode: Secondary Navigation Elements ----
+     Icons and text in inactive sidebar nav items need to be darker
+     for visibility on lavender background
+  */
+  .text-text-secondary {
+    color: #2d3748 !important; /* Very dark gray for contrast */
+  }
 }
 
 
