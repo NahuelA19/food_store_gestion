@@ -456,16 +456,9 @@
     color: #ffffff !important; /* White for visibility on lavender/blue background */
   }
 
-  /* ---- Light Mode: Secondary Navigation Elements ----
-     Revert secondary text to original color for sidebar labels
-  */
-  .text-text-secondary {
-    color: var(--color-text-secondary) !important;
-  }
-
-  /* ---- Light Mode: Sidebar Link Labels ----
-     Make ALL text inside sidebar links white for visibility
-     This catches both active and inactive states
+  /* ---- Light Mode: Sidebar Link Text ----
+     Make only the span text inside sidebar links white for visibility
+     This catches both active and inactive states for Productos, Pedidos, etc.
   */
   a span {
     color: #ffffff !important;
