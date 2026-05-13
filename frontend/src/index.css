@@ -455,14 +455,6 @@
   small {
     color: #ffffff !important; /* White for visibility on lavender/blue background */
   }
-
-  /* ---- Light Mode: Sidebar Link Text ----
-     Make only the span text inside sidebar links white for visibility
-     This catches both active and inactive states for Productos, Pedidos, etc.
-  */
-  a span {
-    color: #ffffff !important;
-  }
 }
 
 
