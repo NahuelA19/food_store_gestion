@@ -462,6 +462,13 @@
   .text-text-secondary {
     color: var(--color-text-secondary) !important;
   }
+
+  /* ---- Light Mode: Sidebar Link Labels ----
+     Make the span text inside sidebar links white for visibility
+  */
+  a span.font-semibold {
+    color: #ffffff !important;
+  }
 }
 
 
