@@ -446,13 +446,14 @@
   }
 
   /* ---- Light Mode: Muted Text Colors (Secondary Descriptions) ----
-     Paragraphs with text-text-muted class need darker gray for visibility
-     on lavender background (e.g. "Gestiona los pedidos de todas las sucursales")
+     In light mode with lavender background, muted text (descriptions) should be
+     white for consistency with headings and icons. This ensures descriptions like
+     "Gestiona los pedidos de todas las sucursales" are clearly visible.
   */
   p.text-text-muted,
   .text-text-muted,
   small {
-    color: #4a5568 !important; /* Darker gray: ~oklch(0.42) equivalent */
+    color: #ffffff !important; /* White for visibility on lavender/blue background */
   }
 
   /* ---- Light Mode: Secondary Navigation Elements ----
