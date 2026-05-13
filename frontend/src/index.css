@@ -457,11 +457,10 @@
   }
 
   /* ---- Light Mode: Secondary Navigation Elements ----
-     Secondary text (sidebar labels, section titles) must be white for visibility
-     on lavender background
+     Revert secondary text to original color for sidebar labels
   */
   .text-text-secondary {
-    color: #ffffff !important; /* White for consistency and visibility */
+    color: var(--color-text-secondary) !important;
   }
 }
 
