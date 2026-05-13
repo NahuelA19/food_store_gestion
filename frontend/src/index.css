@@ -463,6 +463,14 @@
   p.text-text-secondary {
     color: #ffffff !important;
   }
+
+  /* ---- Light Mode: Bold Headings Inside Cards ----
+     Span elements with font-semibold and text-text-primary (like "Productos")
+     should be white for visibility
+  */
+  span.font-semibold.text-text-primary {
+    color: #ffffff !important;
+  }
 }
 
 
