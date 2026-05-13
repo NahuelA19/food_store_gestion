@@ -464,9 +464,10 @@
   }
 
   /* ---- Light Mode: Sidebar Link Labels ----
-     Make the span text inside sidebar links white for visibility
+     Make ALL text inside sidebar links white for visibility
+     This catches both active and inactive states
   */
-  a span.font-semibold {
+  a span {
     color: #ffffff !important;
   }
 }
