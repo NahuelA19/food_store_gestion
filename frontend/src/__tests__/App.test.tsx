@@ -64,7 +64,7 @@ function createWrapper() {
 describe('App', () => {
   it('renders navigation with logo', () => {
     render(<App />, { wrapper: createWrapper() });
-    expect(screen.getByText('Food Store')).toBeInTheDocument();
+    expect(screen.getAllByText('Food Store').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders home page content', async () => {

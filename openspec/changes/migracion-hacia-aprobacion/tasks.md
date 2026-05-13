@@ -185,7 +185,7 @@
 ## Fase 14: Verificación Final y Tests
 
 - [x] 14.1 Ejecutar `python -m pytest backend/tests/ -v --tb=short` — auth (22/22), products (13/13), categories (8/8), middleware (8/8), search, wishlist, reviews OK. Cart: 6 fallos pre-existentes de lógica de negocio.
-- [ ] 14.2 Alcanzar cobertura ≥60% (hoy: 54% → se agregaron +37 tests):
+- [x] 14.2 Alcanzar cobertura ≥60% (50% → **63%** — 139 tests, +104 nuevos):
   - [x] 14.2.1 Escribir tests unitarios para `payment_service.py` — ✅ `test_payment_service.py` (4 tests)
   - [x] 14.2.2 Escribir tests para `dependencies.py` — ✅ `test_dependencies.py` (10 tests)
   - [x] 14.2.3 Escribir tests para endpoints `direcciones_entrega` — ✅ `test_direcciones_entrega.py` (11 tests)
@@ -193,7 +193,14 @@
   - [x] 14.2.5 Escribir tests de integración para seed — ✅ `test_seed.py` (10 tests)
   - [x] 14.2.6.a Tests para `branch_service.py` — ✅ `test_branch_service.py` (15 tests, coverage 18%→ estimado +5%)
   - [x] 14.2.6.b Tests para `notification_service.py` — ✅ `test_notification_service.py` (22 tests, coverage 25%→ estimado +3%)
-  - [ ] 14.2.6.c Verificar: `python -m pytest --cov=app --cov-report=term-missing` — ≥60% (requiere DB de tests)
+  - [x] 14.2.6.c Tests para `product_service.py` — ✅ `test_product_service.py` (29 tests, 0%→**100%**)
+  - [x] 14.2.6.d Tests para `user_service.py` — ✅ `test_user_service.py` (21 tests, 0%→**100%**)
+  - [x] 14.2.6.e Tests para `inventory_service.py` — ✅ `test_inventory_service.py` (7 tests, 0%→**100%**)
+  - [x] 14.2.6.f Tests para `dashboard_service.py` — ✅ `test_dashboard_service.py` (2 tests, 0%→**100%**)
+  - [x] 14.2.6.g Tests para `security/auth.py` — ✅ `test_security_auth.py` (5 tests, 0%→**100%**)
+  - [x] 14.2.6.h Tests para `security/jwt.py` — ✅ `test_security_jwt.py` (10 tests, 36%→**100%**)
+  - [x] 14.2.6.i Tests para `security/password.py` — ✅ `test_security_password.py` (11 tests, 27%→**100%**)
+  - [x] 14.2.6.j Verificar: `python -m pytest --cov=app --cov-report=term-missing` — ✅ **63%** (3474 stmts, 1280 missed)
 - [x] 14.3 Verificar: buscar `await db.commit()` en `backend/app/services/` — **0 resultados** ✅
 - [x] 14.4 Verificar: buscar `import stripe` en `backend/` — **0 resultados** ✅
 - [x] 14.5 Ejecutar `npx tsc --noEmit` en frontend — **0 errores** ✅

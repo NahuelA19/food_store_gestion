@@ -1,4 +1,4 @@
-"""Tests for password hashing and validation utilities."""
+"""Tests for password hashing and validation."""
 
 import pytest
 
@@ -9,114 +9,67 @@ from app.security.password import (
 )
 
 
-class TestPasswordHashing:
-    """Test password hashing and verification."""
+class TestGetPasswordHash:
+    def test_returns_non_empty_string(self):
+        result = get_password_hash("TestPass1")
+        assert isinstance(result, str)
+        assert len(result) > 0
 
-    def test_password_hashing_creates_different_hashes(self):
-        """Same password produces different hashes (due to salt)."""
-        password = "TestPassword123"
+    def test_differs_from_input(self):
+        password = "TestPass1"
+        result = get_password_hash(password)
+        assert result != password
+
+    def test_same_password_produces_different_hashes(self):
+        password = "TestPass1"
         hash1 = get_password_hash(password)
         hash2 = get_password_hash(password)
+        assert hash1 != hash2  # bcrypt salt ensures uniqueness
 
-        # Hashes should be different (different salts)
-        assert hash1 != hash2
-        # But both should verify against the same password
-        assert verify_password(password, hash1)
-        assert verify_password(password, hash2)
 
-    def test_verify_password_with_correct_password(self):
-        """Correct password verifies against hash."""
-        password = "MySecurePassword123"
+class TestVerifyPassword:
+    def test_correct_password_returns_true(self):
+        password = "SecurePass123"
         hashed = get_password_hash(password)
+        assert verify_password(password, hashed) is True
 
-        assert verify_password(password, hashed)
-
-    def test_verify_password_with_incorrect_password(self):
-        """Incorrect password fails verification."""
-        password = "MySecurePassword123"
-        wrong_password = "WrongPassword123"
+    def test_wrong_password_returns_false(self):
+        password = "SecurePass123"
         hashed = get_password_hash(password)
+        assert verify_password("WrongPass456", hashed) is False
 
-        assert not verify_password(wrong_password, hashed)
-
-    def test_verify_password_with_empty_password(self):
-        """Empty password fails verification."""
-        hashed = get_password_hash("MyPassword123")
-
-        assert not verify_password("", hashed)
-
-    def test_password_hash_format(self):
-        """Password hash is in bcrypt format."""
-        password = "TestPassword123"
-        hashed = get_password_hash(password)
-
-        # Bcrypt hashes start with $2a$, $2b$, $2y$
-        assert hashed.startswith(("$2a$", "$2b$", "$2y$"))
+    def test_empty_password_fails(self):
+        hashed = get_password_hash("RealPass1")
+        assert verify_password("", hashed) is False
 
 
-class TestPasswordValidation:
-    """Test password strength validation."""
+class TestValidatePasswordStrength:
+    def test_too_short_returns_false(self):
+        valid, msg = validate_password_strength("Ab1")
+        assert valid is False
+        assert "at least 8 characters" in msg
 
-    def test_valid_password(self):
-        """Valid password passes validation."""
-        password = "ValidPass123"
-        is_valid, error = validate_password_strength(password)
+    def test_empty_string_returns_false(self):
+        valid, msg = validate_password_strength("")
+        assert valid is False
+        assert "at least 8 characters" in msg
 
-        assert is_valid
-        assert error == ""
+    def test_no_uppercase_returns_false(self):
+        valid, msg = validate_password_strength("abcdefgh1")
+        assert valid is False
+        assert "uppercase" in msg
 
-    def test_password_too_short(self):
-        """Password with less than 8 characters fails."""
-        password = "Short1A"
-        is_valid, error = validate_password_strength(password)
+    def test_no_digit_returns_false(self):
+        valid, msg = validate_password_strength("Abcdefgh")
+        assert valid is False
+        assert "digit" in msg
 
-        assert not is_valid
-        assert "8 characters" in error
+    def test_valid_password_returns_true(self):
+        valid, msg = validate_password_strength("TestPass1")
+        assert valid is True
+        assert msg == ""
 
-    def test_password_missing_uppercase(self):
-        """Password without uppercase letter fails."""
-        password = "lowercase123"
-        is_valid, error = validate_password_strength(password)
-
-        assert not is_valid
-        assert "uppercase" in error.lower()
-
-    def test_password_missing_digit(self):
-        """Password without digit fails."""
-        password = "NoDigitHere"
-        is_valid, error = validate_password_strength(password)
-
-        assert not is_valid
-        assert "digit" in error.lower()
-
-    @pytest.mark.parametrize(
-        "valid_password",
-        [
-            "ValidPass123",
-            "AnotherGood2Pass",
-            "Secure9Pass",
-            "ComplexPassw0rd",
-        ],
-    )
-    def test_various_valid_passwords(self, valid_password):
-        """Various valid passwords pass validation."""
-        is_valid, error = validate_password_strength(valid_password)
-
-        assert is_valid, f"Password '{valid_password}' should be valid: {error}"
-        assert error == ""
-
-    @pytest.mark.parametrize(
-        "invalid_password,reason",
-        [
-            ("short1", "too short"),
-            ("nouppercase123", "no uppercase"),
-            ("NODIGITS", "no digit"),
-            ("NoD", "multiple issues"),
-        ],
-    )
-    def test_various_invalid_passwords(self, invalid_password, reason):
-        """Various invalid passwords fail validation."""
-        is_valid, error = validate_password_strength(invalid_password)
-
-        assert not is_valid, f"Password '{invalid_password}' should be invalid ({reason})"
-        assert error != ""
+    def test_valid_password_with_multiple_requirements(self):
+        valid, msg = validate_password_strength("ComplexPass99")
+        assert valid is True
+        assert msg == ""

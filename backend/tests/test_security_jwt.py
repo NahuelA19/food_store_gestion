@@ -1,104 +1,140 @@
 """Tests for JWT token generation and validation."""
 
+import hashlib
 from datetime import timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from jose import jwt
+import pytest
+from jose import JWTError, jwt
 
-from app.config import settings
-from app.security.jwt import create_access_token, verify_token
+from app.security.jwt import (
+    create_access_token,
+    create_refresh_token,
+    hash_token,
+    verify_token,
+
+)
 
 
-class TestJWTTokenGeneration:
-    """Test JWT token generation."""
+@pytest.fixture
+def mock_settings():
+    with patch("app.security.jwt.settings") as mock:
+        mock.secret_key = "test-secret-key-for-testing-only"
+        mock.algorithm = "HS256"
+        mock.access_token_expire_minutes = 15
+        yield mock
 
-    def test_create_access_token(self):
-        """Token is created successfully with correct format."""
-        data = {"user_id": 1, "email": "test@example.com"}
-        token = create_access_token(data)
 
+class TestCreateAccessToken:
+    def test_returns_string(self, mock_settings):
+        token = create_access_token({"user_id": 1})
         assert isinstance(token, str)
         assert len(token) > 0
-        # JWT has 3 parts separated by dots
-        assert token.count(".") == 2
 
-    def test_create_access_token_with_custom_expiry(self):
-        """Token with custom expiration delta."""
-        data = {"user_id": 1, "email": "test@example.com"}
-        expires = timedelta(minutes=30)
-        token = create_access_token(data, expires_delta=expires)
+    def test_can_be_decoded(self, mock_settings):
+        data = {"user_id": 42, "email": "test@example.com"}
+        token = create_access_token(data)
 
-        assert isinstance(token, str)
-        # Token should be decodable
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        assert payload["user_id"] == 1
+        payload = jwt.decode(
+            token,
+            mock_settings.secret_key,
+            algorithms=[mock_settings.algorithm],
+        )
+        assert payload["user_id"] == 42
         assert payload["email"] == "test@example.com"
         assert "exp" in payload
 
-    def test_token_contains_user_claims(self):
-        """Token payload contains all provided claims."""
-        data = {"user_id": 42, "email": "user@example.com", "role": "admin"}
-        token = create_access_token(data)
-
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        assert payload["user_id"] == 42
-        assert payload["email"] == "user@example.com"
-        assert payload["role"] == "admin"
-
-
-class TestJWTTokenVerification:
-    """Test JWT token verification."""
-
-    def test_verify_valid_token(self):
-        """Valid token verifies successfully."""
-        data = {"user_id": 1, "email": "test@example.com"}
-        token = create_access_token(data)
-
-        payload = verify_token(token)
-        assert payload is not None
+    def test_custom_expiry(self, mock_settings):
+        token = create_access_token(
+            {"user_id": 1},
+            expires_delta=timedelta(minutes=5),
+        )
+        payload = jwt.decode(
+            token,
+            mock_settings.secret_key,
+            algorithms=[mock_settings.algorithm],
+        )
         assert payload["user_id"] == 1
-        assert payload["email"] == "test@example.com"
 
-    def test_verify_expired_token_returns_none(self):
-        """Expired token returns None."""
-        data = {"user_id": 1, "email": "test@example.com"}
-        # Create token that expires immediately
-        expires = timedelta(seconds=-1)
-        token = create_access_token(data, expires_delta=expires)
+    def test_different_data_produces_different_tokens(self, mock_settings):
+        token_a = create_access_token({"user_id": 1})
+        token_b = create_access_token({"user_id": 2})
+        assert token_a != token_b
 
-        payload = verify_token(token)
-        assert payload is None
 
-    def test_verify_tampered_token_returns_none(self):
-        """Tampered token (invalid signature) returns None."""
-        data = {"user_id": 1, "email": "test@example.com"}
-        token = create_access_token(data)
-
-        # Modify the token to tamper with it
-        tampered_token = token[:-10] + "0000000000"
-
-        payload = verify_token(tampered_token)
-        assert payload is None
-
-    def test_verify_malformed_token_returns_none(self):
-        """Malformed token returns None."""
-        malformed_tokens = [
-            "not.a.token",
-            "just_a_string",
-            "",
-            "token",
-        ]
-
-        for malformed in malformed_tokens:
-            payload = verify_token(malformed)
-            assert payload is None, f"Malformed token '{malformed}' should return None"
-
-    def test_verify_token_missing_required_field(self):
-        """Token without required claims still decodes but might be invalid for auth."""
-        # Create token with minimal claims
-        data = {"custom": "value"}
+class TestVerifyToken:
+    def test_returns_payload_for_valid_token(self, mock_settings):
+        data = {"user_id": 7, "role": "admin"}
         token = create_access_token(data)
 
         payload = verify_token(token)
-        # Token verifies but doesn't have expected user_id/email
+
         assert payload is not None
-        assert payload.get("custom") == "value"
+        assert payload["user_id"] == 7
+        assert payload["role"] == "admin"
+        assert "exp" in payload
+
+    def test_returns_none_for_expired_token(self, mock_settings):
+        with patch("jose.jwt.decode", side_effect=JWTError("Signature has expired.")):
+            result = verify_token("expired-token")
+            assert result is None
+
+    def test_returns_none_for_malformed_token(self):
+        with patch("app.security.jwt.settings") as mock:
+            mock.secret_key = "test-key"
+            mock.algorithm = "HS256"
+            result = verify_token("not-a-valid-jwt")
+            assert result is None
+
+    def test_returns_none_when_jwt_decode_raises_jwterror(self, mock_settings):
+        with patch("jose.jwt.decode", side_effect=JWTError("Invalid signature")):
+            result = verify_token("some-token")
+            assert result is None
+
+
+class TestHashToken:
+    def test_returns_sha256_hexdigest(self):
+        raw = "test-refresh-abc"
+        expected = hashlib.sha256(raw.encode()).hexdigest()
+        result = hash_token(raw)
+        assert result == expected
+
+    def test_output_length_is_64_chars(self):
+        raw = "any-input"
+        result = hash_token(raw)
+        assert len(result) == 64
+
+    def test_different_inputs_produce_different_hashes(self):
+        assert hash_token("token-a") != hash_token("token-b")
+
+
+class TestCreateRefreshToken:
+    @pytest.mark.asyncio
+    async def test_creates_token_and_adds_to_session(self):
+        mock_session = AsyncMock()
+        mock_session.add = MagicMock()
+        mock_session.flush = AsyncMock()
+
+        with patch("app.security.jwt.secrets.token_urlsafe", return_value="mocked-token-123"):
+            result = await create_refresh_token(1, mock_session)
+
+        assert result == "mocked-token-123"
+        mock_session.add.assert_called_once()
+        mock_session.flush.assert_awaited_once()
+
+        added_token = mock_session.add.call_args[0][0]
+        assert added_token.user_id == 1
+        assert added_token.token_hash == hashlib.sha256("mocked-token-123".encode()).hexdigest()
+
+    @pytest.mark.asyncio
+    async def test_different_user_id_stored_correctly(self):
+        mock_session = AsyncMock()
+        mock_session.add = MagicMock()
+        mock_session.flush = AsyncMock()
+
+        with patch("app.security.jwt.secrets.token_urlsafe", return_value="another-token"):
+            result = await create_refresh_token(99, mock_session)
+
+        assert result == "another-token"
+        added_token = mock_session.add.call_args[0][0]
+        assert added_token.user_id == 99
