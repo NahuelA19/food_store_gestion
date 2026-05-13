@@ -3,6 +3,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.config import Settings
@@ -10,7 +11,21 @@ from app.core.uow import UnitOfWork
 from app.dependencies import get_current_user, get_settings, get_uow
 from app.models.order import Order
 from app.models.user import User
-from app.services.payment_service import create_preference, handle_ipn, verify_webhook_signature
+from app.services.payment_service import (
+    create_preference,
+    handle_ipn,
+    process_card_payment,
+    verify_webhook_signature,
+)
+
+
+class CardPaymentRequest(BaseModel):
+    """Request schema for card payment processing."""
+
+    token: str = Field(..., min_length=1)
+    payment_method_id: str = Field(..., min_length=1)
+    installments: int = Field(1, ge=1, le=12)
+    payer_email: str = Field(..., min_length=1)
 
 logger = logging.getLogger(__name__)
 
@@ -207,4 +222,70 @@ async def mercadopago_webhook(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to process payment notification",
+        ) from e
+
+
+@router.post("/process-card", status_code=status.HTTP_200_OK)
+async def process_card_payment_endpoint(
+    order_id: int = Query(..., description="Order ID to process card payment for"),
+    body: CardPaymentRequest = ...,
+    current_user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+    uow: UnitOfWork = Depends(get_uow),
+) -> dict:
+    """Process a card payment for an order via MercadoPago.
+
+    Uses a card token from the frontend (obtained via MercadoPago CardForm)
+    to charge the card directly. Transitions the order FSM based on the
+    payment result.
+
+    Requires authentication. Only the order owner can pay.
+
+    Args:
+        order_id: ID of the order to pay
+        body: Card payment details (token, payment_method_id, installments, payer_email)
+        current_user: Authenticated user
+        settings: Application settings
+        uow: Unit of work for database access
+
+    Returns:
+        dict: MercadoPago payment response with status and details
+
+    Raises:
+        HTTPException 404: Order not found
+        HTTPException 403: Not authorized
+        HTTPException 500: Payment processing failed
+    """
+    result = await uow.session.execute(select(Order).where(Order.id == order_id))
+    order = result.scalar_one_or_none()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order {order_id} not found",
+        )
+
+    if order.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to process payment for this order",
+        )
+
+    try:
+        payment_response = await process_card_payment(
+            order=order,
+            token=body.token,
+            payment_method_id=body.payment_method_id,
+            installments=body.installments,
+            payer_email=body.payer_email,
+            settings=settings,
+            uow=uow,
+        )
+        await uow.commit()
+        return payment_response
+    except ValueError as e:
+        logger.error("Failed to process card payment for order %d: %s", order_id, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Card payment processing failed: {str(e)}",
         ) from e

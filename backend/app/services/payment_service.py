@@ -115,6 +115,101 @@ def map_mp_status_to_fsm(mp_status: str) -> str | None:
     return status_mapping.get(mp_status.lower())
 
 
+async def process_card_payment(
+    order: Order,
+    token: str,
+    payment_method_id: str,
+    installments: int,
+    payer_email: str,
+    settings: Settings,
+    uow: UnitOfWork,
+) -> dict:
+    """Process a card payment via MercadoPago SDK.
+
+    Creates a payment directly using a card token (for frontend
+    card form integration), transitions the order FSM, and stores
+    a Pago record.
+
+    Args:
+        order: Order being paid
+        token: Card token from MercadoPago SDK (CardForm)
+        payment_method_id: Payment method ID (e.g. "visa", "master")
+        installments: Number of installments
+        payer_email: Buyer's email
+        settings: App settings with MP credentials
+        uow: Unit of work for database access
+
+    Returns:
+        dict: Full MP payment response with status and details
+
+    Raises:
+        ValueError: If MP credentials missing or payment fails
+    """
+    if not settings.mp_access_token:
+        raise ValueError("MercadoPago access token not configured")
+
+    sdk = mercadopago.SDK(settings.mp_access_token)
+
+    payment_data = {
+        "transaction_amount": float(order.total_amount),
+        "token": token,
+        "description": f"Order #{order.id}",
+        "installments": installments,
+        "payment_method_id": payment_method_id,
+        "notification_url": settings.mp_notification_url,
+        "payer": {
+            "email": payer_email,
+        },
+    }
+
+    response = sdk.payment().create(payment_data)
+
+    if response["status"] >= 400:
+        logger.error("MercadoPago card payment failed: %s", response)
+        raise ValueError(f"MercadoPago payment error: {response.get('response', {})}")
+
+    payment_response = response.get("response", {})
+    mp_status = payment_response.get("status", "")
+    status_detail = payment_response.get("status_detail", "")
+    mp_payment_id = str(payment_response.get("id", ""))
+
+    # Map MP status to FSM state and transition the order
+    fsm_state = map_mp_status_to_fsm(mp_status)
+    if fsm_state:
+        motivos = {
+            "CONFIRMADO": "Pago con tarjeta confirmado",
+            "CANCELADO": f"Pago con tarjeta rechazado: {status_detail}",
+            "PENDIENTE": "Pago con tarjeta en proceso",
+        }
+        motivo = motivos.get(fsm_state, f"Pago con tarjeta MP estado: {mp_status}")
+        await transition(
+            order,
+            fsm_state,
+            usuario_id=None,
+            session=uow.session,
+            motivo=motivo,
+        )
+
+    # Store payment record
+    pago = Pago(
+        pedido_id=order.id,
+        monto=order.total_amount,
+        mp_payment_id=mp_payment_id,
+        mp_status=mp_status,
+        mp_status_detail=status_detail,
+        mp_raw_response=payment_response,
+    )
+
+    uow.session.add(pago)
+    await uow.flush()
+
+    logger.info(
+        "Card payment processed for order %d: MP payment_id=%s, status=%s",
+        order.id, mp_payment_id, mp_status,
+    )
+    return payment_response
+
+
 async def create_preference(
     order: Order,
     settings: Settings,

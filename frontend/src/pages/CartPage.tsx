@@ -8,7 +8,10 @@ import { useCartContext } from "../context/CartContext";
 import { usePaymentStore } from "../store/paymentStore";
 import { useAuthStore } from "../store/authStore";
 import { paymentApi } from "../api/paymentApi";
-import { ShoppingBag, Package, Trash2, Plus, Minus, ArrowLeft, CreditCard, Loader2 } from "lucide-react";
+import { CardPaymentForm } from "../components/CardPaymentForm";
+import { ShoppingBag, Package, Trash2, Plus, Minus, ArrowLeft, CreditCard, Loader2, Landmark } from "lucide-react";
+
+type PaymentMethod = "redirect" | "card";
 
 export function CartPage() {
   const {
@@ -27,8 +30,12 @@ export function CartPage() {
   const navigate = useNavigate();
   const { setPreference } = usePaymentStore();
   const accessToken = useAuthStore((s) => s.accessToken);
+  const user = useAuthStore((s) => s.user);
   const [shippingAddress, setShippingAddress] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
+  const [cardError, setCardError] = useState<string | null>(null);
 
   const handleMpCheckout = async () => {
     if (!shippingAddress.trim()) return;
@@ -47,6 +54,39 @@ export function CartPage() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleCardCheckout = async () => {
+    if (!shippingAddress.trim()) return;
+    if (!accessToken) return;
+    setIsProcessing(true);
+    setCardError(null);
+    try {
+      const checkoutResult = await checkout({ shipping_address: shippingAddress });
+      const orderId = checkoutResult.order_id;
+      if (!orderId) throw new Error("No se pudo crear la orden");
+      setCurrentOrderId(orderId);
+      setPaymentMethod("card");
+    } catch (err) {
+      setCardError(err instanceof Error ? err.message : "Error al crear la orden");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCardSuccess = (paymentId: number) => {
+    navigate(`/payment/success?payment_id=${paymentId}`);
+  };
+
+  const handleCardError = (errMsg: string) => {
+    setCardError(errMsg);
+    setPaymentMethod(null);
+  };
+
+  const handleBackToMethods = () => {
+    setPaymentMethod(null);
+    setCurrentOrderId(null);
+    setCardError(null);
   };
 
   if (isLoading) {
@@ -185,59 +225,105 @@ export function CartPage() {
         </div>
 
         <div className="lg:sticky lg:top-6 lg:self-start">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumen</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm text-text-primary">
-                <span>Subtotal</span>
-                <span>${Number(subtotal).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm text-text-primary">
-                <span>IVA (10%)</span>
-                <span>${Number(tax).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between border-t-2 border-primary pt-4 text-lg font-bold text-primary">
-                <span>Total</span>
-                <span>${Number(total).toFixed(2)}</span>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="shipping-address" className="text-sm font-medium text-text-primary">
-                  Dirección de envío
-                </label>
-                <input
-                  id="shipping-address"
-                  type="text"
-                  value={shippingAddress}
-                  onChange={(e) => setShippingAddress(e.target.value)}
-                  placeholder="Calle y número, ciudad, código postal"
-                  className="w-full rounded-lg border-2 border-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none"
-                />
-              </div>
+          {paymentMethod === "card" && currentOrderId ? (
+            <div className="space-y-4">
+              <CardPaymentForm
+                amount={Number(total)}
+                orderId={currentOrderId}
+                payerEmail={user?.email ?? ""}
+                onSuccess={handleCardSuccess}
+                onError={handleCardError}
+              />
               <Button
-                variant="default"
-                size="lg"
-                className="w-full gap-2"
-                disabled={!shippingAddress.trim() || isProcessing}
-                onClick={handleMpCheckout}
-              >
-                {isProcessing ? (
-                  <Icon icon={Loader2} size={18} className="animate-spin" />
-                ) : (
-                  <Icon icon={CreditCard} size={18} />
-                )}
-                {isProcessing ? "Procesando..." : "Pagar con MercadoPago"}
-              </Button>
-              <Link
-                to="/products"
-                className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-border bg-surface-card px-4 py-3 text-sm font-semibold text-text-primary transition-all hover:bg-surface-alt"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleBackToMethods}
               >
                 <Icon icon={ArrowLeft} size={16} />
-                Seguir comprando
-              </Link>
-            </CardContent>
-          </Card>
+                Volver a métodos de pago
+              </Button>
+            </div>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumen</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between text-sm text-text-primary">
+                  <span>Subtotal</span>
+                  <span>${Number(subtotal).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-text-primary">
+                  <span>IVA (10%)</span>
+                  <span>${Number(tax).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between border-t-2 border-primary pt-4 text-lg font-bold text-primary">
+                  <span>Total</span>
+                  <span>${Number(total).toFixed(2)}</span>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="shipping-address" className="text-sm font-medium text-text-primary">
+                    Dirección de envío
+                  </label>
+                  <input
+                    id="shipping-address"
+                    type="text"
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    placeholder="Calle y número, ciudad, código postal"
+                    className="w-full rounded-lg border-2 border-border bg-surface-card px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                {cardError && (
+                  <div className="rounded-lg bg-danger/10 p-3 text-sm text-danger" role="alert">
+                    {cardError}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="default"
+                    size="lg"
+                    className="w-full gap-2"
+                    disabled={!shippingAddress.trim() || isProcessing}
+                    onClick={handleMpCheckout}
+                  >
+                    {isProcessing ? (
+                      <Icon icon={Loader2} size={18} className="animate-spin" />
+                    ) : (
+                      <Icon icon={CreditCard} size={18} />
+                    )}
+                    {isProcessing ? "Procesando..." : "Pagar con MercadoPago"}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full gap-2"
+                    disabled={!shippingAddress.trim() || isProcessing}
+                    onClick={handleCardCheckout}
+                  >
+                    {isProcessing ? (
+                      <Icon icon={Loader2} size={18} className="animate-spin" />
+                    ) : (
+                      <Icon icon={Landmark} size={18} />
+                    )}
+                    Pagar con Tarjeta
+                  </Button>
+                </div>
+
+                <Link
+                  to="/products"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-border bg-surface-card px-4 py-3 text-sm font-semibold text-text-primary transition-all hover:bg-surface-alt"
+                >
+                  <Icon icon={ArrowLeft} size={16} />
+                  Seguir comprando
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
