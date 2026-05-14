@@ -17,6 +17,7 @@ import { useOrders } from "../hooks/useOrders";
 import { useBranches } from "../hooks/useBranches";
 import { useProducts } from "../hooks/useProducts";
 import { useCart } from "../hooks/useCart";
+import { useWishlist } from "../hooks/useWishlist";
 import type { Branch } from "../types/branch";
 import type { Product } from "../types/product";
 import { OrdersByStatusChart } from "../components/OrdersByStatusChart";
@@ -35,6 +36,7 @@ import {
   ShoppingCart,
   Check,
   AlertCircle,
+  Heart,
 } from "lucide-react";
 
 /* ─── ADMIN DASHBOARD COMPONENT ─── */
@@ -511,9 +513,36 @@ function AdminDashboardPage() {
 function UserShopPage() {
   const { products, isLoading } = useProducts();
   const { addItem, isLoading: cartLoading } = useCart();
+  const { items: wishlistItems, toggle: toggleWishlist } = useWishlist();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [addingProductId, setAddingProductId] = useState<number | null>(null);
+  const [favLoadingId, setFavLoadingId] = useState<number | null>(null);
+
+  // Set of favorited product IDs for fast lookup
+  const favoriteIds = useMemo(
+    () => new Set(wishlistItems.map((item) => item.product_id)),
+    [wishlistItems],
+  );
+
+  // Sort: favorited products first
+  const sortedProducts = useMemo(() => {
+    if (!products || favoriteIds.size === 0) return products;
+    return [...products].sort((a, b) => {
+      const aFav = favoriteIds.has(a.id) ? 1 : 0;
+      const bFav = favoriteIds.has(b.id) ? 1 : 0;
+      return bFav - aFav;
+    });
+  }, [products, favoriteIds]);
+
+  const handleToggleFavorite = async (productId: number) => {
+    setFavLoadingId(productId);
+    try {
+      await toggleWishlist(productId);
+    } finally {
+      setFavLoadingId(null);
+    }
+  };
 
   const handleAddToCart = async (product: Product) => {
     try {
@@ -586,15 +615,15 @@ function UserShopPage() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {products && products.length > 0 ? (
-          products.map((product: Product) => (
+        {sortedProducts && sortedProducts.length > 0 ? (
+          sortedProducts.map((product: Product) => (
             <div key={product.id}>
               <Card variant="interactive" className="h-full hover:shadow-lg transition-shadow">
                 <CardContent className="p-4 h-full flex flex-col">
                   {/* Image Placeholder */}
                   <Link
                     to={`/products/${product.id}`}
-                    className="w-full h-40 bg-surface-alt rounded-lg mb-3 flex items-center justify-center hover:bg-surface-alt/80 transition-colors group"
+                    className="relative w-full h-40 bg-surface-alt rounded-lg mb-3 flex items-center justify-center hover:bg-surface-alt/80 transition-colors group"
                   >
                     {product.image_url ? (
                       <img
@@ -605,6 +634,36 @@ function UserShopPage() {
                     ) : (
                       <Icon icon={Package} size={40} className="text-text-muted group-hover:scale-110 transition-transform" />
                     )}
+
+                    {/* Favorite heart button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleToggleFavorite(product.id);
+                      }}
+                      disabled={favLoadingId === product.id}
+                      className={`absolute top-2 right-2 rounded-full p-1.5 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                        favLoadingId === product.id ? "animate-pulse" : "hover:scale-110"
+                      } ${
+                        favoriteIds.has(product.id)
+                          ? "text-red-500"
+                          : "text-gray-400 hover:text-red-400"
+                      }`}
+                      aria-label={
+                        favoriteIds.has(product.id)
+                          ? "Quitar de favoritos"
+                          : "Agregar a favoritos"
+                      }
+                    >
+                      <Heart
+                        size={18}
+                        className={`transition-all duration-200 ${
+                          favoriteIds.has(product.id) ? "fill-red-500" : "fill-none"
+                        }`}
+                      />
+                    </button>
                   </Link>
 
                   {/* Product Info */}

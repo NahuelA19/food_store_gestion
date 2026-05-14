@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
 import { useSearch } from '../hooks/useSearch';
 import { SearchBar } from '../components/SearchBar';
 import { FilterPanel } from '../components/FilterPanel';
 import { SearchResults } from '../components/SearchResults';
 import { useAuthStore } from '../store/authStore';
+import { useWishlist } from '../hooks/useWishlist';
 import { PlusCircle } from 'lucide-react';
 
 export function ProductsPage() {
@@ -23,6 +25,11 @@ export function ProductsPage() {
     resetFilters,
     clearSearch,
   } = useSearch();
+  const { items: wishlistItems, toggle } = useWishlist();
+  const favoriteIds = useMemo(
+    () => new Set(wishlistItems.map((item) => item.product_id)),
+    [wishlistItems],
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -72,6 +79,8 @@ export function ProductsPage() {
             error={error}
             onPageChange={setPage}
             onProductClick={(id) => navigate(`/products/${id}`)}
+            favoriteIds={favoriteIds}
+            onToggleFavorite={toggle}
           />
         </main>
       </div>

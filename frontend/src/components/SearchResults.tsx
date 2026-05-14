@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { SkeletonCard } from "@/components/ui/Skeleton";
-import { Package, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Package, Search, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import type { Product, PaginationInfo } from "../hooks/useSearch";
-
 export interface SearchResultsProps {
   items: Product[];
   pagination: PaginationInfo;
@@ -14,14 +13,39 @@ export interface SearchResultsProps {
   error?: string | null;
   onPageChange: (page: number) => void;
   onProductClick: (productId: number) => void;
+  favoriteIds?: Set<number>;
+  onToggleFavorite?: (productId: number) => void;
 }
 
-function ProductCardItem({ product, onClick }: { product: Product; onClick: () => void }) {
+function ProductCardItem({
+  product,
+  onClick,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  product: Product;
+  onClick: () => void;
+  isFavorite: boolean;
+  onToggleFavorite?: (productId: number) => void;
+}) {
   const [imgError, setImgError] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
   const inStock =
     product.inventory &&
     product.inventory.stock_quantity > product.inventory.low_stock_threshold;
   const hasImage = product.image_url && !imgError;
+
+  const handleFavorite = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (favLoading || !onToggleFavorite) return;
+    setFavLoading(true);
+    try {
+      await onToggleFavorite(product.id);
+    } finally {
+      setFavLoading(false);
+    }
+  };
 
   return (
     <Card variant="interactive" onClick={onClick}>
@@ -61,6 +85,30 @@ function ProductCardItem({ product, onClick }: { product: Product; onClick: () =
               )}
             </div>
           </div>
+
+          {/* Favorite button */}
+          {onToggleFavorite && (
+            <button
+              type="button"
+              onClick={handleFavorite}
+              disabled={favLoading}
+              className={`shrink-0 rounded-full p-1.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                favLoading ? "animate-pulse" : "hover:scale-110"
+              } ${
+                isFavorite
+                  ? "text-red-500"
+                  : "text-gray-400 hover:text-red-400 dark:text-gray-500"
+              }`}
+              aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+            >
+              <Heart
+                size={18}
+                className={`transition-all duration-200 ${
+                  isFavorite ? "fill-red-500" : "fill-none"
+                }`}
+              />
+            </button>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -74,7 +122,20 @@ export function SearchResults({
   error,
   onPageChange,
   onProductClick,
+  favoriteIds,
+  onToggleFavorite,
 }: SearchResultsProps) {
+  // Sort: favorited products first
+  const sortedItems = useMemo(() => {
+    if (!favoriteIds || favoriteIds.size === 0) return items;
+    return [...items].sort((a, b) => {
+      const aFav = favoriteIds.has(a.id) ? 1 : 0;
+      const bFav = favoriteIds.has(b.id) ? 1 : 0;
+      return bFav - aFav;
+    });
+  }, [items, favoriteIds]);
+
+  const displayItems = sortedItems;
   if (error) {
     return (
       <div className="rounded-xl border border-danger/20 bg-danger-bg p-6 text-center">
@@ -119,11 +180,13 @@ export function SearchResults({
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((product) => (
+        {displayItems.map((product) => (
           <ProductCardItem
             key={product.id}
             product={product}
             onClick={() => onProductClick(product.id)}
+            isFavorite={favoriteIds?.has(product.id) ?? false}
+            onToggleFavorite={onToggleFavorite}
           />
         ))}
       </div>
