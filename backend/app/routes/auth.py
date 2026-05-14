@@ -98,6 +98,7 @@ async def register(
         access_token=access_token,
         refresh_token=raw_refresh,
         token_type="bearer",
+        role=new_user.role,
     )
 
 
@@ -158,6 +159,7 @@ async def login(
         access_token=access_token,
         refresh_token=raw_refresh,
         token_type="bearer",
+        role=user.role,
     )
 
 

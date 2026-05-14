@@ -336,10 +336,18 @@ async def simulate_payment(
         await transition(
             order,
             "CONFIRMADO",
-            usuario_id=None,
+            usuario_id=current_user.id,
             session=uow.session,
             motivo="Pago simulado para pruebas",
         )
+
+        # Mark payment as succeeded and record timestamp
+        from datetime import datetime, timezone
+        from app.models.order import PaymentStatus
+        order.payment_status = PaymentStatus.APPROVED
+        order.paid_at = datetime.now(timezone.utc)
+        order.payment_method = "MERCADOPAGO"
+        uow.session.add(order)
         
         # Create a simulated payment record
         pago = Pago(

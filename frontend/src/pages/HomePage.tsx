@@ -268,7 +268,7 @@ function AdminDashboardPage() {
     if (apiOrders.length > 0) {
       return apiOrders.slice(0, 5).map((o) => ({
         id: o.id,
-        customer: `Usuario #${o.user_id}`,
+        customer: o.user_email || `Usuario #${o.user_id}`,
         status: o.status,
         total: Number(o.total_amount),
       }));
@@ -658,7 +658,7 @@ function UserShopPage() {
 
 export function HomePage() {
   const user = useAuthStore((s) => s.user);
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role?.toLowerCase() === "admin";
 
   // Si es usuario normal, mostrar catálogo de productos
   if (!isAdmin) {

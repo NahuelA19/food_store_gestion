@@ -30,6 +30,7 @@ class PaymentStatus(str, Enum):
 
     PENDING = "pending"
     SUCCEEDED = "succeeded"
+    APPROVED = "approved"   # MercadoPago uses 'approved'; also stored by seeds
     FAILED = "failed"
     REFUNDED = "refunded"
 
@@ -70,7 +71,7 @@ class Order(Base, TimestampMixin):
         index=True,
     )
     status: Mapped[OrderStatus] = mapped_column(
-        SQLEnum(OrderStatus),
+        SQLEnum(OrderStatus, native_enum=False),
         default=OrderStatus.PAYMENT_PENDING,
         nullable=False,
         index=True,
@@ -94,8 +95,10 @@ class Order(Base, TimestampMixin):
     )
 
     # Payment fields (MercadoPago)
+    # values_callable ensures SQLAlchemy stores/reads .value strings (lowercase)
+    # matching the PostgreSQL paymentstatus enum: pending, approved, succeeded, etc.
     payment_status: Mapped[PaymentStatus | None] = mapped_column(
-        SQLEnum(PaymentStatus),
+        SQLEnum(PaymentStatus, values_callable=lambda x: [e.value for e in x], native_enum=False),
         default=PaymentStatus.PENDING,
         nullable=True,
     )

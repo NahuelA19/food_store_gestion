@@ -41,13 +41,16 @@ FSM_TRANSITIONS: dict[str, list[str]] = {
 }
 
 # Map FSM codigo → OrderStatus for backward compatibility of the `status` column
+# IMPORTANT: PostgreSQL SQLEnum stores the Python enum member NAME (key), not the .value string.
+# The DB has: PENDING, CONFIRMED, DELIVERED, CANCELLED, EN_PREP, EN_CAMINO, PENDIENTE, etc.
+# We map to enum members whose NAME matches what the DB already stores.
 _FSM_TO_STATUS: dict[str, OrderStatus] = {
-    "PENDIENTE": OrderStatus.PENDIENTE,
-    "CONFIRMADO": OrderStatus.CONFIRMADO,
-    "EN_PREP": OrderStatus.EN_PREP,
-    "EN_CAMINO": OrderStatus.EN_CAMINO,
-    "ENTREGADO": OrderStatus.ENTREGADO,
-    "CANCELADO": OrderStatus.CANCELADO,
+    "PENDIENTE": OrderStatus.PENDIENTE,   # Name=PENDIENTE, DB stores 'PENDIENTE' ✓
+    "CONFIRMADO": OrderStatus.CONFIRMED,  # Name=CONFIRMED, DB stores 'CONFIRMED' ✓
+    "EN_PREP": OrderStatus.EN_PREP,       # Name=EN_PREP, DB stores 'EN_PREP' ✓
+    "EN_CAMINO": OrderStatus.EN_CAMINO,   # Name=EN_CAMINO, DB stores 'EN_CAMINO' ✓
+    "ENTREGADO": OrderStatus.DELIVERED,   # Name=DELIVERED, DB stores 'DELIVERED' ✓
+    "CANCELADO": OrderStatus.CANCELLED,   # Name=CANCELLED, DB stores 'CANCELLED' ✓
 }
 
 # Reverse map: OrderStatus → FSM codigo
@@ -243,6 +246,7 @@ async def get_user_orders(
     result = await uow.session.execute(
         select(Order)
         .where(Order.user_id == user_id)
+        .options(selectinload(Order.user))
         .order_by(Order.created_at.desc())
         .offset(offset)
         .limit(limit)
@@ -256,6 +260,7 @@ async def get_user_orders(
             OrderResponse(
                 id=o.id,
                 user_id=o.user_id,
+                user_email=o.user.email if o.user else None,
                 status=o.status.value if hasattr(o.status, "value") else o.status,
                 total_amount=o.total_amount,
                 created_at=o.created_at,
@@ -293,6 +298,7 @@ async def get_order_detail(
         select(Order)
         .where(Order.id == order_id)
         .options(selectinload(Order.items).selectinload(OrderItem.product))
+        .options(selectinload(Order.user))
     )
     order = result.scalar_one_or_none()
 
@@ -332,6 +338,7 @@ async def get_order_detail(
     return OrderDetailResponse(
         id=order.id,
         user_id=order.user_id,
+        user_email=order.user.email if order.user else None,
         status=order.status.value if hasattr(order.status, "value") else order.status,
         total_amount=order.total_amount,
         status_history=status_history,

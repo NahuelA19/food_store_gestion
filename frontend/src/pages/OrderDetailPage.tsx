@@ -348,7 +348,7 @@ export function OrderDetailPage() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-text-primary">
-                      Usuario #{order.user_id}
+                      {order.user_email || `Usuario #${order.user_id}`}
                     </p>
                   </div>
                 </div>

@@ -152,7 +152,10 @@ export function CartPage() {
     );
   }
 
-  if (items.length === 0) {
+  // Only show empty state when there's no active payment in progress.
+  // After checkout(), the cart query is invalidated and returns 0 items,
+  // but we still need to show the payment form (currentOrderId is set).
+  if (items.length === 0 && !currentOrderId) {
     return (
       <div className="flex flex-col items-center gap-4 px-6 py-16 text-center">
         <Icon icon={ShoppingBag} size={48} className="text-text-muted opacity-60" />

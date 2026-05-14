@@ -77,7 +77,7 @@ export function OrdersPage() {
     if (apiOrders.length > 0) {
       return apiOrders.map((o: OrderType) => ({
         id: o.id,
-        customer: `Usuario #${o.user_id}`,
+        customer: o.user_email || `Usuario #${o.user_id}`,
         status: o.status,
         total: Number(o.total_amount),
         date: o.created_at ? o.created_at.split("T")[0] : "",

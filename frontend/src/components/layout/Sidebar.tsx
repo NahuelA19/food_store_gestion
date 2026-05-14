@@ -38,7 +38,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     return location.pathname.startsWith(path);
   };
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role?.toLowerCase() === "admin";
 
   // Diferentes menús según el rol
   const navSections = isAdmin

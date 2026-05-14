@@ -2,13 +2,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 export const paymentApi = {
   async createPreference(orderId: number, authToken: string) {
-    const res = await fetch(`${API_URL}/payments/preference`, {
+    const res = await fetch(`${API_URL}/payments/preference?order_id=${orderId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`,
       },
-      body: JSON.stringify({ order_id: orderId }),
     });
     if (!res.ok) throw new Error('Failed to create payment preference');
     return res.json() as Promise<{ preference_id: string; init_point: string }>;

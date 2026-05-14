@@ -18,38 +18,94 @@ export interface OrdersByStatusChartProps {
   data: Record<string, number>;
 }
 
-/* ─── Color palette for statuses ─── */
+/* ─── Color palette for statuses ───
+ *
+ * Keys are LOWERCASE because the dashboard endpoint normalizes with
+ * LOWER(status::text) so the frontend receives consistent lowercase keys.
+ * Both English and Spanish variants are covered for robustness.
+ */
 
 const STATUS_COLORS: Record<string, string> = {
+  // Pendiente / Pending
+  pendiente: "#f59e0b",
   pending: "#f59e0b",
-  confirmed: "#3b82f6",
-  preparing: "#8b5cf6",
-  ready: "#10b981",
-  shipped: "#06b6d4",
-  delivered: "#059669",
-  cancelled: "#ef4444",
+
+  // Pago pendiente
+  pago_pendiente: "#f59e0b",
   payment_pending: "#f59e0b",
-  payment_failed: "#ef4444",
+
+  // Pagado / Paid
+  pagado: "#10b981",
   paid: "#10b981",
+
+  // Pago fallido
+  pago_fallido: "#ef4444",
+  payment_failed: "#ef4444",
+
+  // Confirmado / Confirmed
+  confirmado: "#3b82f6",
+  confirmed: "#3b82f6",
+
+  // En preparación / Preparando / Preparing
+  preparando: "#8b5cf6",
+  en_prep: "#8b5cf6",
+
+  // Listo / Ready
+  listo: "#10b981",
+
+  // En camino / Enviado / Shipped
+  en_camino: "#06b6d4",
+  shipped: "#06b6d4",
+
+  // Entregado / Delivered
+  entregado: "#059669",
+  delivered: "#059669",
+
+  // Cancelado / Cancelled
+  cancelado: "#ef4444",
+  cancelled: "#ef4444",
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  payment_pending: "Pendiente",
-  payment_failed: "Pago Fallido",
-  paid: "Pagado",
+  pendiente: "Pendiente",
   pending: "Pendiente",
+  pago_pendiente: "Pago Pendiente",
+  payment_pending: "Pago Pendiente",
+  pagado: "Pagado",
+  paid: "Pagado",
+  pago_fallido: "Pago Fallido",
+  payment_failed: "Pago Fallido",
+  confirmado: "Confirmado",
   confirmed: "Confirmado",
-  preparing: "Preparando",
-  ready: "Listo",
+  preparando: "Preparando",
+  en_prep: "En Preparación",
+  listo: "Listo",
+  en_camino: "En Camino",
   shipped: "Enviado",
+  entregado: "Entregado",
   delivered: "Entregado",
+  cancelado: "Cancelado",
   cancelled: "Cancelado",
 };
 
 const DEFAULT_COLOR = "#6b7280";
 
+/** Merge status synonyms that represent the same business state. */
+function normalizeData(data: Record<string, number>): Record<string, number> {
+  const MERGE_MAP: Record<string, string> = {
+    pending: "pendiente",
+  };
+  const result: Record<string, number> = {};
+  for (const [key, count] of Object.entries(data)) {
+    const canonical = MERGE_MAP[key] ?? key;
+    result[canonical] = (result[canonical] ?? 0) + count;
+  }
+  return result;
+}
+
 export function OrdersByStatusChart({ data }: OrdersByStatusChartProps) {
-  const chartData = Object.entries(data).map(([status, count]) => ({
+  const normalized = normalizeData(data);
+  const chartData = Object.entries(normalized).map(([status, count]) => ({
     name: STATUS_LABELS[status] || status,
     value: count,
     color: STATUS_COLORS[status] || DEFAULT_COLOR,

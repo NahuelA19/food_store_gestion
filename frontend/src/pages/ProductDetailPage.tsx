@@ -179,7 +179,7 @@ export const ProductDetailPage: React.FC = () => {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {useAuthStore.getState().user?.role === "admin" && (
+                {useAuthStore.getState().user?.role?.toLowerCase() === "admin" && (
                   <Link
                     to={`/products/${product.id}/edit`}
                     className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm font-semibold text-text-secondary transition-all hover:border-brand-300 hover:text-brand-600"

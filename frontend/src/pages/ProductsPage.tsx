@@ -31,7 +31,7 @@ export function ProductsPage() {
           <h1 className="font-display text-3xl font-bold text-text-primary">Products</h1>
           <p className="mt-1 text-text-secondary">Browse our collection of fresh food products</p>
         </div>
-        {user?.role === "admin" && (
+        {user?.role?.toLowerCase() === "admin" && (
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate("/products/new")}

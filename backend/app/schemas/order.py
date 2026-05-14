@@ -1,5 +1,7 @@
 """Order Pydantic schemas for validation and serialization."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from decimal import Decimal
 
@@ -24,6 +26,7 @@ class OrderResponse(BaseModel):
 
     id: int
     user_id: int
+    user_email: str | None = None
     status: str
     total_amount: Decimal
     created_at: datetime
@@ -36,9 +39,10 @@ class OrderDetailResponse(BaseModel):
 
     id: int
     user_id: int
+    user_email: str | None = None
     status: str
     total_amount: Decimal
-    status_history: list[dict] | None = None
+    status_history: list[HistorialResponse] | None = None
     payment_status: str | None = None
     payment_method: str | None = None
     paid_at: datetime | None = None

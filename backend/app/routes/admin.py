@@ -27,49 +27,10 @@ from app.schemas.order import (
 #     pending, confirmed, shipped, delivered, cancelled
 # The Python OrderStatus enum has different values (payment_pending, paid, etc.)
 # We use raw text() queries for status comparisons until the DB enum is migrated.
-_DB_STATUS_PENDING = "pending"
-
-logger = logging.getLogger(__name__)
-
-router = APIRouter(prefix="/admin", tags=["admin"])
-
-
-@router.get("/orders", response_model=OrderListResponse)
-async def admin_list_all_orders(
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
-    status_filter: str | None = Query(None, alias="status", description="Filter by order status"),
-    current_user: User = Depends(get_admin_user),
-    uow: UnitOfWork = Depends(get_uow),
-) -> OrderListResponse:
-    """List ALL orders (admin only). Supports pagination and status filtering."""
-    query = select(Order)
-
-    if status_filter:
-        # Map common status names to DB enum values
-        _status_map = {
-            "pending": "pending",
-            "payment_pending": "pending",
-            "confirmed": "confirmed",
-            "shipped": "shipped",
-            "delivered": "delivered",
-            "cancelled": "cancelled",
-        }
-        db_status = _status_map.get(status_filter.lower())
-        if not db_status:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid status: '{status_filter}'",
-            ) from None
-        query = query.where(text("status::text = :st")).params(st=db_status)
-
-    count_query = select(func.count()).select_from(query.subquery())
-    count_result = await uow.session.execute(count_query)
-    total = count_result.scalar_one()
-
-    offset = (page - 1) * limit
-    result = await uow.session.execute(
-        query.order_by(Order.created_at.desc()).offset(offset).limit(limit)
+    _DB_STATUS_PENDING = "pending"
+    pending_result = await uow.session.execute(
+        text("SELECT COUNT(*) FROM orders WHERE LOWER(status::text) = :st"),
+        {"st": _DB_STATUS_PENDING},
     )
     orders = result.scalars().all()
 
@@ -80,6 +41,7 @@ async def admin_list_all_orders(
             OrderResponse(
                 id=o.id,
                 user_id=o.user_id,
+                user_email=o.user.email if o.user else None,
                 status=o.status.value if hasattr(o.status, "value") else o.status,
                 total_amount=o.total_amount,
                 created_at=o.created_at,
@@ -104,6 +66,7 @@ async def admin_get_order_detail(
         select(Order)
         .where(Order.id == order_id)
         .options(selectinload(Order.items).selectinload(OrderItem.product))
+        .options(selectinload(Order.user))
     )
     order = result.scalar_one_or_none()
 
@@ -135,6 +98,7 @@ async def admin_get_order_detail(
     return OrderDetailResponse(
         id=order.id,
         user_id=order.user_id,
+        user_email=order.user.email if order.user else None,
         status=order.status.value if hasattr(order.status, "value") else order.status,
         total_amount=order.total_amount,
         status_history=status_history,
@@ -202,9 +166,9 @@ async def admin_dashboard_stats(
     )
     monthly_revenue = float(monthly_result.scalar_one())
 
-    # Orders by status (using DB enum values)
+    # Orders by status (normalized to lowercase for frontend chart)
     status_counts_result = await uow.session.execute(
-        text("SELECT status::text, COUNT(*) FROM orders GROUP BY status")
+        text("SELECT LOWER(status::text), COUNT(*) FROM orders GROUP BY status")
     )
     orders_by_status = {row[0]: row[1] for row in status_counts_result.all()}
 

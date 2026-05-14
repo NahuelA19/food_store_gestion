@@ -151,7 +151,7 @@ export function useAuth() {
 
   return {
     user: user
-      ? { id: user.id, email: user.email, first_name: user.firstName, last_name: user.lastName, phone: "" }
+      ? { id: user.id, email: user.email, first_name: user.firstName, last_name: user.lastName, role: user.role, phone: "" }
       : null,
     isAuthenticated,
     isLoading: loginMutation.isPending || registerMutation.isPending,
