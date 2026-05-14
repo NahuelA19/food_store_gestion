@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearch } from '../hooks/useSearch';
 import { SearchBar } from '../components/SearchBar';
 import { FilterPanel } from '../components/FilterPanel';
@@ -35,6 +35,20 @@ export function ProductsPage() {
   const [optimisticFavs, setOptimisticFavs] = useState<Set<number> | null>(null);
   const favoriteIds = optimisticFavs ?? baseFavIds;
 
+  // When server data catches up with optimistic state, clear the overlay
+  useEffect(() => {
+    if (!optimisticFavs) return;
+    // If server now has the same state, stop overriding
+    let shouldClear = true;
+    for (const id of optimisticFavs) {
+      if (baseFavIds.has(id) !== optimisticFavs.has(id)) {
+        shouldClear = false;
+        break;
+      }
+    }
+    if (shouldClear) setOptimisticFavs(null);
+  }, [baseFavIds, optimisticFavs]);
+
   const handleToggleFavorite = async (productId: number) => {
     // 1. Optimistic: flip heart immediately (no waiting for refetch)
     setOptimisticFavs((prev) => {
@@ -48,9 +62,7 @@ export function ProductsPage() {
     // 2. Fire real backend toggle
     await toggle(productId);
 
-    // 3. Let the background refetch sync server state — it will update
-    //    baseFavIds and the optimistic overlay will be cleared when
-    //    both match (handled by using optimisticFavs ?? baseFavIds)
+    // 3. Refetch in background will update baseFavIds → useEffect clears overlay
   };
 
   return (

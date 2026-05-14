@@ -27,10 +27,49 @@ from app.schemas.order import (
 #     pending, confirmed, shipped, delivered, cancelled
 # The Python OrderStatus enum has different values (payment_pending, paid, etc.)
 # We use raw text() queries for status comparisons until the DB enum is migrated.
-    _DB_STATUS_PENDING = "pending"
-    pending_result = await uow.session.execute(
-        text("SELECT COUNT(*) FROM orders WHERE LOWER(status::text) = :st"),
-        {"st": _DB_STATUS_PENDING},
+_DB_STATUS_PENDING = "pending"
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.get("/orders", response_model=OrderListResponse)
+async def admin_list_all_orders(
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    status_filter: str | None = Query(None, alias="status", description="Filter by order status"),
+    current_user: User = Depends(get_admin_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> OrderListResponse:
+    """List ALL orders (admin only). Supports pagination and status filtering."""
+    query = select(Order)
+
+    if status_filter:
+        # Map common status names to DB enum values
+        _status_map = {
+            "pending": "pending",
+            "payment_pending": "pending",
+            "confirmed": "confirmed",
+            "shipped": "shipped",
+            "delivered": "delivered",
+            "cancelled": "cancelled",
+        }
+        db_status = _status_map.get(status_filter.lower())
+        if not db_status:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status: '{status_filter}'",
+            ) from None
+        query = query.where(text("status::text = :st")).params(st=db_status)
+
+    count_query = select(func.count()).select_from(query.subquery())
+    count_result = await uow.session.execute(count_query)
+    total = count_result.scalar_one()
+
+    offset = (page - 1) * limit
+    result = await uow.session.execute(
+        query.order_by(Order.created_at.desc()).offset(offset).limit(limit)
     )
     orders = result.scalars().all()
 
@@ -41,7 +80,6 @@ from app.schemas.order import (
             OrderResponse(
                 id=o.id,
                 user_id=o.user_id,
-                user_email=o.user.email if o.user else None,
                 status=o.status.value if hasattr(o.status, "value") else o.status,
                 total_amount=o.total_amount,
                 created_at=o.created_at,

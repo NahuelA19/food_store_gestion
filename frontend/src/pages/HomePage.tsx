@@ -537,6 +537,19 @@ function UserShopPage() {
     });
   }, [products, favoriteIds]);
 
+  // When server data catches up with optimistic state, clear the overlay
+  useEffect(() => {
+    if (!optimisticFavs) return;
+    let shouldClear = true;
+    for (const id of optimisticFavs) {
+      if (baseFavIds.has(id) !== optimisticFavs.has(id)) {
+        shouldClear = false;
+        break;
+      }
+    }
+    if (shouldClear) setOptimisticFavs(null);
+  }, [baseFavIds, optimisticFavs]);
+
   const handleToggleFavorite = async (productId: number) => {
     setFavLoadingId(productId);
 

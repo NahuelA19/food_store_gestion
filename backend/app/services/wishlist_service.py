@@ -56,7 +56,11 @@ async def get_wishlist(
     result = await uow.session.execute(
         select(WishlistItem)
         .where(WishlistItem.user_id == user_id)
-        .options(selectinload(WishlistItem.product).selectinload(Product.category))
+        .options(
+            selectinload(WishlistItem.product)
+            .selectinload(Product.category),
+            selectinload(WishlistItem.product).selectinload(Product.inventory),
+        )
         .order_by(WishlistItem.created_at.desc())
     )
     return list(result.scalars().all())
