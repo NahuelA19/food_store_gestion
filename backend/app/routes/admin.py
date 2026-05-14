@@ -1,6 +1,7 @@
 """Admin API routes for the Food Store."""
 
 import logging
+from datetime import datetime, timedelta, timezone
 from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -154,27 +155,17 @@ async def admin_dashboard_stats(
     current_user: User = Depends(get_admin_user),
     uow: UnitOfWork = Depends(get_uow),
 ) -> DashboardStatsResponse:
-    """Get dashboard KPI statistics (admin only).
-
-    Calculates:
-    - total_orders_today: Orders created today
-    - orders_today_change: % change vs yesterday
-    - total_revenue_today: Revenue from today's orders
-    - revenue_today_change: % change vs yesterday
-    - active_branches: Count of active branches
-    - pending_orders: Orders with PAYMENT_PENDING status
-    - pending_orders_change: % change in pending count vs yesterday
-    - total_products: Count of all products
-    - total_products_change: Products added in the last 7 days (as count change)
-    - monthly_revenue: Revenue this month
-    - monthly_revenue_change: % change vs last month
-    - orders_by_status: Distribution of orders by status
-    """
-    now = func.now()
-    today_start = func.date_trunc("day", now)
-    yesterday_start = today_start - text("INTERVAL '1 day'")
-    month_start = func.date_trunc("month", now)
-    last_month_start = month_start - text("INTERVAL '1 month'")
+    """Get dashboard KPI statistics (admin only)."""
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_start = today_start - timedelta(days=1)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # Calculate last month start correctly
+    if month_start.month == 1:
+        last_month_start = month_start.replace(year=month_start.year - 1, month=12)
+    else:
+        last_month_start = month_start.replace(month=month_start.month - 1)
 
     def _calc_pct(curr, prev):
         if not prev or prev == 0:
@@ -189,7 +180,7 @@ async def admin_dashboard_stats(
     total_orders_today, total_revenue_today = today_orders_result.one()
     total_revenue_today = float(total_revenue_today)
 
-    # 2. Orders and Revenue YESTERDAY (for comparison)
+    # 2. Orders and Revenue YESTERDAY
     yesterday_orders_result = await uow.session.execute(
         select(func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0))
         .where(Order.created_at >= yesterday_start)
@@ -217,7 +208,6 @@ async def admin_dashboard_stats(
     )
     pending_orders = pending_result.scalar_one()
     
-    # Pending yesterday (for change)
     pending_yesterday_result = await uow.session.execute(
         text("SELECT COUNT(*) FROM orders WHERE status::text = :st AND created_at < :ts"),
         {"st": _DB_STATUS_PENDING, "ts": today_start},
@@ -229,12 +219,12 @@ async def admin_dashboard_stats(
     products_result = await uow.session.execute(select(func.count(Product.id)))
     total_products = products_result.scalar_one()
     
-    # Products added in last 7 days (as a trend)
+    seven_days_ago = now - timedelta(days=7)
     new_products_result = await uow.session.execute(
-        select(func.count(Product.id)).where(Product.created_at >= now - text("INTERVAL '7 days'"))
+        select(func.count(Product.id)).where(Product.created_at >= seven_days_ago)
     )
     new_products_count = new_products_result.scalar_one()
-    total_products_change = float(new_products_count) # Return as absolute change for products
+    total_products_change = float(new_products_count)
 
     # 6. Monthly revenue
     monthly_result = await uow.session.execute(
@@ -243,7 +233,6 @@ async def admin_dashboard_stats(
     )
     monthly_revenue = float(monthly_result.scalar_one())
 
-    # Last month revenue
     last_monthly_result = await uow.session.execute(
         select(func.coalesce(func.sum(Order.total_amount), 0))
         .where(Order.created_at >= last_month_start)
