@@ -220,6 +220,9 @@ async def create_preference(
     Creates a preference in MP, stores the payment record in the database,
     and returns the preference_id and init_point (checkout URL).
 
+    When MP credentials are not configured (development/testing), returns
+    a simulated preference that redirects to the order page as success.
+
     Args:
         order: Order to create payment preference for
         settings: App settings with MP credentials
@@ -229,24 +232,71 @@ async def create_preference(
         tuple: (preference_id, init_point) for redirecting to MP checkout
 
     Raises:
-        ValueError: If MP credentials are missing or API fails
+        ValueError: If MP API call fails (only when credentials are present)
     """
-    if not settings.mp_access_token:
-        raise ValueError("MercadoPago access token not configured")
-
-    # Initialize SDK
-    sdk = mercadopago.SDK(settings.mp_access_token)
-
-    # Generate idempotency key to prevent duplicate charges
-    idempotency_key = uuid4()
-
-    # Use order total amount
     total_amount = order.total_amount
 
-    # Generate external reference UUID for IPN webhook matching
+    # ── Simulated mode (no MP credentials) ──────────────────────────
+    if not settings.mp_access_token:
+        logger.warning("MP access token not configured — using simulated payment for order %d", order.id)
+
+        idempotency_key = uuid4()
+        external_ref_uuid = uuid4()
+
+        preference_id = f"SIM-{order.id}"
+        init_point = f"{settings.base_url}/orders/{order.id}?status=success"
+
+        # Simulated MP response
+        simulated_response = {
+            "id": preference_id,
+            "init_point": init_point,
+            "sandbox_init_point": init_point,
+            "status": "simulated",
+        }
+
+        # Store simulated payment record
+        pago = Pago(
+            pedido_id=order.id,
+            idempotency_key=idempotency_key,
+            external_reference=external_ref_uuid,
+            mp_payment_id=preference_id,
+            monto=total_amount,
+            mp_raw_response=simulated_response,
+        )
+        uow.session.add(pago)
+        try:
+            await uow.flush()
+        except IntegrityError:
+            await uow.session.rollback()
+            result = await uow.session.execute(
+                select(Pago).where(Pago.pedido_id == order.id).order_by(Pago.created_at.desc())
+            )
+            existing_pago = result.scalar_one_or_none()
+            if existing_pago:
+                existing_init = existing_pago.mp_raw_response.get("init_point", init_point) if existing_pago.mp_raw_response else init_point
+                return existing_pago.mp_payment_id, existing_init
+
+        logger.info("Created simulated preference for order %d: %s", order.id, preference_id)
+        return preference_id, init_point
+
+    # ── Real mode (MP credentials present) ───────────────────────────
+    sdk = mercadopago.SDK(settings.mp_access_token)
+
+    idempotency_key = uuid4()
     external_ref_uuid = uuid4()
 
-    # Build preference payload
+    # Get payer email safely (eager-load user if needed, fallback for tests)
+    payer_email = getattr(order.user, "email", None) if order.user else None
+    if not payer_email:
+        # Try to query the user if not loaded
+        try:
+            from app.models.user import User
+            result = await uow.session.execute(select(User).where(User.id == order.user_id))
+            user = result.scalar_one_or_none()
+            payer_email = user.email if user else "unknown@example.com"
+        except Exception:
+            payer_email = "unknown@example.com"
+
     preference_data = {
         "items": [
             {
@@ -259,7 +309,7 @@ async def create_preference(
             }
         ],
         "payer": {
-            "email": order.user.email if order.user else "unknown@example.com",
+            "email": payer_email,
         },
         "back_urls": {
             "success": f"{settings.base_url}/orders/{order.id}?status=success",
@@ -267,11 +317,10 @@ async def create_preference(
             "pending": f"{settings.base_url}/orders/{order.id}?status=pending",
         },
         "auto_return": "approved",
-        "external_reference": str(order.id),  # Maps IPN webhook to order (MP uses this in notification)
+        "external_reference": str(order.id),
         "statement_descriptor": "FoodStore",
     }
 
-    # Create preference via SDK
     response = sdk.preference().create(preference_data)
 
     if response["status"] >= 400:
@@ -286,11 +335,10 @@ async def create_preference(
         logger.error("Missing preference_id or init_point in MP response: %s", preference_response)
         raise ValueError("MercadoPago returned incomplete preference data")
 
-    # Store payment record in database
     pago = Pago(
         pedido_id=order.id,
         idempotency_key=idempotency_key,
-        external_reference=external_ref_uuid,  # Internal UUID for tracking
+        external_reference=external_ref_uuid,
         mp_payment_id=preference_id,
         monto=total_amount,
         mp_raw_response=preference_response,
@@ -298,14 +346,11 @@ async def create_preference(
 
     uow.session.add(pago)
 
-    # Attempt to save — catch integrity errors for duplicates
     try:
         await uow.flush()
     except IntegrityError:
-        # Likely duplicate idempotency key (race condition or retry)
         logger.warning("Duplicate payment record for order %d (idempotency key conflict)", order.id)
         await uow.session.rollback()
-        # Re-query the existing pago record
         result = await uow.session.execute(
             select(Pago).where(Pago.pedido_id == order.id).order_by(Pago.created_at.desc())
         )

@@ -54,11 +54,13 @@ def build_search_filters(
 
     # Full-text search filter
     if q:
-        filters.append(
-            Product.search_vector.match(
-                func.plainto_tsquery("english", q)
+        if len(q) < 3:
+            # For very short queries, use ILIKE to avoid stop-word filtering (e.g. "a", "el")
+            filters.append(Product.name.ilike(f"%{q}%"))
+        else:
+            filters.append(
+                Product.search_vector.op("@@")(func.plainto_tsquery("spanish", q))
             )
-        )
 
     # Category filter
     if category_id:
@@ -93,7 +95,7 @@ def build_sort_order(sort_by: str, order: str, q: str | None = None) -> ColumnEl
         # Rank by text search relevance
         return func.ts_rank(
             Product.search_vector,
-            func.plainto_tsquery("english", q)
+            func.plainto_tsquery("spanish", q)
         ).desc()
     else:  # created_at or default
         return Product.created_at.desc() if desc else Product.created_at.asc()

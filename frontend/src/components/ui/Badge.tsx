@@ -10,16 +10,16 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        success: "bg-[color:var(--color-success-bg)] text-[color:var(--color-success-text)]",
-        warning: "bg-[color:var(--color-warning-bg)] text-[color:var(--color-warning-text)]",
-        danger: "bg-[color:var(--color-danger-bg)] text-[color:var(--color-danger-text)]",
-        info: "bg-[color:var(--color-info-bg)] text-[color:var(--color-info-text)]",
-        neutral: "bg-surface-alt text-text-secondary border border-border",
-        brand: "bg-brand-100 text-brand-700",
+        success: "bg-success/20 border border-success/50 text-white backdrop-blur-sm shadow-sm",
+        warning: "bg-warning/20 border border-warning/50 text-white backdrop-blur-sm shadow-sm",
+        danger: "bg-danger/20 border border-danger/50 text-white backdrop-blur-sm shadow-sm",
+        info: "bg-info/20 border border-info/50 text-white backdrop-blur-sm shadow-sm",
+        neutral: "bg-surface-alt border border-border text-white backdrop-blur-sm shadow-sm",
+        brand: "bg-brand-500/20 border border-brand-500/50 text-white backdrop-blur-sm shadow-sm",
         /* Semantic order states with design system tokens */
-        pending: "bg-[color:var(--color-pending-bg)] text-[color:var(--color-pending-text)] font-semibold",
-        confirmed: "bg-[color:var(--color-confirmed-bg)] text-[color:var(--color-confirmed-text)] font-semibold",
-        preparing: "bg-[color:var(--color-preparing-bg)] text-[color:var(--color-preparing-text)] font-semibold",
+        pending: "bg-pending/20 border border-pending/50 text-white font-semibold backdrop-blur-sm shadow-sm",
+        confirmed: "bg-confirmed/20 border border-confirmed/50 text-white font-semibold backdrop-blur-sm shadow-sm",
+        preparing: "bg-preparing/20 border border-preparing/50 text-white font-semibold backdrop-blur-sm shadow-sm",
       },
       size: {
         default: "text-xs px-2.5 py-0.5",

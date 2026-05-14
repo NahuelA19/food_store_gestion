@@ -5,6 +5,7 @@ import logging
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.config import Settings
 from app.core.uow import UnitOfWork
@@ -59,7 +60,11 @@ async def create_payment_preference(
         HTTPException 403: User not authorized
         HTTPException 500: Payment preference creation failed
     """
-    result = await uow.session.execute(select(Order).where(Order.id == order_id))
+    result = await uow.session.execute(
+        select(Order)
+        .where(Order.id == order_id)
+        .options(selectinload(Order.user))
+    )
     order = result.scalar_one_or_none()
 
     if not order:

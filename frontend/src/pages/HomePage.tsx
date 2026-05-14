@@ -4,7 +4,7 @@
  * - User: Shows product catalog
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { Button } from "../components/ui/Button";

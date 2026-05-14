@@ -18,13 +18,13 @@
   /* ---- Glassmorphic Surfaces: Light Mode (over lavender #f3f0ff) ---- 
      Base: white with controlled transparency + backdrop-filter blur
   */
-  --color-surface: rgba(255, 255, 255, 0.88); /* Cards: glassmorphic base */
-  --color-surface-alt: rgba(255, 255, 255, 0.82); /* Surfaces: subsections */
-  --color-surface-card: rgba(255, 255, 255, 0.88); /* Card primary surface */
-  --color-surface-raised: rgba(255, 255, 255, 0.94); /* Elevated (modals) */
-  --glass-blur: blur(12px);
+  --color-surface: rgba(255, 255, 255, 0.08); /* Cards: glassmorphic base */
+  --color-surface-alt: rgba(255, 255, 255, 0.04); /* Surfaces: subsections */
+  --color-surface-card: rgba(255, 255, 255, 0.10); /* Card primary surface */
+  --color-surface-raised: rgba(255, 255, 255, 0.15); /* Elevated (modals) */
+  --glass-blur: blur(10px);
   --glass-blur-elevated: blur(16px);
-  --glass-border: rgba(99, 102, 241, 0.12); /* Subtle indigo tint */
+  --glass-border: rgba(255, 255, 255, 0.2); /* Subtle indigo tint */
 
   /* ---- Brand Colors: Indigo + Teal (Modern & Elegant) ----
      Primary: Indigo #6366f1 | Accent: Teal #0ea5a5
@@ -53,15 +53,13 @@
 
   /* ---- Text: Light Mode ----
      WCAG AA requires 4.5:1 for normal text, 3:1 for large text
-     Primary: #1a1a1a on white background (21:1 contrast) ✓ WCAG AAA
+     Since the background image is dark blue, we use white/light text for contrast.
   */
-  --color-text-primary: oklch(0.14 0.012 70); /* Very dark gray (#1a1a1a) - body text */
-  --color-text-secondary: oklch(0.35 0.01 70); /* Medium gray - secondary info */
-  --color-text-muted: oklch(
-    0.42 0.01 70
-  ); /* Darker gray for better contrast on lavender background */
+  --color-text-primary: oklch(0.98 0.002 70); /* Near white for primary text */
+  --color-text-secondary: oklch(0.90 0.005 70); /* Light gray for secondary info */
+  --color-text-muted: oklch(0.80 0.01 70); /* Muted gray/white */
   --color-text-on-brand: oklch(1 0 0); /* White text on brand color */
-  --color-text-inverse: oklch(0.98 0.002 70); /* Inverse (white-ish) */
+  --color-text-inverse: oklch(0.14 0.012 70); /* Inverse (dark) */
 
   /* ---- Borders: Light Mode ----
      Subtle borders with enough contrast to define structure without harshness
@@ -484,6 +482,12 @@
   .label {
     @apply text-sm font-semibold text-text-primary;
     font-weight: 600;
+  }
+
+  /* ---- Select Options (Fix for native dropdowns) ---- */
+  select option {
+    color: #1a1a1a !important;
+    background-color: #ffffff !important;
   }
 
   /* ---- Small/Muted Text ----

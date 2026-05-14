@@ -156,7 +156,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <button
               onClick={logout}
               className={cn(
-                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-danger transition-all duration-200 hover:bg-danger-bg",
+                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-danger transition-all duration-200 hover:bg-danger/20",
                 collapsed && "justify-center px-0"
               )}
               title={collapsed ? "Cerrar sesión" : undefined}

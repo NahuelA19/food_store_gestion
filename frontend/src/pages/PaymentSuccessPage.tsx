@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { usePaymentStore } from '../store/paymentStore';
 import { CheckCircle } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Icon } from '../components/ui/Icon';
 
 export default function PaymentSuccessPage() {
   const [params] = useSearchParams();
@@ -17,16 +19,22 @@ export default function PaymentSuccessPage() {
   }, [params, setStatus]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-      <CheckCircle className="w-16 h-16 text-green-500" />
-      <h1 className="text-2xl font-bold">¡Pago exitoso!</h1>
-      <p className="text-gray-600">Tu pedido ha sido confirmado</p>
-      <button
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 p-4 text-center">
+      <div className="bg-success/20 p-5 rounded-full border border-success/50 shadow-lg backdrop-blur-md animate-scale-in">
+        <Icon icon={CheckCircle} size={64} className="text-[color:var(--color-success)]" />
+      </div>
+      <div className="space-y-2 max-w-md">
+        <h1 className="text-3xl md:text-4xl font-display font-bold text-text-primary">¡Pago exitoso!</h1>
+        <p className="text-text-secondary text-lg">Tu pedido ha sido confirmado y ya lo estamos preparando.</p>
+      </div>
+      <Button
         onClick={() => navigate('/orders')}
-        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+        variant="default"
+        size="lg"
+        className="mt-4 shadow-modal bg-[color:var(--color-success)] hover:bg-[color:var(--color-success-text)] text-white"
       >
         Ver mis pedidos
-      </button>
+      </Button>
     </div>
   );
 }

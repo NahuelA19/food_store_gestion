@@ -27,7 +27,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 to-surface p-6">
+    <div className="flex min-h-screen items-center justify-center bg-transparent p-6">
       <Card className="w-full max-w-md mx-auto">
         <CardHeader>
           <CardTitle className="text-center text-2xl text-brand">

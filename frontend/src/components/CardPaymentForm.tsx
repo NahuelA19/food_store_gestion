@@ -1,11 +1,9 @@
-import { useState } from "react";
-import { initMercadoPago, CardPayment } from "@mercadopago/sdk-react";
+import { useEffect, useState } from "react";
 import { paymentApi } from "../api/paymentApi";
 import { useAuthStore } from "../store/authStore";
 import { Card, CardContent } from "./ui/Card";
-import { Loader2 } from "lucide-react";
-
-initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY, { locale: "es-AR" });
+import { Icon } from "./ui/Icon";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 interface CardPaymentFormProps {
   amount: number;
@@ -13,6 +11,69 @@ interface CardPaymentFormProps {
   payerEmail: string;
   onSuccess: (paymentId: number) => void;
   onError: (error: string) => void;
+}
+
+/** Lazy-loaded MercadoPago Brick wrapper.
+ *
+ * Only rendered when VITE_MP_PUBLIC_KEY is present.
+ * Imports the SDK dynamically so it doesn't crash when the env var is missing.
+ */
+function MpBrickLazy(props: {
+  amount: number;
+  payerEmail: string;
+  onReady: () => void;
+  onSubmit: (formData: {
+    token: string;
+    payment_method_id: string;
+    installments: number;
+    payer: { email?: string };
+  }) => void;
+  onError: (err: unknown) => void;
+}) {
+  const [BrickComponent, setBrickComponent] = useState<
+    typeof import("@mercadopago/sdk-react").CardPayment | null
+  >(null);
+  const [loadError, setLoadError] = useState(false);
+
+  // Dynamically import the SDK once (only if PUBLIC_KEY exists)
+  useEffect(() => {
+    const mpKey = import.meta.env.VITE_MP_PUBLIC_KEY;
+    if (!mpKey) return;
+
+    import("@mercadopago/sdk-react")
+      .then((mod) => {
+        mod.initMercadoPago(mpKey, { locale: "es-AR" });
+        setBrickComponent(() => mod.CardPayment);
+      })
+      .catch(() => setLoadError(true));
+  }, []);
+
+  if (loadError) {
+    return (
+      <div className="rounded-lg bg-danger/10 p-4 text-center text-sm text-danger">
+        <Icon icon={AlertTriangle} size={20} className="mx-auto mb-2" />
+        Error al cargar el SDK de MercadoPago
+      </div>
+    );
+  }
+
+  if (!BrickComponent) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-8 text-sm text-text-muted">
+        <Loader2 size={18} className="animate-spin" />
+        Cargando formulario de pago...
+      </div>
+    );
+  }
+
+  return (
+    <BrickComponent
+      initialization={{ amount: props.amount, payer: { email: props.payerEmail } }}
+      onSubmit={props.onSubmit}
+      onReady={props.onReady}
+      onError={props.onError}
+    />
+  );
 }
 
 export function CardPaymentForm({
@@ -25,6 +86,8 @@ export function CardPaymentForm({
   const [brickReady, setBrickReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const accessToken = useAuthStore((s) => s.accessToken);
+
+  const hasMpPublicKey = Boolean(import.meta.env.VITE_MP_PUBLIC_KEY);
 
   const handleSubmit = async (formData: {
     token: string;
@@ -58,7 +121,19 @@ export function CardPaymentForm({
   return (
     <Card className="w-full">
       <CardContent className="space-y-4 p-6">
-        {!brickReady && !submitting && (
+        {!hasMpPublicKey && (
+          <div className="rounded-lg bg-amber-50 p-4 text-center text-sm text-amber-800">
+            <Icon icon={AlertTriangle} size={20} className="mx-auto mb-2" />
+            <p className="font-semibold">Modo de prueba</p>
+            <p className="mt-1 text-amber-600">
+              No hay credenciales de MercadoPago configuradas.{" "}
+              Usá el botón <strong>"Simular Compra"</strong> más
+              abajo para probar el flujo de pago.
+            </p>
+          </div>
+        )}
+
+        {!brickReady && !submitting && hasMpPublicKey && (
           <div className="flex items-center justify-center gap-2 py-8 text-sm text-text-muted">
             <Loader2 size={18} className="animate-spin" />
             Cargando formulario de pago...
@@ -72,14 +147,17 @@ export function CardPaymentForm({
           </div>
         )}
 
-        <div className={submitting ? "pointer-events-none opacity-50" : ""}>
-          <CardPayment
-            initialization={{ amount, payer: { email: payerEmail } }}
-            onSubmit={handleSubmit}
-            onReady={() => setBrickReady(true)}
-            onError={(err) => onError(err instanceof Error ? err.message : String(err))}
-          />
-        </div>
+        {hasMpPublicKey && (
+          <div className={submitting ? "pointer-events-none opacity-50" : ""}>
+            <MpBrickLazy
+              amount={amount}
+              payerEmail={payerEmail}
+              onReady={() => setBrickReady(true)}
+              onSubmit={handleSubmit}
+              onError={(err) => onError(err instanceof Error ? err.message : String(err))}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

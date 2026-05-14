@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Globe, Moon, Bell, Save } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 interface UserPreferences {
   language: string;
@@ -86,6 +87,7 @@ export function PreferencesPanel({
   onSubmit,
   isLoading,
 }: PreferencesPanelProps) {
+  const { setTheme } = useTheme();
   const [formData, setFormData] = useState<UserPreferences>(preferences);
 
   const hasChanges =
@@ -111,6 +113,10 @@ export function PreferencesPanel({
       changes.notifications = formData.notifications;
 
     await onSubmit(changes);
+
+    if (changes.theme) {
+      setTheme(changes.theme as "light" | "dark" | "auto");
+    }
   };
 
   return (
