@@ -24,6 +24,8 @@ import {
   MessageSquare,
   Star,
   Pencil,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 
 export const ProductDetailPage: React.FC = () => {
@@ -34,6 +36,8 @@ export const ProductDetailPage: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [imgError, setImgError] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { isWishlisted, toggle } = useWishlist();
   const { addItem } = useCartContext();
@@ -49,10 +53,19 @@ export const ProductDetailPage: React.FC = () => {
   const handleAddToCart = async () => {
     if (!product) return;
     try {
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      
       await addItem(product.id, quantity);
-      // Reset quantity to 1 after successful add
+      
+      setSuccessMessage(`"${product.name}" agregado al carrito`);
       setQuantity(1);
+      
+      // Limpiar mensaje después de 3 segundos
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al agregar al carrito";
+      setErrorMessage(message);
       console.error("Error adding to cart:", err);
     }
   };
@@ -109,6 +122,26 @@ export const ProductDetailPage: React.FC = () => {
 
   return (
     <div className="animate-fade-in mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-6 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-900/30">
+          <Check size={18} className="text-emerald-600 dark:text-emerald-400" />
+          <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+            {successMessage}
+          </p>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="mb-6 flex items-center gap-2 rounded-lg border border-danger bg-danger-bg p-3 dark:border-danger/30 dark:bg-danger/10">
+          <AlertCircle size={18} className="text-danger" />
+          <p className="text-sm font-medium text-danger">
+            {errorMessage}
+          </p>
+        </div>
+      )}
+
       <Button
         variant="ghost"
         onClick={() => navigate("/products")}
