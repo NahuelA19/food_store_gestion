@@ -20,8 +20,10 @@ export interface OrdersByStatusChartProps {
 
 /* ─── Color palette for statuses ───
  *
- * Keys are LOWERCASE because the dashboard endpoint normalizes with
- * LOWER(status::text) so the frontend receives consistent lowercase keys.
+ * Keys are LOWERCASE. Before lookup, each incoming key is lowercased so
+ * this works regardless of whether the backend returns UPPERCASE enum
+ * names or already-normalized lowercase (via LOWER()).
+ *
  * Both English and Spanish variants are covered for robustness.
  */
 
@@ -90,14 +92,15 @@ const STATUS_LABELS: Record<string, string> = {
 
 const DEFAULT_COLOR = "#6b7280";
 
-/** Merge status synonyms that represent the same business state. */
+/** Normalize incoming keys: lowercase and merge synonyms. */
 function normalizeData(data: Record<string, number>): Record<string, number> {
   const MERGE_MAP: Record<string, string> = {
     pending: "pendiente",
   };
   const result: Record<string, number> = {};
   for (const [key, count] of Object.entries(data)) {
-    const canonical = MERGE_MAP[key] ?? key;
+    const normalizedKey = key.toLowerCase();
+    const canonical = MERGE_MAP[normalizedKey] ?? normalizedKey;
     result[canonical] = (result[canonical] ?? 0) + count;
   }
   return result;
