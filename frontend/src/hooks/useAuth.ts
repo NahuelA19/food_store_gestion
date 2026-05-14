@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 
@@ -149,10 +149,16 @@ export function useAuth() {
     []
   );
 
+  const mappedUser = useMemo(
+    () =>
+      user
+        ? { id: user.id, email: user.email, first_name: user.firstName, last_name: user.lastName, role: user.role, phone: "" }
+        : null,
+    [user],
+  );
+
   return {
-    user: user
-      ? { id: user.id, email: user.email, first_name: user.firstName, last_name: user.lastName, role: user.role, phone: "" }
-      : null,
+    user: mappedUser,
     isAuthenticated,
     isLoading: loginMutation.isPending || registerMutation.isPending,
     error:
