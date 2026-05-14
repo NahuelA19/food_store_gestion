@@ -52,8 +52,9 @@ export function ProfilePage() {
 
       try {
         const token = useAuthStore.getState().accessToken;
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL || "http://localhost:8000/api"}/users/me/preferences`,
+          `${apiUrl}/users/me/preferences`,
           {
             headers: {
               "Content-Type": "application/json",
