@@ -29,7 +29,7 @@ class ReviewResponse(BaseModel):
     id: int
     product_id: int
     user_id: int
-    user_name: str
+    user_name: str = ""
     rating: int
     title: str | None = None
     comment: str | None = None

@@ -27,7 +27,10 @@ export const orderApi = {
     const params = new URLSearchParams({ page: String(page) });
     if (status && status !== "all") params.append("status", status);
 
-    const response = await fetch(`${API_BASE_URL}/admin/orders?${params}`, {
+    const user = useAuthStore.getState().user;
+    const endpoint = user?.role === "admin" ? "/admin/orders" : "/orders";
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}?${params}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse<OrderListResponse>(response);

@@ -83,6 +83,24 @@ async def delete_review(
     )
 
 
+@router.get("/my/{product_id}", response_model=ReviewResponse | None)
+async def get_my_review(
+    product_id: int,
+    uow: UnitOfWork = Depends(get_uow),
+    current_user: User = Depends(get_current_user),
+) -> ReviewResponse | None:
+    """Get the current user's review for a product."""
+    review = await review_service.get_user_review(
+        uow=uow, user_id=current_user.id, product_id=product_id
+    )
+    if not review:
+        return None
+
+    response = ReviewResponse.model_validate(review)
+    response.user_name = current_user.name or current_user.email
+    return response
+
+
 @router.get("/recent", response_model=list[ReviewResponse])
 async def get_recent_reviews(
     limit: int = Query(5, ge=1, le=20),

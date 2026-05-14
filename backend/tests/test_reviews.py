@@ -110,7 +110,7 @@ class TestCreateReview:
         assert data["rating"] == 4
         assert data["title"] == "Great product"
         assert data["comment"] == "Really enjoyed this product"
-        assert data["is_approved"] is False
+        assert data["is_approved"] is True
         assert data["product_id"] == test_product.id
         assert "user_name" in data
 

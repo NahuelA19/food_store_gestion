@@ -127,7 +127,7 @@ export function CardPaymentForm({
             <p className="font-semibold">Modo de prueba</p>
             <p className="mt-1 text-amber-600">
               No hay credenciales de MercadoPago configuradas.{" "}
-              Usá el botón <strong>"Simular Compra"</strong> más
+              Us&aacute; el bot&oacute;n <strong>Simular Compra</strong> m&aacute;s
               abajo para probar el flujo de pago.
             </p>
           </div>

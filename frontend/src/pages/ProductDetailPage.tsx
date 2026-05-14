@@ -9,7 +9,7 @@ import { ReviewList } from "../components/reviews/ReviewList";
 import { ReviewForm } from "../components/reviews/ReviewForm";
 import { FavoriteButton } from "../components/wishlist/FavoriteButton";
 import { useProduct } from "../hooks/useProduct";
-import { useProductReviews } from "../hooks/useReviews";
+import { useProductReviews, useMyReview } from "../hooks/useReviews";
 import { useWishlist } from "../hooks/useWishlist";
 import { useAuthStore } from "../store/authStore";
 import { useCartContext } from "../context/CartContext";
@@ -49,6 +49,11 @@ export const ProductDetailPage: React.FC = () => {
     setPage: setReviewPage,
     refetch: refetchReviews,
   } = useProductReviews(productId);
+
+  const {
+    review: myReview,
+    refetch: refetchMyReview,
+  } = useMyReview(productId);
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -316,15 +321,31 @@ export const ProductDetailPage: React.FC = () => {
           <div>
             <div className="sticky top-24 rounded-xl border border-border bg-surface-alt p-6 dark:border-border dark:bg-surface">
               <h3 className="mb-4 font-display text-lg font-bold text-text-primary">
-                Write a Review
+                {myReview ? "Your Review" : "Write a Review"}
               </h3>
               {isAuthenticated ? (
-                showReviewForm ? (
+                myReview ? (
+                  <ReviewForm
+                    productId={product.id}
+                    existingReview={myReview}
+                    onSubmit={() => {
+                      setShowReviewForm(false);
+                      refetchReviews();
+                      refetchMyReview();
+                    }}
+                    onDelete={() => {
+                      setShowReviewForm(false);
+                      refetchReviews();
+                      refetchMyReview();
+                    }}
+                  />
+                ) : showReviewForm ? (
                   <ReviewForm
                     productId={product.id}
                     onSubmit={() => {
                       setShowReviewForm(false);
                       refetchReviews();
+                      refetchMyReview();
                     }}
                   />
                 ) : (

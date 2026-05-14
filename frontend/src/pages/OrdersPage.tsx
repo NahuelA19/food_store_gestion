@@ -28,20 +28,6 @@ interface OrderRow {
   date: string;
 }
 
-const FALLBACK_ORDERS: OrderRow[] = [
-  { id: 1042, customer: "María García", status: "pending", total: 156.0, date: "2026-05-09" },
-  { id: 1041, customer: "Carlos López", status: "confirmed", total: 89.5, date: "2026-05-09" },
-  { id: 1040, customer: "Ana Martínez", status: "preparing", total: 234.0, date: "2026-05-09" },
-  { id: 1039, customer: "Pedro Sánchez", status: "pending", total: 67.8, date: "2026-05-08" },
-  { id: 1038, customer: "Laura Rodríguez", status: "confirmed", total: 192.0, date: "2026-05-08" },
-  { id: 1037, customer: "Sofía Fernández", status: "delivered", total: 45.0, date: "2026-05-08" },
-  { id: 1036, customer: "Diego Morales", status: "ready", total: 178.5, date: "2026-05-08" },
-  { id: 1035, customer: "Valentina Torres", status: "cancelled", total: 92.0, date: "2026-05-07" },
-  { id: 1034, customer: "Jorge Ruiz", status: "delivered", total: 215.0, date: "2026-05-07" },
-  { id: 1033, customer: "Camila Vargas", status: "delivered", total: 134.5, date: "2026-05-07" },
-  { id: 1032, customer: "Andrés Castro", status: "preparing", total: 78.0, date: "2026-05-07" },
-  { id: 1031, customer: "Isabella Ríos", status: "pending", total: 299.0, date: "2026-05-06" },
-];
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "warning" | "info" | "neutral" | "success" | "danger" }> = {
   payment_pending: { label: "Pendiente de Pago", variant: "warning" },
@@ -87,7 +73,7 @@ export function OrdersPage() {
   }, [apiOrders]);
 
   const filteredOrders = useMemo(() => {
-    let result = orders.length > 0 ? orders : FALLBACK_ORDERS;
+    let result = orders;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();

@@ -62,6 +62,15 @@ export const reviewApi = {
     if (!response.ok) throw new Error("Failed to delete review");
   },
 
+  async getMyReview(productId: number): Promise<Review | null> {
+    const response = await fetch(`${API_BASE_URL}/reviews/my/${productId}`, {
+      headers: getAuthHeaders(),
+    });
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error("Failed to fetch your review");
+    return response.json();
+  },
+
   async getRecentReviews(limit: number = 5): Promise<Review[]> {
     const response = await fetch(`${API_BASE_URL}/reviews/recent?limit=${limit}`);
     if (!response.ok) throw new Error("Failed to fetch recent reviews");

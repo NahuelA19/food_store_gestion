@@ -166,6 +166,21 @@ async def get_review_summary(
     )
 
 
+async def get_user_review(
+    uow: UnitOfWork,
+    user_id: int,
+    product_id: int,
+) -> Review | None:
+    """Get a user's review for a specific product."""
+    result = await uow.session.execute(
+        select(Review).where(
+            Review.user_id == user_id,
+            Review.product_id == product_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 async def get_review_by_id(
     uow: UnitOfWork,
     review_id: int,
