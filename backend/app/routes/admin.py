@@ -158,25 +158,50 @@ async def admin_dashboard_stats(
 
     Calculates:
     - total_orders_today: Orders created today
+    - orders_today_change: % change vs yesterday
     - total_revenue_today: Revenue from today's orders
+    - revenue_today_change: % change vs yesterday
     - active_branches: Count of active branches
     - pending_orders: Orders with PAYMENT_PENDING status
+    - pending_orders_change: % change in pending count vs yesterday
     - total_products: Count of all products
+    - total_products_change: Products added in the last 7 days (as count change)
     - monthly_revenue: Revenue this month
+    - monthly_revenue_change: % change vs last month
     - orders_by_status: Distribution of orders by status
     """
     now = func.now()
-
-    # Orders created today
     today_start = func.date_trunc("day", now)
+    yesterday_start = today_start - text("INTERVAL '1 day'")
+    month_start = func.date_trunc("month", now)
+    last_month_start = month_start - text("INTERVAL '1 month'")
+
+    def _calc_pct(curr, prev):
+        if not prev or prev == 0:
+            return 100.0 if curr > 0 else 0.0
+        return round(((curr - prev) / prev) * 100, 1)
+
+    # 1. Orders and Revenue TODAY
     today_orders_result = await uow.session.execute(
         select(func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0))
         .where(Order.created_at >= today_start)
     )
     total_orders_today, total_revenue_today = today_orders_result.one()
-    total_revenue_today = float(total_revenue_today) if total_revenue_today else 0.0
+    total_revenue_today = float(total_revenue_today)
 
-    # Active branches
+    # 2. Orders and Revenue YESTERDAY (for comparison)
+    yesterday_orders_result = await uow.session.execute(
+        select(func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0))
+        .where(Order.created_at >= yesterday_start)
+        .where(Order.created_at < today_start)
+    )
+    orders_yesterday, revenue_yesterday = yesterday_orders_result.one()
+    revenue_yesterday = float(revenue_yesterday)
+
+    orders_today_change = _calc_pct(total_orders_today, orders_yesterday)
+    revenue_today_change = _calc_pct(total_revenue_today, revenue_yesterday)
+
+    # 3. Active branches
     try:
         branches_result = await uow.session.execute(
             select(func.count(Branch.id)).where(Branch.is_active.is_(True))
@@ -185,26 +210,49 @@ async def admin_dashboard_stats(
     except Exception:
         active_branches = 0
 
-    # Pending orders (using DB enum value "pending")
+    # 4. Pending orders
     pending_result = await uow.session.execute(
         text("SELECT COUNT(*) FROM orders WHERE status::text = :st"),
         {"st": _DB_STATUS_PENDING},
     )
     pending_orders = pending_result.scalar_one()
+    
+    # Pending yesterday (for change)
+    pending_yesterday_result = await uow.session.execute(
+        text("SELECT COUNT(*) FROM orders WHERE status::text = :st AND created_at < :ts"),
+        {"st": _DB_STATUS_PENDING, "ts": today_start},
+    )
+    pending_yesterday = pending_yesterday_result.scalar_one()
+    pending_orders_change = _calc_pct(pending_orders, pending_yesterday)
 
-    # Total products
+    # 5. Total products
     products_result = await uow.session.execute(select(func.count(Product.id)))
     total_products = products_result.scalar_one()
+    
+    # Products added in last 7 days (as a trend)
+    new_products_result = await uow.session.execute(
+        select(func.count(Product.id)).where(Product.created_at >= now - text("INTERVAL '7 days'"))
+    )
+    new_products_count = new_products_result.scalar_one()
+    total_products_change = float(new_products_count) # Return as absolute change for products
 
-    # Monthly revenue
-    month_start = func.date_trunc("month", now)
+    # 6. Monthly revenue
     monthly_result = await uow.session.execute(
         select(func.coalesce(func.sum(Order.total_amount), 0))
         .where(Order.created_at >= month_start)
     )
     monthly_revenue = float(monthly_result.scalar_one())
 
-    # Orders by status (normalized to lowercase for frontend chart)
+    # Last month revenue
+    last_monthly_result = await uow.session.execute(
+        select(func.coalesce(func.sum(Order.total_amount), 0))
+        .where(Order.created_at >= last_month_start)
+        .where(Order.created_at < month_start)
+    )
+    last_monthly_revenue = float(last_monthly_result.scalar_one())
+    monthly_revenue_change = _calc_pct(monthly_revenue, last_monthly_revenue)
+
+    # 7. Orders by status
     status_counts_result = await uow.session.execute(
         text("SELECT LOWER(status::text), COUNT(*) FROM orders GROUP BY status")
     )
@@ -212,10 +260,15 @@ async def admin_dashboard_stats(
 
     return DashboardStatsResponse(
         total_orders_today=total_orders_today,
+        orders_today_change=orders_today_change,
         total_revenue_today=total_revenue_today,
+        revenue_today_change=revenue_today_change,
         active_branches=active_branches,
         pending_orders=pending_orders,
+        pending_orders_change=pending_orders_change,
         total_products=total_products,
+        total_products_change=total_products_change,
         monthly_revenue=monthly_revenue,
+        monthly_revenue_change=monthly_revenue_change,
         orders_by_status=orders_by_status,
     )
