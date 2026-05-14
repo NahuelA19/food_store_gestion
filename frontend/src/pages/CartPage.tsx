@@ -89,6 +89,39 @@ export function CartPage() {
     setCardError(null);
   };
 
+  const handleSimulatePayment = async () => {
+    if (!shippingAddress.trim()) return;
+    if (!accessToken) return;
+    if (!currentOrderId) return;
+    
+    setIsProcessing(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1"}/payments/simulate-payment?order_id=${currentOrderId}`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Simulación de pago falló");
+      }
+
+      // Pago exitoso - redirigir a success page
+      const paymentId = currentOrderId;
+      navigate(`/payment/success?payment_id=${paymentId}`);
+    } catch (err) {
+      console.error("Simulation error:", err);
+      setCardError(err instanceof Error ? err.message : "Error en la simulación");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-[300px] items-center justify-center">
@@ -226,23 +259,37 @@ export function CartPage() {
 
         <div className="lg:sticky lg:top-6 lg:self-start">
           {paymentMethod === "card" && currentOrderId ? (
-            <div className="space-y-4">
-              <CardPaymentForm
-                amount={Number(total)}
-                orderId={currentOrderId}
-                payerEmail={user?.email ?? ""}
-                onSuccess={handleCardSuccess}
-                onError={handleCardError}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={handleBackToMethods}
-              >
-                <Icon icon={ArrowLeft} size={16} />
-                Volver a métodos de pago
-              </Button>
+             <div className="space-y-4">
+               <CardPaymentForm
+                 amount={Number(total)}
+                 orderId={currentOrderId}
+                 payerEmail={user?.email ?? ""}
+                 onSuccess={handleCardSuccess}
+                 onError={handleCardError}
+               />
+               <Button
+                 variant="outline"
+                 size="sm"
+                 className="w-full"
+                 disabled={isProcessing}
+                 onClick={handleSimulatePayment}
+               >
+                 {isProcessing ? (
+                   <Icon icon={Loader2} size={18} className="animate-spin" />
+                 ) : (
+                   <Icon icon={CreditCard} size={18} />
+                 )}
+                 {isProcessing ? "Simulando..." : "Simular Compra"}
+               </Button>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 className="w-full"
+                 onClick={handleBackToMethods}
+               >
+                 <Icon icon={ArrowLeft} size={16} />
+                 Volver a métodos de pago
+               </Button>
             </div>
           ) : (
             <Card>

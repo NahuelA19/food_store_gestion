@@ -11,6 +11,8 @@ from app.core.uow import UnitOfWork
 from app.dependencies import get_current_user, get_settings, get_uow
 from app.models.order import Order
 from app.models.user import User
+from app.models.pago import Pago
+from app.services.order_service import transition
 from app.services.payment_service import (
     create_preference,
     handle_ipn,
@@ -288,4 +290,91 @@ async def process_card_payment_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Card payment processing failed: {str(e)}",
+        ) from e
+
+
+@router.post("/simulate-payment", status_code=status.HTTP_200_OK)
+async def simulate_payment(
+    order_id: int = Query(..., description="Order ID to simulate payment for"),
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> dict:
+    """Simulate a successful card payment for testing purposes.
+    
+    This endpoint marks an order as paid WITHOUT calling MercadoPago.
+    Use this for testing the payment flow without actual card charges.
+    
+    Args:
+        order_id: ID of the order to simulate payment for
+        current_user: Authenticated user
+        uow: Unit of work for database access
+    
+    Returns:
+        dict: Simulated payment response with success status
+    
+    Raises:
+        HTTPException 404: Order not found
+        HTTPException 403: Not authorized
+    """
+    result = await uow.session.execute(select(Order).where(Order.id == order_id))
+    order = result.scalar_one_or_none()
+    
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order {order_id} not found",
+        )
+    
+    if order.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to process payment for this order",
+        )
+    
+    try:
+        # Transition order to CONFIRMADO (approved)
+        await transition(
+            order,
+            "CONFIRMADO",
+            usuario_id=None,
+            session=uow.session,
+            motivo="Pago simulado para pruebas",
+        )
+        
+        # Create a simulated payment record
+        pago = Pago(
+            pedido_id=order.id,
+            monto=order.total_amount,
+            mp_payment_id=f"SIM-{order.id}",
+            mp_status="approved",
+            mp_status_detail="Simulated payment for testing",
+            mp_raw_response={
+                "id": f"SIM-{order.id}",
+                "status": "approved",
+                "status_detail": "Simulated payment for testing",
+                "transaction_amount": float(order.total_amount),
+                "description": f"Order #{order.id} (simulated)",
+            },
+        )
+        
+        uow.session.add(pago)
+        await uow.commit()
+        
+        logger.info(
+            "Simulated payment for order %d: status=approved",
+            order.id,
+        )
+        
+        return {
+            "id": f"SIM-{order.id}",
+            "status": "approved",
+            "status_detail": "Simulated payment - Order confirmed",
+            "transaction_amount": float(order.total_amount),
+            "description": f"Order #{order.id} (simulated)",
+        }
+    except Exception as e:
+        logger.error("Failed to simulate payment for order %d: %s", order_id, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Payment simulation failed: {str(e)}",
         ) from e
