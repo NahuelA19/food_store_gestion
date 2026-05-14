@@ -39,10 +39,12 @@ async def toggle_wishlist(
 
     if existing:
         await uow.session.delete(existing)
+        await uow.commit()
         return False  # Removed
     else:
         item = WishlistItem(user_id=user_id, product_id=product_id)
         uow.session.add(item)
+        await uow.commit()
         return True  # Added
 
 
