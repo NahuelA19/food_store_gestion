@@ -170,21 +170,43 @@ const FALLBACK_BRANCHES: BranchSummary[] = [
 ];
 
 const STATUS_LABELS: { [key: string]: string } = {
-  PENDIENTE: "Pendiente",
+  PENDIENTE: "Pendiente de Pago",
+  pendiente: "Pendiente de Pago",
+  pending: "Pendiente de Pago",
+  PAYMENT_PENDING: "Pendiente de Pago",
+  pago_pendiente: "Pendiente de Pago",
   CONFIRMADO: "Confirmado",
+  confirmado: "Confirmado",
   EN_PREP: "En Preparación",
-  EN_CAMINO: "En Camino",
+  en_prep: "En Preparación",
+  EN_CAMINO: "Enviado",
+  en_camino: "Enviado",
+  SHIPPED: "Enviado",
+  shipped: "Enviado",
   ENTREGADO: "Entregado",
+  entregado: "Entregado",
   CANCELADO: "Cancelado",
+  cancelado: "Cancelado",
 };
 
 const STATUS_VARIANTS: { [key: string]: "warning" | "info" | "success" | "danger" } = {
   PENDIENTE: "warning",
+  pendiente: "warning",
+  pending: "warning",
+  PAYMENT_PENDING: "warning",
+  pago_pendiente: "warning",
   CONFIRMADO: "info",
+  confirmado: "info",
   EN_PREP: "info",
+  en_prep: "info",
   EN_CAMINO: "info",
+  en_camino: "info",
+  SHIPPED: "info",
+  shipped: "info",
   ENTREGADO: "success",
+  entregado: "success",
   CANCELADO: "danger",
+  cancelado: "danger",
 };
 
 function DashboardSkeleton() {
@@ -421,10 +443,10 @@ function AdminDashboardPage() {
                         </td>
                         <td className="px-4 py-3">
                           <Badge
-                            variant={STATUS_VARIANTS[order.status] || "neutral"}
+                            variant={STATUS_VARIANTS[order.status.toLowerCase()] || "neutral"}
                             size="sm"
                           >
-                            {STATUS_LABELS[order.status] || order.status}
+                            {STATUS_LABELS[order.status.toLowerCase()] || order.status}
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-text-secondary">

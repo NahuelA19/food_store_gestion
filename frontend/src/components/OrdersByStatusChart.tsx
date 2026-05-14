@@ -69,10 +69,10 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pendiente: "Pendiente",
-  pending: "Pendiente",
-  pago_pendiente: "Pago Pendiente",
-  payment_pending: "Pago Pendiente",
+  pendiente: "Pendiente de Pago",
+  pending: "Pendiente de Pago",
+  pago_pendiente: "Pendiente de Pago",
+  payment_pending: "Pendiente de Pago",
   pagado: "Pagado",
   paid: "Pagado",
   pago_fallido: "Pago Fallido",
@@ -82,7 +82,7 @@ const STATUS_LABELS: Record<string, string> = {
   preparando: "Preparando",
   en_prep: "En Preparación",
   listo: "Listo",
-  en_camino: "En Camino",
+  en_camino: "Enviado",
   shipped: "Enviado",
   entregado: "Entregado",
   delivered: "Entregado",
@@ -94,13 +94,35 @@ const DEFAULT_COLOR = "#6b7280";
 
 /** Normalize incoming keys: lowercase and merge synonyms. */
 function normalizeData(data: Record<string, number>): Record<string, number> {
-  const MERGE_MAP: Record<string, string> = {
+  const CANONICAL_MAP: Record<string, string> = {
+    // Pendiente
     pending: "pendiente",
+    pendiente: "pendiente",
+    pago_pendiente: "pendiente",
+    payment_pending: "pendiente",
+    
+    // Confirmado
+    confirmed: "confirmado",
+    confirmado: "confirmado",
+    
+    // Enviado / En camino
+    shipped: "en_camino",
+    en_camino: "en_camino",
+    enviado: "en_camino",
+    
+    // Entregado
+    delivered: "entregado",
+    entregado: "entregado",
+    
+    // Cancelado
+    cancelled: "cancelado",
+    cancelado: "cancelado",
   };
+
   const result: Record<string, number> = {};
   for (const [key, count] of Object.entries(data)) {
     const normalizedKey = key.toLowerCase();
-    const canonical = MERGE_MAP[normalizedKey] ?? normalizedKey;
+    const canonical = CANONICAL_MAP[normalizedKey] || normalizedKey;
     result[canonical] = (result[canonical] ?? 0) + count;
   }
   return result;
@@ -108,13 +130,22 @@ function normalizeData(data: Record<string, number>): Record<string, number> {
 
 export function OrdersByStatusChart({ data }: OrdersByStatusChartProps) {
   const normalized = normalizeData(data);
-  const chartData = Object.entries(normalized).map(([status, count]) => ({
+  
+  // Define canonical order for consistent legend
+  const CANONICAL_STATUSES = ["pendiente", "confirmado", "en_camino", "entregado", "cancelado"];
+  
+  const allData = CANONICAL_STATUSES.map((status) => ({
     name: STATUS_LABELS[status] || status,
-    value: count,
+    value: normalized[status] || 0,
     color: STATUS_COLORS[status] || DEFAULT_COLOR,
   }));
 
-  if (chartData.length === 0) {
+  // Filter for Pie segments (hide 0s) but we can keep all for Legend if needed
+  // However, Recharts Pie usually works better if we only pass non-zero values
+  const pieData = allData.filter(item => item.value > 0);
+  const total = allData.reduce((acc, curr) => acc + curr.value, 0);
+
+  if (total === 0) {
     return (
       <div className="flex h-64 items-center justify-center rounded-xl border-2 border-dashed border-border">
         <p className="text-sm text-text-muted">Sin datos de pedidos</p>
@@ -124,33 +155,51 @@ export function OrdersByStatusChart({ data }: OrdersByStatusChartProps) {
 
   return (
     <div className="w-full">
-      <ResponsiveContainer width="100%" height={280}>
+      <ResponsiveContainer width="100%" height={320}>
         <PieChart>
           <Pie
-            data={chartData}
+            data={pieData}
             cx="50%"
-            cy="50%"
+            cy="45%"
             innerRadius={60}
             outerRadius={100}
             paddingAngle={3}
             dataKey="value"
+            animationDuration={800}
           >
-            {chartData.map((entry) => (
-              <Cell key={entry.name} fill={entry.color} />
+            {pieData.map((entry) => (
+              <Cell key={entry.name} fill={entry.color} stroke="none" />
             ))}
           </Pie>
           <Tooltip
             contentStyle={{
-              backgroundColor: "var(--color-surface-card)",
-              border: "1px solid var(--color-border)",
-              borderRadius: "8px",
-              fontSize: "13px",
+              backgroundColor: "rgba(15, 23, 42, 0.95)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "12px",
+              padding: "10px 14px",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
             }}
-            formatter={(value) => [`${value} pedido(s)`, undefined]}
+            itemStyle={{ color: "#fff", fontWeight: "600", fontSize: "14px" }}
+            labelStyle={{ display: "none" }}
+            cursor={{ fill: "transparent" }}
+            formatter={(value, name) => [
+              <span key="val" style={{ color: "white" }}>{value} pedido(s)</span>,
+              <span key="name" style={{ color: "#94a3b8", marginRight: "8px" }}>{name}:</span>
+            ]}
           />
           <Legend
+            verticalAlign="bottom"
+            align="center"
+            iconType="circle"
+            wrapperStyle={{ paddingTop: "20px" }}
+            payload={allData.map(item => ({
+              value: item.name,
+              type: "circle",
+              id: item.name,
+              color: item.color
+            }))}
             formatter={(value: string) => (
-              <span className="text-sm text-text-primary">{value}</span>
+              <span className="text-[12px] font-medium text-text-primary mr-2">{value}</span>
             )}
           />
         </PieChart>

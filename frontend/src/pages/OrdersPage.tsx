@@ -30,15 +30,43 @@ interface OrderRow {
 
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "warning" | "info" | "neutral" | "success" | "danger" }> = {
+  // Pendiente
+  pendiente: { label: "Pendiente de Pago", variant: "warning" },
+  pending: { label: "Pendiente de Pago", variant: "warning" },
   payment_pending: { label: "Pendiente de Pago", variant: "warning" },
+  
+  // Pago Fallido
+  pago_fallido: { label: "Pago Fallido", variant: "danger" },
   payment_failed: { label: "Pago Fallido", variant: "danger" },
+  
+  // Pagado
+  pagado: { label: "Pagado", variant: "info" },
   paid: { label: "Pagado", variant: "info" },
-  pending: { label: "Pendiente", variant: "warning" },
+  
+  // Confirmado
+  confirmado: { label: "Confirmado", variant: "info" },
   confirmed: { label: "Confirmado", variant: "info" },
+  
+  // Preparando
+  preparando: { label: "Preparando", variant: "neutral" },
   preparing: { label: "Preparando", variant: "neutral" },
+  en_prep: { label: "Preparando", variant: "neutral" },
+  
+  // Listo
+  listo: { label: "Listo", variant: "success" },
   ready: { label: "Listo", variant: "success" },
+  
+  // Enviado
+  enviado: { label: "Enviado", variant: "info" },
+  en_camino: { label: "Enviado", variant: "info" },
   shipped: { label: "Enviado", variant: "info" },
+  
+  // Entregado
+  entregado: { label: "Entregado", variant: "success" },
   delivered: { label: "Entregado", variant: "success" },
+  
+  // Cancelado
+  cancelado: { label: "Cancelado", variant: "danger" },
   cancelled: { label: "Cancelado", variant: "danger" },
 };
 
@@ -229,9 +257,9 @@ export function OrdersPage() {
                           {order.customer}
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant={STATUS_CONFIG[order.status]?.variant || "neutral"} size="sm">
+                          <Badge variant={STATUS_CONFIG[order.status.toLowerCase()]?.variant || "neutral"} size="sm">
                             <span className="sr-only">Estado: </span>
-                            {STATUS_CONFIG[order.status]?.label || order.status}
+                            {STATUS_CONFIG[order.status.toLowerCase()]?.label || order.status}
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-text-secondary">
