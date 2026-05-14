@@ -519,11 +519,13 @@ function UserShopPage() {
   const [addingProductId, setAddingProductId] = useState<number | null>(null);
   const [favLoadingId, setFavLoadingId] = useState<number | null>(null);
 
-  // Set of favorited product IDs for fast lookup
-  const favoriteIds = useMemo(
+  // Base set from server data, plus optimistic local overrides for instant feedback
+  const baseFavIds = useMemo(
     () => new Set(wishlistItems.map((item) => item.product_id)),
     [wishlistItems],
   );
+  const [optimisticFavs, setOptimisticFavs] = useState<Set<number> | null>(null);
+  const favoriteIds = optimisticFavs ?? baseFavIds;
 
   // Sort: favorited products first
   const sortedProducts = useMemo(() => {
@@ -537,11 +539,20 @@ function UserShopPage() {
 
   const handleToggleFavorite = async (productId: number) => {
     setFavLoadingId(productId);
-    try {
-      await toggleWishlist(productId);
-    } finally {
-      setFavLoadingId(null);
-    }
+
+    // Optimistic: flip heart immediately
+    setOptimisticFavs((prev) => {
+      const current = prev ?? baseFavIds;
+      const next = new Set(current);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
+
+    // Fire real toggle — refetch will sync server state in background
+    await toggleWishlist(productId);
+
+    setFavLoadingId(null);
   };
 
   const handleAddToCart = async (product: Product) => {

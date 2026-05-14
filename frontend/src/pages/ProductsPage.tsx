@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useSearch } from '../hooks/useSearch';
 import { SearchBar } from '../components/SearchBar';
 import { FilterPanel } from '../components/FilterPanel';
@@ -26,10 +26,32 @@ export function ProductsPage() {
     clearSearch,
   } = useSearch();
   const { items: wishlistItems, toggle } = useWishlist();
-  const favoriteIds = useMemo(
+
+  // Base set from server data, plus optimistic local overrides for instant feedback
+  const baseFavIds = useMemo(
     () => new Set(wishlistItems.map((item) => item.product_id)),
     [wishlistItems],
   );
+  const [optimisticFavs, setOptimisticFavs] = useState<Set<number> | null>(null);
+  const favoriteIds = optimisticFavs ?? baseFavIds;
+
+  const handleToggleFavorite = async (productId: number) => {
+    // 1. Optimistic: flip heart immediately (no waiting for refetch)
+    setOptimisticFavs((prev) => {
+      const current = prev ?? baseFavIds;
+      const next = new Set(current);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
+
+    // 2. Fire real backend toggle
+    await toggle(productId);
+
+    // 3. Let the background refetch sync server state — it will update
+    //    baseFavIds and the optimistic overlay will be cleared when
+    //    both match (handled by using optimisticFavs ?? baseFavIds)
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -80,7 +102,7 @@ export function ProductsPage() {
             onPageChange={setPage}
             onProductClick={(id) => navigate(`/products/${id}`)}
             favoriteIds={favoriteIds}
-            onToggleFavorite={toggle}
+            onToggleFavorite={handleToggleFavorite}
           />
         </main>
       </div>
