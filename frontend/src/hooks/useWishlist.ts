@@ -1,12 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "../store/authStore";
 import { wishlistApi } from "../api/wishlistApi";
 
 export function useWishlist() {
   const queryClient = useQueryClient();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const query = useQuery({
     queryKey: ["wishlist"],
     queryFn: () => wishlistApi.list(),
+    enabled: isAuthenticated,
   });
 
   const toggleMutation = useMutation({

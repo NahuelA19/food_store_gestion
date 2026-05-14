@@ -12,6 +12,7 @@ import { useProduct } from "../hooks/useProduct";
 import { useProductReviews } from "../hooks/useReviews";
 import { useWishlist } from "../hooks/useWishlist";
 import { useAuthStore } from "../store/authStore";
+import { useCartContext } from "../context/CartContext";
 import {
   AlertTriangle,
   Package,
@@ -35,6 +36,7 @@ export const ProductDetailPage: React.FC = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { isWishlisted, toggle } = useWishlist();
+  const { addItem } = useCartContext();
   const {
     reviews,
     summary,
@@ -43,6 +45,17 @@ export const ProductDetailPage: React.FC = () => {
     setPage: setReviewPage,
     refetch: refetchReviews,
   } = useProductReviews(productId);
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+    try {
+      await addItem(product.id, quantity);
+      // Reset quantity to 1 after successful add
+      setQuantity(1);
+    } catch (err) {
+      console.error("Error adding to cart:", err);
+    }
+  };
 
   if (error) {
     return (
@@ -238,7 +251,12 @@ export const ProductDetailPage: React.FC = () => {
                     <Icon icon={Plus} size={16} />
                   </Button>
                 </div>
-                <Button variant="default" size="lg" className="flex-1">
+                <Button 
+                  variant="default" 
+                  size="lg" 
+                  className="flex-1"
+                  onClick={handleAddToCart}
+                >
                   <Icon icon={ShoppingCart} size={18} />
                   Add to Cart
                 </Button>

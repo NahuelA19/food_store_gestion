@@ -231,6 +231,9 @@ async def add_item_to_cart(
         )
         uow.session.add(item)
 
+    # Flush to persist changes before querying
+    await uow.flush()
+
     # Return updated cart
     return await get_cart_with_items(cart_id, (await uow.session.execute(select(Cart).where(Cart.id == cart_id))).scalar_one().user_id, uow)
 
@@ -273,6 +276,9 @@ async def update_cart_item_quantity(
         item.quantity = body.quantity
         uow.session.add(item)
 
+    # Flush to persist changes before querying
+    await uow.flush()
+
     # Return updated cart
     result = await uow.session.execute(select(Cart.user_id).where(Cart.id == cart_id))
     user_id = cast(int, result.scalar_one())
@@ -310,6 +316,9 @@ async def remove_cart_item(
 
     await uow.session.delete(item)
 
+    # Flush to persist changes before querying
+    await uow.flush()
+
     result = await uow.session.execute(select(Cart.user_id).where(Cart.id == cart_id))
     user_id = cast(int, result.scalar_one())
     return await get_cart_with_items(cart_id, user_id, uow)
@@ -331,6 +340,9 @@ async def clear_cart_items(
     await uow.session.execute(
         delete(CartItem).where(CartItem.cart_id == cart_id)
     )
+
+    # Flush to persist changes before querying
+    await uow.flush()
 
     result = await uow.session.execute(select(Cart.user_id).where(Cart.id == cart_id))
     user_id = result.scalar_one()

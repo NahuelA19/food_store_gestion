@@ -40,35 +40,43 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   const isAdmin = user?.role === "admin";
 
-  const navSections = [
-    {
-      title: "Panel",
-      links: [
-        { to: "/", label: "Dashboard", icon: LayoutDashboard },
-        { to: "/products", label: "Productos", icon: Package },
-        { to: "/orders", label: "Pedidos", icon: ShoppingCart },
-      ],
-    },
-    {
-      title: "Gestión",
-      links: [
-        { to: "/branches", label: "Sucursales", icon: Building2 },
-        { to: "/employees", label: "Empleados", icon: Users },
-        { to: "/settings", label: "Configuración", icon: Settings },
-      ],
-    },
-    ...(isAdmin
-      ? [
-          {
-            title: "Admin",
-            links: [
-              { to: "/products/new", label: "Nuevo Producto", icon: PlusCircle },
-              { to: "/categories/new", label: "Nueva Categoría", icon: FolderPlus },
-            ],
-          },
-        ]
-      : []),
-  ];
+  // Diferentes menús según el rol
+  const navSections = isAdmin
+    ? [
+        {
+          title: "Panel",
+          links: [
+            { to: "/", label: "Dashboard", icon: LayoutDashboard },
+            { to: "/products", label: "Productos", icon: Package },
+            { to: "/orders", label: "Pedidos", icon: ShoppingCart },
+          ],
+        },
+        {
+          title: "Gestión",
+          links: [
+            { to: "/branches", label: "Sucursales", icon: Building2 },
+            { to: "/employees", label: "Empleados", icon: Users },
+            { to: "/settings", label: "Configuración", icon: Settings },
+          ],
+        },
+        {
+          title: "Admin",
+          links: [
+            { to: "/products/new", label: "Nuevo Producto", icon: PlusCircle },
+            { to: "/categories/new", label: "Nueva Categoría", icon: FolderPlus },
+          ],
+        },
+      ]
+    : [
+        {
+          title: "Mi Tienda",
+          links: [
+            { to: "/products", label: "Productos", icon: Package },
+            { to: "/cart", label: "Carrito", icon: ShoppingCart },
+            { to: "/profile", label: "Mi Perfil", icon: Users },
+          ],
+        },
+      ];
 
   return (
     <aside

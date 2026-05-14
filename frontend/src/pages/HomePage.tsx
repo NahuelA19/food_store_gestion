@@ -1,9 +1,12 @@
 /**
- * HomePage — Admin dashboard with KPIs, pending orders, and branch overview
+ * HomePage — Dashboard for both admin and regular users
+ * - Admin: Shows KPIs, orders, branches
+ * - User: Shows product catalog
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
@@ -12,7 +15,10 @@ import { Icon } from "../components/ui/Icon";
 import { useDashboardStats } from "../hooks/useDashboard";
 import { useOrders } from "../hooks/useOrders";
 import { useBranches } from "../hooks/useBranches";
+import { useProducts } from "../hooks/useProducts";
+import { useCart } from "../hooks/useCart";
 import type { Branch } from "../types/branch";
+import type { Product } from "../types/product";
 import { OrdersByStatusChart } from "../components/OrdersByStatusChart";
 import {
   ShoppingBag,
@@ -26,9 +32,12 @@ import {
   FolderPlus,
   ListOrdered,
   Store,
+  ShoppingCart,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 
-/* ─── Static demo data (fallback) ─── */
+/* ─── ADMIN DASHBOARD COMPONENT ─── */
 
 interface KpiCard {
   icon: typeof Package;
@@ -98,38 +107,37 @@ interface OrderRow {
 }
 
 const FALLBACK_ORDERS: OrderRow[] = [
-  { id: 1042, customer: "María García", status: "pending", total: 156.0 },
-  { id: 1041, customer: "Carlos López", status: "confirmed", total: 89.5 },
-  { id: 1040, customer: "Ana Martínez", status: "preparing", total: 234.0 },
-  { id: 1039, customer: "Pedro Sánchez", status: "pending", total: 67.8 },
-  { id: 1038, customer: "Laura Rodríguez", status: "confirmed", total: 192.0 },
+  {
+    id: 1001,
+    customer: "Juan García",
+    status: "CONFIRMADO",
+    total: 450.0,
+  },
+  {
+    id: 1002,
+    customer: "María López",
+    status: "EN_PREP",
+    total: 320.5,
+  },
+  {
+    id: 1003,
+    customer: "Carlos Martínez",
+    status: "EN_CAMINO",
+    total: 580.75,
+  },
+  {
+    id: 1004,
+    customer: "Ana Rodríguez",
+    status: "PENDIENTE",
+    total: 210.0,
+  },
+  {
+    id: 1005,
+    customer: "Pedro Sánchez",
+    status: "ENTREGADO",
+    total: 645.25,
+  },
 ];
-
-const STATUS_LABELS: Record<string, string> = {
-  payment_pending: "Pendiente",
-  payment_failed: "Pago Fallido",
-  paid: "Pagado",
-  pending: "Pendiente",
-  confirmed: "Confirmado",
-  preparing: "Preparando",
-  ready: "Listo",
-  shipped: "Enviado",
-  delivered: "Entregado",
-  cancelled: "Cancelado",
-};
-
-const STATUS_VARIANTS: Record<string, "warning" | "info" | "neutral" | "success" | "danger"> = {
-  payment_pending: "warning",
-  payment_failed: "danger",
-  paid: "success",
-  pending: "warning",
-  confirmed: "info",
-  preparing: "neutral",
-  ready: "success",
-  shipped: "info",
-  delivered: "success",
-  cancelled: "danger",
-};
 
 interface BranchSummary {
   id: number;
@@ -139,63 +147,61 @@ interface BranchSummary {
 }
 
 const FALLBACK_BRANCHES: BranchSummary[] = [
-  { id: 1, name: "Sucursal Central", address: "Av. Corrientes 1234", status: "active" },
-  { id: 2, name: "Sucursal Norte", address: "Av. Cabildo 5678", status: "active" },
-  { id: 3, name: "Sucursal Sur", address: "Av. Boedo 9012", status: "active" },
+  {
+    id: 1,
+    name: "Centro Comercial",
+    address: "Av. Principal 123, Centro",
+    status: "active",
+  },
+  {
+    id: 2,
+    name: "Zona Norte",
+    address: "Calle 45 No. 567, Norte",
+    status: "active",
+  },
+  {
+    id: 3,
+    name: "Zona Sur",
+    address: "Av. Sur 890, Sur",
+    status: "inactive",
+  },
 ];
 
-/* ─── Skeleton component ─── */
+const STATUS_LABELS: { [key: string]: string } = {
+  PENDIENTE: "Pendiente",
+  CONFIRMADO: "Confirmado",
+  EN_PREP: "En Preparación",
+  EN_CAMINO: "En Camino",
+  ENTREGADO: "Entregado",
+  CANCELADO: "Cancelado",
+};
+
+const STATUS_VARIANTS: { [key: string]: "warning" | "info" | "success" | "danger" } = {
+  PENDIENTE: "warning",
+  CONFIRMADO: "info",
+  EN_PREP: "info",
+  EN_CAMINO: "info",
+  ENTREGADO: "success",
+  CANCELADO: "danger",
+};
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-8 animate-pulse">
-      {/* KPI skeletons */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-5 space-y-3">
-              <Skeleton className="h-10 w-10 rounded-xl" />
-              <Skeleton className="h-8 w-20" />
-              <Skeleton className="h-4 w-24" />
-            </CardContent>
-          </Card>
-        ))}
+    <div className="space-y-8 pb-16">
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-1/3" />
+        <Skeleton className="h-4 w-1/2" />
       </div>
-
-      {/* Two column skeleton */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <Skeleton className="h-6 w-40" />
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-        <div className="space-y-4">
-          <Skeleton className="h-6 w-32" />
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex gap-3">
-                  <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {[...Array(6)].map((_, i) => (
+          <Skeleton key={i} className="h-32" />
+        ))}
       </div>
     </div>
   );
 }
 
-export function HomePage() {
+function AdminDashboardPage() {
   const { stats, isLoading: statsLoading } = useDashboardStats();
   const { orders: apiOrders, isLoading: ordersLoading } = useOrders(1);
   const { branches: apiBranches, isLoading: branchesLoading } = useBranches();
@@ -276,7 +282,7 @@ export function HomePage() {
         id: b.id,
         name: b.name,
         address: b.address || "",
-        status: b.is_active ? "active" as const : "inactive" as const,
+        status: b.is_active ? "active" : "inactive",
       }));
     }
     return FALLBACK_BRANCHES;
@@ -296,7 +302,7 @@ export function HomePage() {
         </p>
       </div>
 
-      {/* ═══ KPI METRICS ROW ═══ */}
+      {/* KPI METRICS ROW */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpiCards.map((stat) => (
           <Card key={stat.label} className="hover:shadow-md transition-shadow">
@@ -326,7 +332,7 @@ export function HomePage() {
         ))}
       </div>
 
-      {/* ═══ QUICK ACTIONS ═══ */}
+      {/* QUICK ACTIONS */}
       <div className="flex flex-wrap gap-3">
         <Link to="/products/new">
           <Button variant="default" className="gap-2">
@@ -354,7 +360,7 @@ export function HomePage() {
         </Link>
       </div>
 
-      {/* ═══ TWO COLUMN LAYOUT ═══ */}
+      {/* TWO COLUMN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pending Orders */}
         <div className="lg:col-span-2 space-y-4">
@@ -412,7 +418,10 @@ export function HomePage() {
                           {order.customer}
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant={STATUS_VARIANTS[order.status] || "neutral"} size="sm">
+                          <Badge
+                            variant={STATUS_VARIANTS[order.status] || "neutral"}
+                            size="sm"
+                          >
                             {STATUS_LABELS[order.status] || order.status}
                           </Badge>
                         </td>
@@ -458,7 +467,7 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* ═══ BRANCH OVERVIEW ═══ */}
+      {/* BRANCH OVERVIEW */}
       <div>
         <h2 className="font-display text-lg font-bold text-text-primary mb-4">
           Resumen de Sucursales
@@ -473,7 +482,9 @@ export function HomePage() {
                       <Icon icon={Building2} size={20} />
                     </div>
                     <Badge
-                      variant={branch.status === "active" ? "success" : "danger"}
+                      variant={
+                        branch.status === "active" ? "success" : "danger"
+                      }
                       size="sm"
                     >
                       {branch.status === "active" ? "Activo" : "Inactivo"}
@@ -493,4 +504,167 @@ export function HomePage() {
       </div>
     </div>
   );
+}
+
+/* ─── USER SHOP PAGE ─── */
+
+function UserShopPage() {
+  const { products, isLoading } = useProducts();
+  const { addItem, isLoading: cartLoading } = useCart();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [addingProductId, setAddingProductId] = useState<number | null>(null);
+
+  const handleAddToCart = async (product: Product) => {
+    try {
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      setAddingProductId(product.id);
+      
+      await addItem(product.id, 1);
+      
+      setSuccessMessage(`"${product.name}" agregado al carrito`);
+      setAddingProductId(null);
+      
+      // Limpiar mensaje después de 3 segundos
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al agregar al carrito";
+      setErrorMessage(message);
+      setAddingProductId(null);
+      console.error("Error adding to cart:", err);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 pb-16">
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-1/3" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => (
+            <Skeleton key={i} className="h-64" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 pb-16 animate-fade-in">
+      {/* Page title */}
+      <div>
+        <h1 className="font-display text-2xl font-bold text-text-primary">
+          Nuestros Productos
+        </h1>
+        <p className="text-sm text-text-muted mt-1">
+          Explora nuestro catálogo y agrega productos a tu carrito
+        </p>
+      </div>
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg dark:bg-emerald-900/30 dark:border-emerald-800">
+          <Check size={18} className="text-emerald-600 dark:text-emerald-400" />
+          <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+            {successMessage}
+          </p>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="flex items-center gap-2 p-3 bg-danger-bg border border-danger rounded-lg dark:bg-danger/10 dark:border-danger/30">
+          <AlertCircle size={18} className="text-danger" />
+          <p className="text-sm font-medium text-danger">
+            {errorMessage}
+          </p>
+        </div>
+      )}
+
+      {/* Products Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {products && products.length > 0 ? (
+          products.map((product: Product) => (
+            <div key={product.id}>
+              <Card variant="interactive" className="h-full hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 h-full flex flex-col">
+                  {/* Image Placeholder */}
+                  <Link
+                    to={`/products/${product.id}`}
+                    className="w-full h-40 bg-surface-alt rounded-lg mb-3 flex items-center justify-center hover:bg-surface-alt/80 transition-colors group"
+                  >
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform"
+                      />
+                    ) : (
+                      <Icon icon={Package} size={40} className="text-text-muted group-hover:scale-110 transition-transform" />
+                    )}
+                  </Link>
+
+                  {/* Product Info */}
+                  <Link to={`/products/${product.id}`} className="flex-1 hover:opacity-80 transition-opacity">
+                    <p className="font-semibold text-text-primary line-clamp-2">
+                      {product.name}
+                    </p>
+                    <p className="text-xs text-text-muted mt-1 line-clamp-2">
+                      {product.description}
+                    </p>
+                  </Link>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+                    <p className="font-bold text-brand-600">
+                      ${Number(product.price).toFixed(2)}
+                    </p>
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      disabled={cartLoading || addingProductId === product.id}
+                      className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {addingProductId === product.id ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span className="hidden sm:inline">...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart size={14} />
+                          <span className="hidden sm:inline">Agregar</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ))
+        ) : (
+          <div className="col-span-full text-center py-12">
+            <p className="text-text-muted">No hay productos disponibles</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── MAIN HOMEPAGE COMPONENT ─── */
+
+export function HomePage() {
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === "admin";
+
+  // Si es usuario normal, mostrar catálogo de productos
+  if (!isAdmin) {
+    return <UserShopPage />;
+  }
+
+  // Si es admin, mostrar dashboard
+  return <AdminDashboardPage />;
 }

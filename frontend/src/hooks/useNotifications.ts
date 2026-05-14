@@ -1,18 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "../store/authStore";
 import { notificationApi } from "../api/notificationApi";
 
 export function useNotifications(page = 1) {
   const queryClient = useQueryClient();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const listQuery = useQuery({
     queryKey: ["notifications", page],
     queryFn: () => notificationApi.list(page),
+    enabled: isAuthenticated,
   });
 
   const unreadQuery = useQuery({
     queryKey: ["notifications", "unread"],
     queryFn: () => notificationApi.getUnreadCount(),
     refetchInterval: 30000,
+    enabled: isAuthenticated,
   });
 
   const markAsReadMutation = useMutation({
