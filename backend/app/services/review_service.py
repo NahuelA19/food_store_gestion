@@ -220,11 +220,7 @@ async def update_review(
     if data.comment is not None:
         review.comment = data.comment
 
-    # Reset moderation status on update
-    review.is_approved = False
-    review.moderated_by = None
-    review.moderated_at = None
-    review.rejection_reason = None
+    # Keep existing approval status — don't reset to unapproved on edit
 
     uow.session.add(review)
     await uow.flush()

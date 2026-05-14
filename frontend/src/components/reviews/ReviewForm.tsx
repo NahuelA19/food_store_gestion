@@ -160,30 +160,32 @@ export function ReviewForm({ productId, existingReview, onSubmit, onDelete }: Re
         )}
 
         {isEditing && showDeleteConfirm && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <span className="text-sm text-text-muted">Are you sure?</span>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-              size="sm"
-            >
-              {isDeleting ? (
-                <Icon icon={Loader2} size={16} className="animate-spin" />
-              ) : (
-                "Yes, delete"
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowDeleteConfirm(false)}
-              size="sm"
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                size="sm"
+              >
+                {isDeleting ? (
+                  <Icon icon={Loader2} size={16} className="animate-spin" />
+                ) : (
+                  "Yes, delete"
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                size="sm"
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         )}
       </div>
