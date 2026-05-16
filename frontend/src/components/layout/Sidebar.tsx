@@ -161,7 +161,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                       "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200",
                       collapsed && "justify-center px-0",
                       isActive(link.to)
-                        ? "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
+                        ? "pill-active"
                         : "text-text-secondary hover:bg-surface-alt hover:text-text-primary"
                     )}
                     title={collapsed ? link.label : undefined}

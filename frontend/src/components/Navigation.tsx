@@ -78,7 +78,7 @@ export function Navigation() {
               className={cn(
                 "flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200",
                 isActive(link.to)
-                  ? "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
+                  ? "pill-active"
                   : "text-text-secondary hover:text-text-primary hover:bg-surface-alt"
               )}
             >
@@ -99,7 +99,7 @@ export function Navigation() {
             className={cn(
               "relative flex items-center justify-center h-10 w-10 rounded-lg transition-all duration-200",
               isActive("/cart")
-                ? "bg-brand-100 text-brand-700"
+                ? "pill-active"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface-alt"
             )}
             aria-label="Carrito de compras"
@@ -124,7 +124,7 @@ export function Navigation() {
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200",
                   isActive("/profile")
-                    ? "bg-brand-100 text-brand-700"
+                    ? "pill-active"
                     : "text-text-secondary hover:text-text-primary hover:bg-surface-alt"
                 )}
               >
@@ -189,7 +189,7 @@ export function Navigation() {
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200",
                     isActive(link.to)
-                      ? "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
+                      ? "pill-active"
                       : "text-text-secondary hover:text-text-primary hover:bg-surface-alt"
                   )}
                 >

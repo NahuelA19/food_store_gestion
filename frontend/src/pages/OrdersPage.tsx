@@ -214,8 +214,8 @@ export function OrdersPage() {
             className={cn(
               "px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200",
               activeFilter === f.key
-                ? "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
-                : "text-text-secondary hover:bg-surface-alt hover:text-text-primary"
+                ? "pill-active"
+                : "pill-inactive"
             )}
           >
             {f.key !== "all" ? (

@@ -121,8 +121,8 @@ function AddressForm({ initial, onSubmit, onCancel, isSubmitting, error }: Addre
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border-2 border-brand-200 bg-brand-50/30 p-4">
-      <h4 className="text-sm font-bold text-text-primary">
+    <form onSubmit={handleSubmit} className="space-y-4 form-panel">
+      <h4 className="text-sm font-bold text-white">
         {initial ? "Editar dirección" : "Nueva dirección"}
       </h4>
 
