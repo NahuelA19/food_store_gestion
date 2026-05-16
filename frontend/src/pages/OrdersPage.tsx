@@ -178,9 +178,10 @@ export function OrdersPage() {
                   onClick={() => { setSelectedBranchId(undefined); setPage(1); setBranchDropdownOpen(false); }}
                   className={cn(
                     "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200",
-                    !selectedBranchId ? "bg-brand-500/15 text-brand-700 dark:text-brand-300" : "opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5"
+                    !selectedBranchId
+                      ? "bg-brand-500/25 text-brand-200"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
                   )}
-                  style={{ color: !selectedBranchId ? undefined : "inherit" }}
                 >
                   Todas las sucursales
                 </button>
@@ -190,9 +191,10 @@ export function OrdersPage() {
                     onClick={() => { setSelectedBranchId(b.id); setPage(1); setBranchDropdownOpen(false); }}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200",
-                      selectedBranchId === b.id ? "bg-brand-500/15 text-brand-700 dark:text-brand-300" : "opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5"
+                      selectedBranchId === b.id
+                        ? "bg-brand-500/25 text-brand-200"
+                        : "text-white/80 hover:text-white hover:bg-white/10"
                     )}
-                    style={{ color: selectedBranchId === b.id ? undefined : "inherit" }}
                   >
                     {b.name}
                   </button>

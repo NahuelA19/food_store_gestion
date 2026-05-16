@@ -138,17 +138,16 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
                   key={branch.id}
                   onClick={() => handleBranchChange(branch)}
                   className={cn(
-                    "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-200",
+                    "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-200 text-white",
                     selectedBranch?.id === branch.id
-                      ? "bg-brand-500/15 text-brand-700 dark:text-brand-300"
-                      : "opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5"
+                      ? "bg-brand-500/25 text-brand-200"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
                   )}
-                  style={{ color: "inherit" }}
                 >
                   <Building2 size={16} className="mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm font-semibold">{branch.name}</p>
-                    <p className="text-xs opacity-60">{branch.address}</p>
+                    <p className="text-xs opacity-50">{branch.address}</p>
                   </div>
                 </button>
               ))
@@ -230,17 +229,16 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
             <div className="dropdown absolute right-0 top-full mt-1.5 w-56 rounded-xl p-1.5 animate-scale-in z-50">
               {isAuthenticated ? (
                 <>
-                  <div className="px-3 py-2 border-b border-black/10 dark:border-white/10 mb-1">
-                    <p className="text-sm font-semibold" style={{ color: "inherit" }}>
+                  <div className="px-3 py-2 border-b border-white/15 mb-1">
+                    <p className="text-sm font-semibold text-white">
                       {user?.email}
                     </p>
-                    <p className="text-xs opacity-60 capitalize">{user?.role ?? "Usuario"}</p>
+                    <p className="text-xs text-white/50 capitalize">{user?.role ?? "Usuario"}</p>
                   </div>
                   <Link
                     to="/settings"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200"
-                    style={{ color: "inherit" }}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
                   >
                     <Icon icon={Settings} size={16} />
                     Configuración
@@ -248,19 +246,18 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
                   <Link
                     to="/help"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200"
-                    style={{ color: "inherit" }}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
                   >
                     <Icon icon={HelpCircle} size={16} />
                     Ayuda
                   </Link>
-                  <div className="border-t border-black/10 dark:border-white/10 mt-1 pt-1">
+                  <div className="border-t border-white/15 mt-1 pt-1">
                     <button
                       onClick={() => {
                         logout();
                         setUserMenuOpen(false);
                       }}
-                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-400/15 transition-all duration-200"
                     >
                       <Icon icon={LogOut} size={16} />
                       Cerrar sesión

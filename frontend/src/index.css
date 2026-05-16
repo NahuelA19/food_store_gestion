@@ -631,22 +631,23 @@
     transition: box-shadow 0.2s ease-out;
   }
 
-  /* ---- Dropdown / Menu Popover — Solid background with blur ---- */
+  /* ---- Dropdown / Menu Popover ----
+     Dark glassmorphic panel consistent with the app's indigo/dark aesthetic.
+     Both light and dark modes use a dark background so white text remains legible.
+  */
   .dropdown {
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    box-shadow: 0 12px 40px -8px rgb(0 0 0 / 0.30), 0 4px 12px -4px rgb(0 0 0 / 0.15);
-    color: oklch(0.14 0.012 70);
+    background: rgba(18, 14, 44, 0.93);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(99, 102, 241, 0.28);
+    box-shadow: 0 16px 48px -8px rgb(0 0 0 / 0.55), 0 6px 16px -4px rgb(0 0 0 / 0.35);
   }
 
   .dark .dropdown {
-    background: rgba(22, 22, 30, 0.96);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(99, 102, 241, 0.18);
-    box-shadow: 0 12px 40px -8px rgb(0 0 0 / 0.70), 0 4px 12px -4px rgb(0 0 0 / 0.50);
-    color: oklch(0.92 0.006 70);
+    background: rgba(10, 8, 28, 0.97);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(99, 102, 241, 0.22);
+    box-shadow: 0 16px 48px -8px rgb(0 0 0 / 0.75), 0 6px 16px -4px rgb(0 0 0 / 0.55);
   }
 }

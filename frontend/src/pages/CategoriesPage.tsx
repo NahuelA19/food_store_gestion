@@ -152,12 +152,12 @@ export function CategoriesPage() {
                 <Icon icon={AlertTriangle} size={22} className="text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="text-base font-bold" style={{ color: "inherit" }}>
+                <h3 className="text-base font-bold text-white">
                   Eliminar categoría
                 </h3>
-                <p className="text-sm opacity-70 mt-1">
+                <p className="text-sm text-white/70 mt-1">
                   ¿Estás seguro de que querés eliminar{" "}
-                  <strong className="font-semibold opacity-100">&ldquo;{deleteTarget.name}&rdquo;</strong>?
+                  <strong className="font-semibold text-white">&ldquo;{deleteTarget.name}&rdquo;</strong>?
                   Esta acción no se puede deshacer.
                 </p>
               </div>
