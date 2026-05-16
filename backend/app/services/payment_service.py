@@ -244,7 +244,7 @@ async def create_preference(
         external_ref_uuid = uuid4()
 
         preference_id = f"SIM-{order.id}"
-        init_point = f"{settings.base_url}/orders/{order.id}?status=success"
+        init_point = f"{settings.frontend_url}/payment/success?order_id={order.id}&simulated=true"
 
         # Simulated MP response
         simulated_response = {
@@ -301,7 +301,7 @@ async def create_preference(
         "items": [
             {
                 "id": str(order.id),
-                "title": f"Orden #{order.id}",
+                "title": f"Orden #{order.id} — Food Store",
                 "description": f"Compra de {len(order.items)} producto(s)",
                 "quantity": 1,
                 "currency_id": "ARS",
@@ -312,13 +312,16 @@ async def create_preference(
             "email": payer_email,
         },
         "back_urls": {
-            "success": f"{settings.base_url}/orders/{order.id}?status=success",
-            "failure": f"{settings.base_url}/orders/{order.id}?status=failure",
-            "pending": f"{settings.base_url}/orders/{order.id}?status=pending",
+            # MP redirects users to these frontend URLs after payment
+            "success": f"{settings.frontend_url}/payment/success?order_id={order.id}",
+            "failure": f"{settings.frontend_url}/payment/failure?order_id={order.id}",
+            "pending": f"{settings.frontend_url}/payment/pending?order_id={order.id}",
         },
         "auto_return": "approved",
+        "notification_url": settings.mp_notification_url,
         "external_reference": str(order.id),
         "statement_descriptor": "FoodStore",
+        "expires": False,
     }
 
     response = sdk.preference().create(preference_data)

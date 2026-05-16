@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     # API
     api_title: str = "Food Store API"
     api_version: str = "0.1.0"
-    base_url: str = "http://localhost:8000"  # Used for MP back_urls, image uploads
+    base_url: str = "http://localhost:8000"  # Backend base URL (used for uploads, API)
+    frontend_url: str = "http://localhost:5173"  # Frontend URL (MP back_urls redirect here)
 
     # Database
     database_url: str
@@ -39,8 +40,8 @@ class Settings(BaseSettings):
     # Payment (MercadoPago)
     mp_access_token: str = ""
     mp_public_key: str = ""
-    mp_webhook_secret: str = ""  # For IPN validation if used
-    mp_notification_url: str = "http://your-domain.com/api/v1/payments/webhook"
+    mp_webhook_secret: str = ""
+    mp_notification_url: str = "http://localhost:8000/api/v1/payments/webhook"
 
     # CORS
     allowed_origins: list[str] | str = "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:3000"
