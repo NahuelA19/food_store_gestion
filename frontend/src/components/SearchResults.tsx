@@ -4,8 +4,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { SkeletonCard } from "@/components/ui/Skeleton";
-import { Package, Search, ChevronLeft, ChevronRight, Heart } from "lucide-react";
+import { Package, Search, ChevronLeft, ChevronRight, Heart, ShoppingCart, Check, Loader2 } from "lucide-react";
+import { getProductImageUrl } from "@/lib/utils";
 import type { Product, PaginationInfo } from "../hooks/useSearch";
+
 export interface SearchResultsProps {
   items: Product[];
   pagination: PaginationInfo;
@@ -15,25 +17,36 @@ export interface SearchResultsProps {
   onProductClick: (productId: number) => void;
   favoriteIds?: Set<number>;
   onToggleFavorite?: (productId: number) => void;
+  onAddToCart?: (productId: number, quantity: number) => Promise<void>;
 }
+
+type CartState = "idle" | "loading" | "added" | "error";
 
 function ProductCardItem({
   product,
   onClick,
   isFavorite,
   onToggleFavorite,
+  onAddToCart,
 }: {
   product: Product;
   onClick: () => void;
   isFavorite: boolean;
   onToggleFavorite?: (productId: number) => void;
+  onAddToCart?: (productId: number, quantity: number) => Promise<void>;
 }) {
   const [imgError, setImgError] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
-  const inStock =
-    product.inventory &&
-    product.inventory.stock_quantity > product.inventory.low_stock_threshold;
-  const hasImage = product.image_url && !imgError;
+  const [cartState, setCartState] = useState<CartState>("idle");
+
+  const stockQty = product.inventory?.stock_quantity ?? 0;
+  const isOutOfStock = stockQty === 0;
+  const isLowStock = product.inventory
+    ? stockQty > 0 && stockQty <= product.inventory.low_stock_threshold
+    : false;
+
+  const imageUrl = getProductImageUrl(product.image_url);
+  const hasImage = !!imageUrl && !imgError;
 
   const handleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -47,44 +60,38 @@ function ProductCardItem({
     }
   };
 
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!onAddToCart || cartState !== "idle") return;
+    setCartState("loading");
+    try {
+      await onAddToCart(product.id, 1);
+      setCartState("added");
+      setTimeout(() => setCartState("idle"), 2000);
+    } catch {
+      setCartState("error");
+      setTimeout(() => setCartState("idle"), 2500);
+    }
+  };
+
   return (
     <Card variant="interactive" onClick={onClick}>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
+      <CardContent className="p-0">
+        {/* Product image */}
+        <div className="relative h-36 overflow-hidden rounded-t-xl">
           {hasImage ? (
             <img
-              src={product.image_url!}
+              src={imageUrl!}
               alt={product.name}
-              className="h-16 w-16 shrink-0 rounded-lg object-cover"
+              className="h-full w-full object-cover"
               onError={() => setImgError(true)}
             />
-           ) : (
-             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-[color:var(--color-surface-alt)]">
-               <Icon icon={Package} className="text-text-secondary" />
-             </div>
-           )}
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate font-display text-base font-semibold text-text-primary">
-              {product.name}
-            </h3>
-            {product.description && (
-              <p className="mt-0.5 line-clamp-2 text-sm text-text-secondary">
-                {product.description}
-              </p>
-            )}
-            <div className="mt-2 flex items-center gap-3">
-             <span className="font-display text-lg font-bold text-[color:var(--color-primary)]">
-                 ${parseFloat(product.price.toString()).toFixed(2)}
-               </span>
-              {product.inventory && (
-                <Badge variant={inStock ? "success" : "warning"} size="sm">
-                  {inStock
-                    ? "In Stock"
-                    : `Low Stock (${product.inventory.stock_quantity})`}
-                </Badge>
-              )}
+          ) : (
+            <div className="flex h-full items-center justify-center bg-surface-alt">
+              <Icon icon={Package} size={36} className="text-text-muted" />
             </div>
-          </div>
+          )}
 
           {/* Favorite button */}
           {onToggleFavorite && (
@@ -92,22 +99,85 @@ function ProductCardItem({
               type="button"
               onClick={handleFavorite}
               disabled={favLoading}
-              className={`shrink-0 rounded-full p-1.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+              className={`absolute right-2 top-2 rounded-full p-1.5 transition-all duration-200 bg-black/30 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${
                 favLoading ? "animate-pulse" : "hover:scale-110"
-              } ${
-                isFavorite
-                  ? "text-red-500"
-                  : "text-gray-400 hover:text-red-400 dark:text-gray-500"
-              }`}
+              } ${isFavorite ? "text-red-400" : "text-white/70 hover:text-red-400"}`}
               aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
             >
               <Heart
-                size={18}
-                className={`transition-all duration-200 ${
-                  isFavorite ? "fill-red-500" : "fill-none"
-                }`}
+                size={16}
+                className={`transition-all duration-200 ${isFavorite ? "fill-red-400" : "fill-none"}`}
               />
             </button>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-3 flex flex-col gap-2">
+          <h3 className="truncate font-display text-sm font-semibold text-text-primary">
+            {product.name}
+          </h3>
+
+          {product.description && (
+            <p className="line-clamp-2 text-xs text-text-muted">
+              {product.description}
+            </p>
+          )}
+
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-display text-base font-bold text-brand-400">
+              ${parseFloat(product.price.toString()).toFixed(2)}
+            </span>
+
+            {product.inventory && (
+              <Badge
+                variant={isOutOfStock ? "danger" : isLowStock ? "warning" : "success"}
+                size="sm"
+              >
+                {isOutOfStock
+                  ? "Sin stock"
+                  : isLowStock
+                  ? `Quedan ${stockQty}`
+                  : "En stock"}
+              </Badge>
+            )}
+          </div>
+
+          {/* Add to cart button */}
+          {onAddToCart && !isOutOfStock && (
+            <Button
+              variant={cartState === "added" ? "outline" : "default"}
+              size="sm"
+              className="w-full mt-1"
+              onClick={handleAddToCart}
+              disabled={cartState !== "idle"}
+              aria-label={`Agregar ${product.name} al carrito`}
+            >
+              {cartState === "loading" && (
+                <>
+                  <Loader2 size={14} className="animate-spin mr-1" />
+                  Agregando...
+                </>
+              )}
+              {cartState === "added" && (
+                <>
+                  <Check size={14} className="mr-1 text-emerald-400" />
+                  <span className="text-emerald-400">¡Agregado!</span>
+                </>
+              )}
+              {cartState === "error" && (
+                <>
+                  <ShoppingCart size={14} className="mr-1 text-red-400" />
+                  <span className="text-red-400">Error</span>
+                </>
+              )}
+              {cartState === "idle" && (
+                <>
+                  <ShoppingCart size={14} className="mr-1" />
+                  Agregar
+                </>
+              )}
+            </Button>
           )}
         </div>
       </CardContent>
@@ -124,8 +194,8 @@ export function SearchResults({
   onProductClick,
   favoriteIds,
   onToggleFavorite,
+  onAddToCart,
 }: SearchResultsProps) {
-  // Sort: favorited products first
   const sortedItems = useMemo(() => {
     if (!favoriteIds || favoriteIds.size === 0) return items;
     return [...items].sort((a, b) => {
@@ -135,13 +205,12 @@ export function SearchResults({
     });
   }, [items, favoriteIds]);
 
-  const displayItems = sortedItems;
   if (error) {
     return (
-      <div className="rounded-xl border border-danger/20 bg-danger-bg p-6 text-center">
-        <p className="font-semibold text-danger-text">{error}</p>
-        <p className="mt-1 text-sm text-danger-text/80">
-          Please try again or contact support.
+      <div className="rounded-xl border border-danger/20 bg-danger/10 p-6 text-center">
+        <p className="font-semibold text-danger">{error}</p>
+        <p className="mt-1 text-sm text-text-muted">
+          Intentá de nuevo o contactá con soporte.
         </p>
       </div>
     );
@@ -159,15 +228,15 @@ export function SearchResults({
 
   if (items.length === 0) {
     return (
-       <div className="flex flex-col items-center justify-center py-16 text-center">
-         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[color:var(--color-surface-alt)]">
-           <Icon icon={Search} size={24} className="text-text-muted" />
-         </div>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface-alt">
+          <Icon icon={Search} size={24} className="text-text-muted" />
+        </div>
         <p className="mt-4 font-display text-lg font-semibold text-text-primary">
-          No products found
+          No se encontraron productos
         </p>
-        <p className="mt-1 text-sm text-text-secondary">
-          Try clearing your filters or searching for something else.
+        <p className="mt-1 text-sm text-text-muted">
+          Probá limpiar los filtros o buscá algo diferente.
         </p>
       </div>
     );
@@ -175,18 +244,19 @@ export function SearchResults({
 
   return (
     <div>
-      <p className="mb-4 text-sm text-text-secondary">
-        Showing {items.length} of {pagination.total} products
+      <p className="mb-4 text-sm text-text-muted">
+        Mostrando {items.length} de {pagination.total} productos
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {displayItems.map((product) => (
+        {sortedItems.map((product) => (
           <ProductCardItem
             key={product.id}
             product={product}
             onClick={() => onProductClick(product.id)}
             isFavorite={favoriteIds?.has(product.id) ?? false}
             onToggleFavorite={onToggleFavorite}
+            onAddToCart={onAddToCart}
           />
         ))}
       </div>
@@ -199,11 +269,11 @@ export function SearchResults({
           disabled={!pagination.has_previous}
         >
           <Icon icon={ChevronLeft} />
-          Previous
+          Anterior
         </Button>
 
-        <span className="min-w-[140px] text-center text-sm text-text-secondary">
-          Page {pagination.page} of {pagination.total_pages}
+        <span className="min-w-[140px] text-center text-sm text-text-muted">
+          Página {pagination.page} de {pagination.total_pages}
         </span>
 
         <Button
@@ -212,7 +282,7 @@ export function SearchResults({
           onClick={() => onPageChange(pagination.page + 1)}
           disabled={!pagination.has_next}
         >
-          Next
+          Siguiente
           <Icon icon={ChevronRight} />
         </Button>
       </div>
