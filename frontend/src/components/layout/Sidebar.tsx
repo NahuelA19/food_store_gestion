@@ -21,6 +21,11 @@ import {
   ChevronRight,
   PlusCircle,
   FolderPlus,
+  Heart,
+  Bell,
+  ClipboardList,
+  Tag,
+  UserCheck,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -39,6 +44,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   };
 
   const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isEmployee = user?.role?.toLowerCase() === "employee";
 
   // Diferentes menús según el rol
   const navSections = isAdmin
@@ -56,6 +62,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           links: [
             { to: "/branches", label: "Sucursales", icon: Building2 },
             { to: "/employees", label: "Empleados", icon: Users },
+            { to: "/clients", label: "Clientes", icon: UserCheck },
+            { to: "/categories", label: "Categorías", icon: Tag },
             { to: "/settings", label: "Configuración", icon: Settings },
           ],
         },
@@ -67,13 +75,39 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           ],
         },
       ]
+    : isEmployee
+    ? [
+        {
+          title: "Operaciones",
+          links: [
+            { to: "/orders", label: "Pedidos", icon: ClipboardList },
+            { to: "/products", label: "Productos", icon: Package },
+            { to: "/branches", label: "Sucursales", icon: Building2 },
+          ],
+        },
+        {
+          title: "Mi cuenta",
+          links: [
+            { to: "/notifications", label: "Notificaciones", icon: Bell },
+            { to: "/settings", label: "Configuración", icon: Settings },
+          ],
+        },
+      ]
     : [
         {
           title: "Mi Tienda",
           links: [
             { to: "/products", label: "Productos", icon: Package },
+            { to: "/orders", label: "Mis Pedidos", icon: ShoppingCart },
+            { to: "/wishlist", label: "Favoritos", icon: Heart },
             { to: "/cart", label: "Carrito", icon: ShoppingCart },
-            { to: "/profile", label: "Mi Perfil", icon: Users },
+          ],
+        },
+        {
+          title: "Mi cuenta",
+          links: [
+            { to: "/notifications", label: "Notificaciones", icon: Bell },
+            { to: "/settings", label: "Configuración", icon: Settings },
           ],
         },
       ];

@@ -10,6 +10,7 @@ import { CreateProductPage } from "./pages/CreateProductPage";
 import { EditProductPage } from "./pages/EditProductPage";
 import { CreateCategoryPage } from "./pages/CreateCategoryPage";
 import { EditCategoryPage } from "./pages/EditCategoryPage";
+import { CategoriesPage } from "./pages/CategoriesPage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { WishlistPage } from "./pages/WishlistPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
@@ -18,6 +19,8 @@ import { OrderDetailPage } from "./pages/OrderDetailPage";
 import { BranchesPage } from "./pages/BranchesPage";
 import { BranchDetailPage } from "./pages/BranchDetailPage";
 import { EmployeesPage } from "./pages/EmployeesPage";
+import { ClientsPage } from "./pages/ClientsPage";
+import { HelpPage } from "./pages/HelpPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailurePage from "./pages/PaymentFailurePage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -70,6 +73,21 @@ function App() {
             <Route path="/employees" element={
               <ProtectedRoute requiredRole="admin">
                 <EmployeesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/clients" element={
+              <ProtectedRoute requiredRole="admin">
+                <ClientsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/categories" element={
+              <ProtectedRoute requiredRole="admin">
+                <CategoriesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/help" element={
+              <ProtectedRoute>
+                <HelpPage />
               </ProtectedRoute>
             } />
             <Route

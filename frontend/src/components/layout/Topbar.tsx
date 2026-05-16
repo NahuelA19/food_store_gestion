@@ -129,9 +129,9 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
         </button>
 
         {branchOpen && (
-          <div className="absolute left-0 top-full mt-1.5 w-64 rounded-xl border border-border bg-surface-card p-1.5 shadow-dropdown animate-scale-in z-50">
+          <div className="dropdown absolute left-0 top-full mt-1.5 w-64 rounded-xl p-1.5 animate-scale-in z-50">
             {branches.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-text-muted">No hay sucursales</div>
+              <div className="px-3 py-2 text-sm opacity-60">No hay sucursales</div>
             ) : (
               branches.map((branch) => (
                 <button
@@ -140,14 +140,15 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
                   className={cn(
                     "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-200",
                     selectedBranch?.id === branch.id
-                      ? "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
-                      : "text-text-secondary hover:bg-surface-alt hover:text-text-primary"
+                      ? "bg-brand-500/15 text-brand-700 dark:text-brand-300"
+                      : "opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5"
                   )}
+                  style={{ color: "inherit" }}
                 >
                   <Building2 size={16} className="mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm font-semibold">{branch.name}</p>
-                    <p className="text-xs text-text-muted">{branch.address}</p>
+                    <p className="text-xs opacity-60">{branch.address}</p>
                   </div>
                 </button>
               ))
@@ -226,19 +227,20 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
           </button>
 
           {userMenuOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-56 rounded-xl border border-border bg-surface-card p-1.5 shadow-dropdown animate-scale-in z-50">
+            <div className="dropdown absolute right-0 top-full mt-1.5 w-56 rounded-xl p-1.5 animate-scale-in z-50">
               {isAuthenticated ? (
                 <>
-                  <div className="px-3 py-2 border-b border-border mb-1">
-                    <p className="text-sm font-semibold text-text-primary">
+                  <div className="px-3 py-2 border-b border-black/10 dark:border-white/10 mb-1">
+                    <p className="text-sm font-semibold" style={{ color: "inherit" }}>
                       {user?.email}
                     </p>
-                    <p className="text-xs text-text-muted">Administrador</p>
+                    <p className="text-xs opacity-60 capitalize">{user?.role ?? "Usuario"}</p>
                   </div>
                   <Link
                     to="/settings"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-text-secondary hover:bg-surface-alt hover:text-text-primary transition-all duration-200"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200"
+                    style={{ color: "inherit" }}
                   >
                     <Icon icon={Settings} size={16} />
                     Configuración
@@ -246,18 +248,19 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
                   <Link
                     to="/help"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-text-secondary hover:bg-surface-alt hover:text-text-primary transition-all duration-200"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold opacity-80 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200"
+                    style={{ color: "inherit" }}
                   >
                     <Icon icon={HelpCircle} size={16} />
                     Ayuda
                   </Link>
-                  <div className="border-t border-border mt-1 pt-1">
+                  <div className="border-t border-black/10 dark:border-white/10 mt-1 pt-1">
                     <button
                       onClick={() => {
                         logout();
                         setUserMenuOpen(false);
                       }}
-                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-danger hover:bg-danger-bg transition-all duration-200"
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
                     >
                       <Icon icon={LogOut} size={16} />
                       Cerrar sesión
