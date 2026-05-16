@@ -12,7 +12,9 @@ import { cn } from "@/lib/utils";
 import { useWishlist } from "../../hooks/useWishlist";
 import { useNotifications } from "../../hooks/useNotifications";
 import { NotificationDropdown } from "../notifications/NotificationDropdown";
+import { CartBadge } from "../Cart/CartBadge";
 import { branchApi } from "../../api/branchApi";
+import { useCartUIStore } from "../../store/cartUIStore";
 import type { Branch } from "../../types/branch";
 import logoImg from "../../assets/images/logo.png";
 import {
@@ -39,6 +41,8 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
   const { isAuthenticated, user } = useAuthStore();
   const { logout } = useAuth();
   const { count: wishlistCount } = useWishlist();
+  const { toggle: toggleCart } = useCartUIStore();
+  const isCustomer = !user?.role || ["customer", "client"].includes(user.role.toLowerCase());
   const [branchOpen, setBranchOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -198,6 +202,17 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
               </span>
             )}
           </Link>
+        )}
+
+        {/* Cart button — customers only */}
+        {isAuthenticated && isCustomer && (
+          <button
+            onClick={toggleCart}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-alt hover:text-text-primary transition-all duration-200 relative"
+            aria-label="Abrir carrito"
+          >
+            <CartBadge />
+          </button>
         )}
 
         {/* Theme toggle */}

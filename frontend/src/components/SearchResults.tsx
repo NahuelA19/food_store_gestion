@@ -4,8 +4,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { SkeletonCard } from "@/components/ui/Skeleton";
-import { Package, Search, ChevronLeft, ChevronRight, Heart, ShoppingCart, Check, Loader2 } from "lucide-react";
+import { Package, Search, ChevronLeft, ChevronRight, Heart, ShoppingCart, Loader2, Plus, Minus } from "lucide-react";
 import { getProductImageUrl } from "@/lib/utils";
+import { useCartContext } from "../context/CartContext";
+import { useToast } from "./ui/Toast";
 import type { Product, PaginationInfo } from "../hooks/useSearch";
 
 export interface SearchResultsProps {
@@ -17,68 +19,97 @@ export interface SearchResultsProps {
   onProductClick: (productId: number) => void;
   favoriteIds?: Set<number>;
   onToggleFavorite?: (productId: number) => void;
-  onAddToCart?: (productId: number, quantity: number) => Promise<void>;
+  showCartControls?: boolean;
 }
 
-type CartState = "idle" | "loading" | "added" | "error";
+/* ─── Single product card ─── */
 
 function ProductCardItem({
   product,
   onClick,
   isFavorite,
   onToggleFavorite,
-  onAddToCart,
+  showCartControls,
 }: {
   product: Product;
   onClick: () => void;
   isFavorite: boolean;
   onToggleFavorite?: (productId: number) => void;
-  onAddToCart?: (productId: number, quantity: number) => Promise<void>;
+  showCartControls: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
-  const [cartState, setCartState] = useState<CartState>("idle");
+  const [addLoading, setAddLoading] = useState(false);
+  const [qtyLoading, setQtyLoading] = useState<"inc" | "dec" | null>(null);
+
+  const { items: cartItems, addItem, updateQuantity, removeItem } = useCartContext();
+  const { toast } = useToast();
+
+  // Find this product in cart (if any)
+  const cartItem = cartItems.find((i) => i.product_id === product.id);
+  const inCart = !!cartItem;
 
   const stockQty = product.inventory?.stock_quantity ?? 0;
   const isOutOfStock = stockQty === 0;
   const isLowStock = product.inventory
     ? stockQty > 0 && stockQty <= product.inventory.low_stock_threshold
     : false;
+  const atMaxStock = inCart && cartItem.quantity >= stockQty;
 
   const imageUrl = getProductImageUrl(product.image_url);
   const hasImage = !!imageUrl && !imgError;
 
   const handleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    e.preventDefault();
     if (favLoading || !onToggleFavorite) return;
     setFavLoading(true);
+    try { await onToggleFavorite(product.id); } finally { setFavLoading(false); }
+  };
+
+  const handleAdd = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (addLoading) return;
+    setAddLoading(true);
     try {
-      await onToggleFavorite(product.id);
+      await addItem(product.id, 1);
+      toast(`${product.name} agregado al carrito`, "success");
+    } catch {
+      toast("Error al agregar al carrito", "error");
     } finally {
-      setFavLoading(false);
+      setAddLoading(false);
     }
   };
 
-  const handleAddToCart = async (e: React.MouseEvent) => {
+  const handleIncrease = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    e.preventDefault();
-    if (!onAddToCart || cartState !== "idle") return;
-    setCartState("loading");
+    if (!cartItem || qtyLoading || atMaxStock) return;
+    setQtyLoading("inc");
     try {
-      await onAddToCart(product.id, 1);
-      setCartState("added");
-      setTimeout(() => setCartState("idle"), 2000);
-    } catch {
-      setCartState("error");
-      setTimeout(() => setCartState("idle"), 2500);
+      await updateQuantity(cartItem.id, cartItem.quantity + 1);
+    } finally {
+      setQtyLoading(null);
+    }
+  };
+
+  const handleDecrease = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!cartItem || qtyLoading) return;
+    setQtyLoading("dec");
+    try {
+      if (cartItem.quantity <= 1) {
+        await removeItem(cartItem.id);
+      } else {
+        await updateQuantity(cartItem.id, cartItem.quantity - 1);
+      }
+    } finally {
+      setQtyLoading(null);
     }
   };
 
   return (
     <Card variant="interactive" onClick={onClick}>
       <CardContent className="p-0">
-        {/* Product image */}
+        {/* Image */}
         <div className="relative h-36 overflow-hidden rounded-t-xl">
           {hasImage ? (
             <img
@@ -93,13 +124,13 @@ function ProductCardItem({
             </div>
           )}
 
-          {/* Favorite button */}
+          {/* Favorite */}
           {onToggleFavorite && (
             <button
               type="button"
               onClick={handleFavorite}
               disabled={favLoading}
-              className={`absolute right-2 top-2 rounded-full p-1.5 transition-all duration-200 bg-black/30 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+              className={`absolute right-2 top-2 rounded-full p-1.5 transition-all duration-200 bg-black/30 backdrop-blur-sm ${
                 favLoading ? "animate-pulse" : "hover:scale-110"
               } ${isFavorite ? "text-red-400" : "text-white/70 hover:text-red-400"}`}
               aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
@@ -109,6 +140,14 @@ function ProductCardItem({
                 className={`transition-all duration-200 ${isFavorite ? "fill-red-400" : "fill-none"}`}
               />
             </button>
+          )}
+
+          {/* In cart indicator */}
+          {inCart && (
+            <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-brand-500/80 backdrop-blur-sm px-2 py-0.5">
+              <ShoppingCart size={10} className="text-white" />
+              <span className="text-[10px] font-bold text-white">{cartItem.quantity}</span>
+            </div>
           )}
         </div>
 
@@ -134,56 +173,71 @@ function ProductCardItem({
                 variant={isOutOfStock ? "danger" : isLowStock ? "warning" : "success"}
                 size="sm"
               >
-                {isOutOfStock
-                  ? "Sin stock"
-                  : isLowStock
-                  ? `Quedan ${stockQty}`
-                  : "En stock"}
+                {isOutOfStock ? "Sin stock" : isLowStock ? `Quedan ${stockQty}` : "En stock"}
               </Badge>
             )}
           </div>
 
-          {/* Add to cart button */}
-          {onAddToCart && !isOutOfStock && (
-            <Button
-              variant={cartState === "added" ? "outline" : "default"}
-              size="sm"
-              className="w-full mt-1"
-              onClick={handleAddToCart}
-              disabled={cartState !== "idle"}
-              aria-label={`Agregar ${product.name} al carrito`}
-            >
-              {cartState === "loading" && (
-                <>
-                  <Loader2 size={14} className="animate-spin mr-1" />
-                  Agregando...
-                </>
+          {/* Cart controls */}
+          {showCartControls && !isOutOfStock && (
+            <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+              {inCart ? (
+                /* Qty controls: [-] qty [+] */
+                <div className="flex items-center justify-between overflow-hidden rounded-xl border border-border bg-surface-alt">
+                  <button
+                    onClick={handleDecrease}
+                    disabled={qtyLoading !== null}
+                    className="flex h-9 w-10 items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface transition-all disabled:opacity-40"
+                    aria-label="Disminuir cantidad"
+                  >
+                    {qtyLoading === "dec"
+                      ? <Loader2 size={14} className="animate-spin" />
+                      : <Minus size={14} />
+                    }
+                  </button>
+
+                  <span className="flex-1 text-center text-sm font-bold text-text-primary">
+                    {cartItem.quantity}
+                  </span>
+
+                  <button
+                    onClick={handleIncrease}
+                    disabled={qtyLoading !== null || atMaxStock}
+                    className="flex h-9 w-10 items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface transition-all disabled:opacity-40"
+                    aria-label="Aumentar cantidad"
+                  >
+                    {qtyLoading === "inc"
+                      ? <Loader2 size={14} className="animate-spin" />
+                      : <Plus size={14} />
+                    }
+                  </button>
+                </div>
+              ) : (
+                /* Add to cart button */
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full"
+                  onClick={handleAdd}
+                  disabled={addLoading}
+                  aria-label={`Agregar ${product.name} al carrito`}
+                >
+                  {addLoading
+                    ? <Loader2 size={14} className="animate-spin mr-1" />
+                    : <ShoppingCart size={14} className="mr-1" />
+                  }
+                  {addLoading ? "Agregando..." : "Agregar"}
+                </Button>
               )}
-              {cartState === "added" && (
-                <>
-                  <Check size={14} className="mr-1 text-emerald-400" />
-                  <span className="text-emerald-400">¡Agregado!</span>
-                </>
-              )}
-              {cartState === "error" && (
-                <>
-                  <ShoppingCart size={14} className="mr-1 text-red-400" />
-                  <span className="text-red-400">Error</span>
-                </>
-              )}
-              {cartState === "idle" && (
-                <>
-                  <ShoppingCart size={14} className="mr-1" />
-                  Agregar
-                </>
-              )}
-            </Button>
+            </div>
           )}
         </div>
       </CardContent>
     </Card>
   );
 }
+
+/* ─── Grid ─── */
 
 export function SearchResults({
   items,
@@ -194,7 +248,7 @@ export function SearchResults({
   onProductClick,
   favoriteIds,
   onToggleFavorite,
-  onAddToCart,
+  showCartControls = false,
 }: SearchResultsProps) {
   const sortedItems = useMemo(() => {
     if (!favoriteIds || favoriteIds.size === 0) return items;
@@ -256,7 +310,7 @@ export function SearchResults({
             onClick={() => onProductClick(product.id)}
             isFavorite={favoriteIds?.has(product.id) ?? false}
             onToggleFavorite={onToggleFavorite}
-            onAddToCart={onAddToCart}
+            showCartControls={showCartControls}
           />
         ))}
       </div>

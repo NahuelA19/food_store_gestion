@@ -6,8 +6,6 @@ import { FilterPanel } from '../components/FilterPanel';
 import { SearchResults } from '../components/SearchResults';
 import { useAuthStore } from '../store/authStore';
 import { useWishlist } from '../hooks/useWishlist';
-import { useCartContext } from '../context/CartContext';
-import { useToast } from '../components/ui/Toast';
 import { PlusCircle } from 'lucide-react';
 
 export function ProductsPage() {
@@ -28,12 +26,9 @@ export function ProductsPage() {
     clearSearch,
   } = useSearch();
   const { items: wishlistItems, toggle } = useWishlist();
-  const { addItem } = useCartContext();
-  const { toast } = useToast();
 
-  const isCustomer = !user?.role || user.role.toLowerCase() === 'customer' || user.role.toLowerCase() === 'client';
+  const isCustomer = !user?.role || ["customer", "client"].includes(user.role.toLowerCase());
 
-  // Base set from server data, plus optimistic local overrides for instant feedback
   const baseFavIds = useMemo(
     () => new Set(wishlistItems.map((item) => item.product_id)),
     [wishlistItems],
@@ -41,7 +36,6 @@ export function ProductsPage() {
   const [optimisticFavs, setOptimisticFavs] = useState<Set<number> | null>(null);
   const favoriteIds = optimisticFavs ?? baseFavIds;
 
-  // When server data catches up with optimistic state, clear the overlay
   useEffect(() => {
     if (!optimisticFavs) return;
     let shouldClear = true;
@@ -63,11 +57,6 @@ export function ProductsPage() {
       return next;
     });
     await toggle(productId);
-  };
-
-  const handleAddToCart = async (productId: number, quantity: number) => {
-    await addItem(productId, quantity);
-    toast('Producto agregado al carrito', 'success');
   };
 
   return (
@@ -121,7 +110,7 @@ export function ProductsPage() {
             onProductClick={(id) => navigate(`/products/${id}`)}
             favoriteIds={favoriteIds}
             onToggleFavorite={handleToggleFavorite}
-            onAddToCart={isCustomer ? handleAddToCart : undefined}
+            showCartControls={isCustomer}
           />
         </main>
       </div>
