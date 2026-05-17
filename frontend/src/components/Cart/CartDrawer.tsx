@@ -62,7 +62,7 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
   const subtotal = Number(item.unit_price) * item.quantity;
 
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-border last:border-0">
+    <div className="flex items-center gap-3 py-3 border-b border-indigo-100/60 dark:border-white/8 last:border-0">
       {/* Color placeholder */}
       <div
         className={cn(
@@ -75,10 +75,10 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+        <p className="text-sm font-semibold text-indigo-950 dark:text-white truncate">
           {item.product_name || `Producto #${item.product_id}`}
         </p>
-        <p className="text-xs text-gray-500 dark:text-white/50 mt-0.5">
+        <p className="text-xs text-indigo-400 dark:text-white/50 mt-0.5">
           ${Number(item.unit_price).toFixed(2)} c/u
         </p>
 
@@ -87,7 +87,7 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
           <button
             onClick={handleDecrease}
             disabled={loadingDec || loadingInc}
-            className="flex h-6 w-6 items-center justify-center rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white transition-all disabled:opacity-40"
+            className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 hover:bg-indigo-200 text-indigo-600 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white transition-all disabled:opacity-40"
             aria-label="Disminuir cantidad"
           >
             {loadingDec
@@ -96,14 +96,14 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
             }
           </button>
 
-          <span className="min-w-[1.5rem] text-center text-sm font-bold text-gray-900 dark:text-white">
+          <span className="min-w-[1.5rem] text-center text-sm font-bold text-indigo-950 dark:text-white">
             {item.quantity}
           </span>
 
           <button
             onClick={handleIncrease}
             disabled={loadingInc || loadingDec}
-            className="flex h-6 w-6 items-center justify-center rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white transition-all disabled:opacity-40"
+            className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 hover:bg-indigo-200 text-indigo-600 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white transition-all disabled:opacity-40"
             aria-label="Aumentar cantidad"
           >
             {loadingInc
@@ -116,13 +116,13 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
 
       {/* Subtotal + remove */}
       <div className="flex flex-col items-end gap-2 shrink-0">
-        <span className="text-sm font-bold text-brand-300">
+        <span className="text-sm font-bold text-brand-600 dark:text-brand-300">
           ${subtotal.toFixed(2)}
         </span>
         <button
           onClick={handleRemove}
           disabled={loadingRem}
-          className="text-gray-400 hover:text-red-400 dark:text-white/30 transition-colors"
+          className="text-indigo-300 hover:text-red-500 dark:text-white/30 dark:hover:text-red-400 transition-colors"
           aria-label="Eliminar del carrito"
         >
           {loadingRem
@@ -216,20 +216,20 @@ export function CartDrawer() {
         aria-label="Carrito de compras"
         className={cn(
           "fixed inset-y-0 right-0 z-50 flex w-full max-w-[400px] flex-col transition-transform duration-300 ease-in-out",
-          "border-l border-border shadow-2xl",
-          "bg-white dark:bg-[rgba(10,8,28,0.97)] backdrop-blur-2xl",
+          "border-l border-indigo-200/50 dark:border-white/10 shadow-2xl",
+          "bg-[rgba(248,246,255,0.97)] dark:bg-[rgba(10,8,28,0.97)] backdrop-blur-2xl",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <div className="flex items-center justify-between border-b border-indigo-100/70 dark:border-white/10 px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500/20 text-brand-400">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400">
               <Icon icon={ShoppingCart} size={18} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900 dark:text-white">Tu Carrito</h2>
-              <p className="text-xs text-gray-500 dark:text-white/45">
+              <h2 className="text-base font-bold text-indigo-950 dark:text-white">Tu Carrito</h2>
+              <p className="text-xs text-indigo-400 dark:text-white/45">
                 {itemCount === 0
                   ? "Vacío"
                   : `${itemCount} ${itemCount === 1 ? "producto" : "productos"}`}
@@ -238,7 +238,7 @@ export function CartDrawer() {
           </div>
           <button
             onClick={close}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-400 hover:text-gray-900 hover:bg-gray-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 transition-all"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-indigo-300 hover:text-indigo-700 hover:bg-indigo-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 transition-all"
             aria-label="Cerrar carrito"
           >
             <Icon icon={X} size={18} />
@@ -249,21 +249,21 @@ export function CartDrawer() {
         <div className="flex-1 overflow-y-auto px-5 py-2 scrollbar-thin">
           {isLoading && items.length === 0 ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 size={28} className="animate-spin text-brand-400" />
+              <Loader2 size={28} className="animate-spin text-brand-500 dark:text-brand-400" />
             </div>
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-500/10 text-brand-400 mb-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-100 text-brand-500 dark:bg-brand-500/10 dark:text-brand-400 mb-4">
                 <Icon icon={ShoppingBag} size={28} />
               </div>
-              <p className="text-base font-semibold text-gray-900 dark:text-white">Carrito vacío</p>
-              <p className="text-sm text-gray-500 dark:text-white/40 mt-1">
+              <p className="text-base font-semibold text-indigo-950 dark:text-white">Carrito vacío</p>
+              <p className="text-sm text-indigo-400 dark:text-white/40 mt-1">
                 Agregá productos para empezar
               </p>
               <Button
                 variant="outline"
                 size="sm"
-                className="mt-5 border-brand-500/30 text-brand-300 hover:border-brand-400"
+                className="mt-5 border-brand-300 text-brand-600 hover:border-brand-500 hover:bg-brand-50 dark:border-brand-500/30 dark:text-brand-300 dark:hover:border-brand-400 dark:hover:bg-transparent"
                 onClick={() => { close(); navigate("/products"); }}
               >
                 Ver productos
@@ -286,20 +286,20 @@ export function CartDrawer() {
 
         {/* Footer — only show when items exist */}
         {items.length > 0 && (
-          <div className="border-t border-border px-5 py-4 space-y-4">
+          <div className="border-t border-indigo-100/70 dark:border-white/10 px-5 py-4 space-y-4">
             {/* Totals */}
             <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between text-gray-600 dark:text-white/60">
+              <div className="flex justify-between text-indigo-500 dark:text-white/60">
                 <span>Subtotal</span>
                 <span>${Number(subtotal).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-gray-600 dark:text-white/60">
+              <div className="flex justify-between text-indigo-500 dark:text-white/60">
                 <span>IVA (10%)</span>
                 <span>${Number(tax).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-base font-bold text-gray-900 dark:text-white pt-2 border-t border-border">
+              <div className="flex justify-between text-base font-bold text-indigo-950 dark:text-white pt-2 border-t border-indigo-100/70 dark:border-white/10">
                 <span>Total</span>
-                <span className="text-brand-300">${Number(total).toFixed(2)}</span>
+                <span className="text-brand-600 dark:text-brand-300">${Number(total).toFixed(2)}</span>
               </div>
             </div>
 
@@ -316,7 +316,7 @@ export function CartDrawer() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:text-white/40 dark:hover:text-red-400 dark:hover:bg-red-400/10"
+                className="w-full text-indigo-400 hover:text-red-500 hover:bg-red-50 dark:text-white/40 dark:hover:text-red-400 dark:hover:bg-red-400/10"
                 onClick={handleClear}
                 disabled={clearLoading}
               >
