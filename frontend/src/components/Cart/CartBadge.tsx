@@ -19,10 +19,10 @@ export function CartBadge() {
 
   return (
     <span className="relative inline-flex items-center justify-center">
-      <Icon icon={ShoppingCart} size={22} />
+      <Icon icon={ShoppingCart} size={22} className="text-gray-700 dark:text-[color:var(--color-text-secondary)]" />
       {itemCount > 0 && (
         <span
-          className={`absolute -top-2 -right-2 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold text-white leading-none shadow-sm transition-transform ${
+          className={`absolute -top-2 -right-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand-500 dark:bg-brand-400 px-1 text-[10px] font-bold text-white leading-none shadow-sm transition-transform ${
             bump ? "scale-125" : "scale-100"
           }`}
         >
