@@ -15,13 +15,13 @@
    DESIGN TOKENS — ROOT (Light Mode)
    ============================================================================ */
 @theme {
-  /* ---- Surfaces: Light Mode (over lavender #f3f0ff) ----
-     High opacity white so inputs and cards are visible against the background.
+  /* ---- Glassmorphic Surfaces: Light Mode (over lavender #f3f0ff) ---- 
+     Base: white with controlled transparency + backdrop-filter blur
   */
-  --color-surface: rgba(255, 255, 255, 0.80);
-  --color-surface-alt: rgba(255, 255, 255, 0.60);
-  --color-surface-card: rgba(255, 255, 255, 0.92);
-  --color-surface-raised: rgba(255, 255, 255, 0.97);
+  --color-surface: rgba(255, 255, 255, 0.08); /* Cards: glassmorphic base */
+  --color-surface-alt: rgba(255, 255, 255, 0.04); /* Surfaces: subsections */
+  --color-surface-card: rgba(255, 255, 255, 0.10); /* Card primary surface */
+  --color-surface-raised: rgba(255, 255, 255, 0.15); /* Elevated (modals) */
   --glass-blur: blur(10px);
   --glass-blur-elevated: blur(16px);
   --glass-border: rgba(255, 255, 255, 0.2); /* Subtle indigo tint */
