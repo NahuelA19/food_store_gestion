@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { getProductImageUrl } from "@/lib/utils";
 import { Card, CardTitle, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -81,11 +82,11 @@ export const ProductDetailPage: React.FC = () => {
         <Card variant="bordered" className="mx-auto max-w-lg text-center">
           <CardContent className="flex flex-col items-center gap-4 py-16">
             <Icon icon={AlertTriangle} size={48} className="text-danger" />
-            <CardTitle>Product not found</CardTitle>
+            <CardTitle>Producto no encontrado</CardTitle>
             <p className="text-text-muted">{error}</p>
             <Button onClick={() => navigate("/products")}>
               <Icon icon={ArrowLeft} size={16} />
-              Back to Products
+              Volver a productos
             </Button>
           </CardContent>
         </Card>
@@ -153,15 +154,15 @@ export const ProductDetailPage: React.FC = () => {
         className="mb-8"
       >
         <Icon icon={ArrowLeft} size={16} />
-        Back to Products
+        Volver a productos
       </Button>
 
       <Card className="overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           <div className="flex min-h-[450px] items-center justify-center overflow-hidden bg-gradient-to-br from-brand-50 to-amber-50">
-            {product.image_url && !imgError ? (
+            {getProductImageUrl(product.image_url) && !imgError ? (
               <img
-                src={product.image_url}
+                src={getProductImageUrl(product.image_url)!}
                 alt={product.name}
                 className="h-full w-full object-cover"
                 onError={() => setImgError(true)}
@@ -217,17 +218,17 @@ export const ProductDetailPage: React.FC = () => {
 
             <div className="flex flex-wrap gap-2">
               {isOutOfStock && (
-                <Badge variant="danger">Out of Stock</Badge>
+                <Badge variant="danger">Sin stock</Badge>
               )}
               {isLowStock && (
                 <Badge variant="warning">
-                  Low Stock ({product.inventory?.available_quantity} left)
+                  Stock bajo ({product.inventory?.available_quantity} disponibles)
                 </Badge>
               )}
               {!isOutOfStock && !isLowStock && (
                 <Badge variant="success">
                   <Icon icon={CheckCircle} size={14} />
-                  In Stock
+                  Disponible
                 </Badge>
               )}
             </div>
@@ -243,8 +244,8 @@ export const ProductDetailPage: React.FC = () => {
                   />
                 </div>
                 <p className="mt-2 text-sm font-semibold text-text-muted">
-                  {product.inventory.available_quantity} of{" "}
-                  {product.inventory.stock_quantity} available
+                  {product.inventory.available_quantity} de{" "}
+                  {product.inventory.stock_quantity} disponibles
                 </p>
               </div>
             )}
@@ -289,14 +290,14 @@ export const ProductDetailPage: React.FC = () => {
                     <Icon icon={Plus} size={16} />
                   </Button>
                 </div>
-                <Button 
-                  variant="default" 
-                  size="lg" 
+                <Button
+                  variant="default"
+                  size="lg"
                   className="flex-1"
                   onClick={handleAddToCart}
                 >
                   <Icon icon={ShoppingCart} size={18} />
-                  Add to Cart
+                  Agregar al carrito
                 </Button>
               </div>
             )}
@@ -321,7 +322,7 @@ export const ProductDetailPage: React.FC = () => {
           <div>
             <div className="sticky top-24 rounded-xl border border-border bg-surface-alt p-6 dark:border-border dark:bg-surface">
               <h3 className="mb-4 font-display text-lg font-bold text-text-primary">
-                {myReview ? "Your Review" : "Write a Review"}
+                {myReview ? "Tu reseña" : "Escribir una reseña"}
               </h3>
               {isAuthenticated ? (
                 myReview ? (
@@ -355,18 +356,18 @@ export const ProductDetailPage: React.FC = () => {
                     onClick={() => setShowReviewForm(true)}
                   >
                     <Icon icon={Star} size={16} />
-                    Write a Review
+                    Escribir reseña
                   </Button>
                 )
               ) : (
                 <div className="text-center">
                   <p className="mb-3 text-sm text-text-muted">
-                    Log in to share your experience with this product.
+                    Iniciá sesión para compartir tu experiencia con este producto.
                   </p>
                   <Link to="/login">
                     <Button variant="outline" className="w-full">
                       <Icon icon={MessageSquare} size={16} />
-                      Log in to Review
+                      Iniciar sesión para reseñar
                     </Button>
                   </Link>
                 </div>

@@ -5,13 +5,14 @@ from datetime import datetime, timedelta, timezone
 from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.core.uow import UnitOfWork
 from app.dependencies import get_admin_user, get_uow
 from app.models.branch import Branch
-from app.models.order import Order
+from app.models.order import Order, OrderStatus
+from app.services.order_service import build_status_condition
 from app.models.order_item import OrderItem
 from app.models.product import Product
 from app.models.user import User
@@ -47,22 +48,13 @@ async def admin_list_all_orders(
     query = select(Order)
 
     if status_filter:
-        # Map common status names to DB enum values
-        _status_map = {
-            "pending": "pending",
-            "payment_pending": "pending",
-            "confirmed": "confirmed",
-            "shipped": "shipped",
-            "delivered": "delivered",
-            "cancelled": "cancelled",
-        }
-        db_status = _status_map.get(status_filter.lower())
-        if not db_status:
+        cond = build_status_condition(status_filter)
+        if cond is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid status: '{status_filter}'",
-            ) from None
-        query = query.where(text("status::text = :st")).params(st=db_status)
+            )
+        query = query.where(cond)
 
     count_query = select(func.count()).select_from(query.subquery())
     count_result = await uow.session.execute(count_query)
