@@ -12,6 +12,7 @@ from app.core.uow import UnitOfWork
 from app.dependencies import get_admin_user, get_uow
 from app.models.branch import Branch
 from app.models.order import Order, OrderStatus
+from app.services.order_service import build_status_condition
 from app.models.order_item import OrderItem
 from app.models.product import Product
 from app.models.user import User
@@ -47,13 +48,13 @@ async def admin_list_all_orders(
     query = select(Order)
 
     if status_filter:
-        try:
-            query = query.where(Order.status == OrderStatus(status_filter.lower()))
-        except ValueError:
+        cond = build_status_condition(status_filter)
+        if cond is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid status: '{status_filter}'. Valid values: {[s.value for s in OrderStatus]}",
-            ) from None
+                detail=f"Invalid status: '{status_filter}'",
+            )
+        query = query.where(cond)
 
     count_query = select(func.count()).select_from(query.subquery())
     count_result = await uow.session.execute(count_query)

@@ -215,6 +215,32 @@ async def create_order_from_cart(
     return order
 
 
+# Maps each frontend filter key to all DB enum values that belong to that group.
+# The enum has Spanish + English aliases for the same semantic state.
+STATUS_FILTER_GROUPS: dict[str, list[str]] = {
+    "payment_pending": ["pendiente", "pending", "pago_pendiente", "payment_pending"],
+    "confirmado":      ["confirmado", "confirmed", "pagado", "paid"],
+    "en_prep":         ["en_prep", "preparando", "listo", "ready"],
+    "en_camino":       ["en_camino", "enviado", "shipped"],
+    "entregado":       ["entregado", "delivered"],
+    "cancelado":       ["cancelado", "cancelled", "pago_fallido", "payment_failed"],
+}
+
+
+def build_status_condition(status: str):
+    """Return a SQLAlchemy condition for a status filter key (handles alias groups)."""
+    group = STATUS_FILTER_GROUPS.get(status.lower())
+    if group:
+        valid = [v for v in group if any(e.value == v for e in OrderStatus)]
+        if valid:
+            return Order.status.in_(valid)
+    # Fallback: exact match via enum
+    try:
+        return Order.status == OrderStatus(status.lower())
+    except ValueError:
+        return None
+
+
 async def get_user_orders(
     user_id: int,
     page: int = 1,
@@ -230,10 +256,9 @@ async def get_user_orders(
     conditions = [Order.user_id == user_id]
 
     if status:
-        try:
-            conditions.append(Order.status == OrderStatus(status))
-        except ValueError:
-            pass  # Invalid status value — ignore filter
+        cond = build_status_condition(status)
+        if cond is not None:
+            conditions.append(cond)
 
     if search and search.strip().isdigit():
         conditions.append(Order.id == int(search.strip()))
