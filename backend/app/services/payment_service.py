@@ -317,12 +317,15 @@ async def create_preference(
             "failure": f"{settings.frontend_url}/payment/failure?order_id={order.id}",
             "pending": f"{settings.frontend_url}/payment/pending?order_id={order.id}",
         },
-        "auto_return": "approved",
         "notification_url": settings.mp_notification_url,
         "external_reference": str(order.id),
         "statement_descriptor": "FoodStore",
         "expires": False,
     }
+
+    # auto_return requires publicly accessible URLs; skip on localhost
+    if "localhost" not in settings.frontend_url and "127.0.0.1" not in settings.frontend_url:
+        preference_data["auto_return"] = "approved"
 
     response = sdk.preference().create(preference_data)
 
@@ -332,7 +335,13 @@ async def create_preference(
 
     preference_response = response.get("response", {})
     preference_id = preference_response.get("id")
-    init_point = preference_response.get("init_point")
+    # Use sandbox_init_point when running with test credentials
+    is_test_token = settings.mp_access_token.startswith("TEST-")
+    init_point = (
+        preference_response.get("sandbox_init_point")
+        if is_test_token
+        else preference_response.get("init_point")
+    ) or preference_response.get("init_point")
 
     if not preference_id or not init_point:
         logger.error("Missing preference_id or init_point in MP response: %s", preference_response)

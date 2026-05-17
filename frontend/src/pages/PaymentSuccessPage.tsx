@@ -3,11 +3,11 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { usePaymentStore } from '../store/paymentStore';
 import { paymentApi } from '../api/paymentApi';
 import { useAuthStore } from '../store/authStore';
-import { CheckCircle, Loader2, ShoppingBag, Package } from 'lucide-react';
+import { CheckCircle, ShoppingBag, Package } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 
-type ConfirmState = 'loading' | 'confirmed' | 'pending' | 'error';
+const REDIRECT_SECONDS = 10;
 
 export default function PaymentSuccessPage() {
   const [params] = useSearchParams();
@@ -18,60 +18,34 @@ export default function PaymentSuccessPage() {
   const orderId = params.get('order_id');
   const isSimulated = params.get('simulated') === 'true';
 
-  const [state, setState] = useState<ConfirmState>('loading');
   const [totalAmount, setTotalAmount] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState(REDIRECT_SECONDS);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const attempts = useRef(0);
-  const MAX_POLLS = 8;
+  const MAX_POLLS = 5;
 
   useEffect(() => {
     setStatus('approved');
 
-    // Without order ID or simulated payment → skip polling
-    if (!orderId || isSimulated) {
-      setState('confirmed');
-      return;
-    }
-
-    if (!accessToken) {
-      setState('confirmed');
-      return;
-    }
+    // Poll in background only to fetch totalAmount — success screen shows immediately
+    if (!orderId || isSimulated || !accessToken) return;
 
     const poll = async () => {
       attempts.current += 1;
       try {
         const info = await paymentApi.getOrderPaymentInfo(Number(orderId), accessToken);
-        const paymentStatus = info.payment_status?.toLowerCase();
-        const orderStatus = info.order_status?.toLowerCase();
+        if (info.total_amount) setTotalAmount(info.total_amount);
 
-        setTotalAmount(info.total_amount);
+        const isSettled =
+          info.payment_status?.toLowerCase() === 'approved' ||
+          info.order_status?.toLowerCase() === 'confirmado';
 
-        const isApproved =
-          paymentStatus === 'approved' ||
-          paymentStatus === 'succeeded' ||
-          orderStatus === 'confirmado' ||
-          orderStatus === 'confirmed' ||
-          orderStatus === 'pagado' ||
-          orderStatus === 'paid';
-
-        if (isApproved) {
-          setState('confirmed');
-          return;
-        }
-
-        // Keep polling if still pending and under max attempts
-        if (attempts.current < MAX_POLLS) {
+        if (!isSettled && attempts.current < MAX_POLLS) {
           pollRef.current = setTimeout(poll, 2500);
-        } else {
-          // Fallback: show success anyway (webhook may arrive shortly)
-          setState('confirmed');
         }
       } catch {
         if (attempts.current < MAX_POLLS) {
           pollRef.current = setTimeout(poll, 2500);
-        } else {
-          setState('confirmed');
         }
       }
     };
@@ -82,23 +56,23 @@ export default function PaymentSuccessPage() {
     };
   }, [orderId, accessToken, isSimulated, setStatus]);
 
-  if (state === 'loading') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 p-4 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-500/20 animate-pulse">
-          <Icon icon={Loader2} size={40} className="text-brand-400 animate-spin" />
-        </div>
-        <div className="space-y-2 max-w-md">
-          <h1 className="text-2xl font-display font-bold text-text-primary">
-            Confirmando tu pago...
-          </h1>
-          <p className="text-text-muted text-base">
-            Estamos verificando el estado de tu transacción.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Countdown + auto-redirect
+  useEffect(() => {
+    const destination = orderId ? `/orders/${orderId}` : '/orders';
+
+    const interval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          navigate(destination);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [orderId, navigate]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 p-4 text-center animate-fade-in">
@@ -131,16 +105,22 @@ export default function PaymentSuccessPage() {
         )}
       </div>
 
+      {/* Countdown */}
+      <p className="text-sm text-text-muted">
+        Redirigiendo al detalle del pedido en{' '}
+        <span className="font-semibold text-emerald-400">{countdown}s</span>...
+      </p>
+
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
+      <div className="flex flex-col sm:flex-row items-center gap-3 mt-2">
         <Button
-          onClick={() => navigate('/orders')}
+          onClick={() => navigate(orderId ? `/orders/${orderId}` : '/orders')}
           variant="default"
           size="lg"
           className="gap-2"
         >
           <Icon icon={ShoppingBag} size={18} />
-          Ver mis pedidos
+          Ver detalle del pedido
         </Button>
 
         <Link

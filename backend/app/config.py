@@ -44,7 +44,9 @@ class Settings(BaseSettings):
     mp_notification_url: str = "http://localhost:8000/api/v1/payments/webhook"
 
     # CORS
-    allowed_origins: list[str] | str = "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:3000"
+    allowed_origins: list[str] | str = (
+        "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:3000"
+    )
 
     def __init__(self, **data: Any) -> None:
         """Initialize settings with environment variable parsing."""
