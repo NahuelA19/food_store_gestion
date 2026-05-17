@@ -158,38 +158,6 @@ El frontend queda disponible en `http://localhost:5173`.
 
 ---
 
-## Configurar MercadoPago (sandbox)
-
-Para probar pagos en modo sandbox necesitás:
-
-**1. Obtener credenciales de prueba**
-
-Ingresá a [mercadopago.com.ar/developers/panel](https://www.mercadopago.com.ar/developers/panel), seleccioná tu app y copiá las **Credenciales de prueba** (`TEST-...`). Pegálas en `backend/.env`.
-
-**2. Crear un usuario comprador de prueba**
-
-```bash
-curl -X POST https://api.mercadopago.com/users/test \
-  -H "Authorization: Bearer TU_ACCESS_TOKEN_TEST" \
-  -H "Content-Type: application/json" \
-  -d '{"site_id": "MLA", "description": "Test comprador"}'
-```
-
-Guardá el `email` y `password` que devuelve.
-
-**3. Realizar un pago de prueba**
-
-1. Hacé un pedido en la app con tu usuario normal
-2. Cuando MP te redirija al checkout, iniciá sesión con el **usuario comprador de prueba**
-3. Usá una tarjeta de prueba:
-   - Número: `4509 9535 6623 3704`
-   - Vencimiento: cualquier fecha futura (`11/25`)
-   - CVV: `123`
-   - Nombre: `APRO` (pago aprobado)
-
-> **Importante:** Las credenciales de sandbox nunca deben commitearse al repositorio. Siempre van en `.env` (ignorado por git).
-
----
 
 ## Estructura del proyecto
 
