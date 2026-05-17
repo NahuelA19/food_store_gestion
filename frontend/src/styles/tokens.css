@@ -15,10 +15,10 @@
    ============================================================================ */
 :root {
   /* Surfaces */
-  --color-surface: oklch(0.98 0.002 70);
-  --color-surface-alt: oklch(0.96 0.003 70);
-  --color-surface-card: oklch(0.96 0.003 70);
-  --color-surface-raised: oklch(0.98 0.002 70);
+  --color-surface: rgba(255, 255, 255, 0.80);
+  --color-surface-alt: rgba(255, 255, 255, 0.60);
+  --color-surface-card: rgba(255, 255, 255, 0.92);
+  --color-surface-raised: rgba(255, 255, 255, 0.97);
 
   /* Text */
   --color-text-primary: oklch(0.14 0.012 70);     /* #1a1a1a */
