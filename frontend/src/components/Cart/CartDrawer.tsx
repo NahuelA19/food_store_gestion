@@ -78,7 +78,7 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
         <p className="text-sm font-semibold text-indigo-950 dark:text-white truncate">
           {item.product_name || `Producto #${item.product_id}`}
         </p>
-        <p className="text-xs text-indigo-400 dark:text-white/50 mt-0.5">
+        <p className="text-xs text-indigo-600 dark:text-white/50 mt-0.5">
           ${Number(item.unit_price).toFixed(2)} c/u
         </p>
 
@@ -122,7 +122,7 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
         <button
           onClick={handleRemove}
           disabled={loadingRem}
-          className="text-indigo-300 hover:text-red-500 dark:text-white/30 dark:hover:text-red-400 transition-colors"
+          className="text-indigo-400 hover:text-red-500 dark:text-white/30 dark:hover:text-red-400 transition-colors"
           aria-label="Eliminar del carrito"
         >
           {loadingRem
@@ -229,7 +229,7 @@ export function CartDrawer() {
             </div>
             <div>
               <h2 className="text-base font-bold text-indigo-950 dark:text-white">Tu Carrito</h2>
-              <p className="text-xs text-indigo-400 dark:text-white/45">
+              <p className="text-xs text-indigo-600 dark:text-white/45">
                 {itemCount === 0
                   ? "Vacío"
                   : `${itemCount} ${itemCount === 1 ? "producto" : "productos"}`}
@@ -238,7 +238,7 @@ export function CartDrawer() {
           </div>
           <button
             onClick={close}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-indigo-300 hover:text-indigo-700 hover:bg-indigo-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 transition-all"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-indigo-500 hover:text-indigo-800 hover:bg-indigo-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 transition-all"
             aria-label="Cerrar carrito"
           >
             <Icon icon={X} size={18} />
@@ -257,7 +257,7 @@ export function CartDrawer() {
                 <Icon icon={ShoppingBag} size={28} />
               </div>
               <p className="text-base font-semibold text-indigo-950 dark:text-white">Carrito vacío</p>
-              <p className="text-sm text-indigo-400 dark:text-white/40 mt-1">
+              <p className="text-sm text-indigo-600 dark:text-white/40 mt-1">
                 Agregá productos para empezar
               </p>
               <Button
@@ -289,11 +289,11 @@ export function CartDrawer() {
           <div className="border-t border-indigo-100/70 dark:border-white/10 px-5 py-4 space-y-4">
             {/* Totals */}
             <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between text-indigo-500 dark:text-white/60">
+              <div className="flex justify-between text-indigo-700 dark:text-white/60">
                 <span>Subtotal</span>
                 <span>${Number(subtotal).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-indigo-500 dark:text-white/60">
+              <div className="flex justify-between text-indigo-700 dark:text-white/60">
                 <span>IVA (10%)</span>
                 <span>${Number(tax).toFixed(2)}</span>
               </div>
@@ -316,7 +316,7 @@ export function CartDrawer() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full text-indigo-400 hover:text-red-500 hover:bg-red-50 dark:text-white/40 dark:hover:text-red-400 dark:hover:bg-red-400/10"
+                className="w-full text-indigo-600 hover:text-red-600 hover:bg-red-50 dark:text-white/40 dark:hover:text-red-400 dark:hover:bg-red-400/10"
                 onClick={handleClear}
                 disabled={clearLoading}
               >
