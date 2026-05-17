@@ -6,7 +6,7 @@ from decimal import Decimal
 from math import ceil
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -219,25 +219,30 @@ async def get_user_orders(
     user_id: int,
     page: int = 1,
     limit: int = 20,
+    status: str | None = None,
+    search: str | None = None,
     uow: UnitOfWork = None,
 ) -> OrderListResponse:
-    """Get paginated list of orders for a user.
-
-    Args:
-        user_id: User ID
-        page: Page number (1-indexed)
-        limit: Items per page (max 100)
-        db: Database session
-
-    Returns:
-        OrderListResponse: Paginated order list
-    """
+    """Get paginated list of orders for a user, with optional status and search filters."""
     page = max(1, page)
     limit = min(max(1, limit), 100)
 
+    conditions = [Order.user_id == user_id]
+
+    if status:
+        try:
+            conditions.append(Order.status == OrderStatus(status))
+        except ValueError:
+            pass  # Invalid status value — ignore filter
+
+    if search and search.strip().isdigit():
+        conditions.append(Order.id == int(search.strip()))
+
+    where_clause = and_(*conditions)
+
     # Get total count
     count_result = await uow.session.execute(
-        select(func.count(Order.id)).where(Order.user_id == user_id)
+        select(func.count(Order.id)).where(where_clause)
     )
     total = count_result.scalar_one()
 
@@ -245,7 +250,7 @@ async def get_user_orders(
     offset = (page - 1) * limit
     result = await uow.session.execute(
         select(Order)
-        .where(Order.user_id == user_id)
+        .where(where_clause)
         .options(selectinload(Order.user))
         .order_by(Order.created_at.desc())
         .offset(offset)

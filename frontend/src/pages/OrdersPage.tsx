@@ -43,11 +43,11 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "warning" | "info"
 const FILTERS: { key: string; label: string }[] = [
   { key: "all", label: "Todos" },
   { key: "payment_pending", label: "Pendiente Pago" },
-  { key: "confirmed", label: "Confirmado" },
-  { key: "preparing", label: "Preparando" },
-  { key: "shipped", label: "Enviado" },
-  { key: "delivered", label: "Entregado" },
-  { key: "cancelled", label: "Cancelado" },
+  { key: "confirmado", label: "Confirmado" },
+  { key: "en_prep", label: "Preparando" },
+  { key: "en_camino", label: "Enviado" },
+  { key: "entregado", label: "Entregado" },
+  { key: "cancelado", label: "Cancelado" },
 ];
 
 interface OrderRow {
