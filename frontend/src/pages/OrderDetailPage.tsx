@@ -10,6 +10,7 @@ import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Icon } from '../components/ui/Icon';
 import { useOrder, useUpdateOrderStatus } from '../hooks/useOrders';
+import { useAuthStore } from '../store/authStore';
 import type { OrderStatus, StatusHistoryEntry } from '../types/order';
 import { ArrowLeft, ChevronDown, User, Package, CreditCard, Clock } from 'lucide-react';
 
@@ -47,6 +48,8 @@ const STATUS_DOT_COLOR: Record<string, string> = {
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const orderId = Number(id);
+  const { user } = useAuthStore();
+  const isAdmin = user?.role?.toLowerCase() === 'admin';
   const { order: apiOrder, isLoading, error } = useOrder(orderId);
   const { updateStatus, isLoading: isUpdating } = useUpdateOrderStatus();
 
@@ -148,8 +151,8 @@ export function OrderDetailPage() {
             {STATUS_CONFIG[resolvedStatus]?.label || resolvedStatus}
           </Badge>
 
-          {/* Status dropdown */}
-          {availableStatuses.length > 0 && (
+          {/* Status dropdown — admin only */}
+          {isAdmin && availableStatuses.length > 0 && (
             <div className="relative">
               <button
                 onClick={() => setStatusOpen(!statusOpen)}
