@@ -145,7 +145,7 @@ export function OrdersPage() {
             placeholder="Buscar por #pedido, cliente, estado..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            className="w-full h-10 pl-9 pr-8 rounded-xl border border-border bg-surface-card text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+            className="w-full h-10 pl-9 pr-8 rounded-xl border border-border bg-white/80 dark:bg-surface-card text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
           />
           {inputValue && (
             <button
