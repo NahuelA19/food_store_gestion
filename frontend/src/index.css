@@ -11,6 +11,9 @@
 
 @import 'tailwindcss';
 
+/* Use .dark class (set by ThemeContext) instead of OS prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================================
    DESIGN TOKENS — ROOT (Light Mode)
    ============================================================================ */
