@@ -16,6 +16,7 @@ from app.models.pago import Pago
 from app.services.order_service import transition
 from app.services.payment_service import (
     create_preference,
+    get_payment_status_from_mp,
     handle_ipn,
     process_card_payment,
     verify_webhook_signature,
@@ -63,7 +64,10 @@ async def create_payment_preference(
     result = await uow.session.execute(
         select(Order)
         .where(Order.id == order_id)
-        .options(selectinload(Order.user))
+        .options(
+            selectinload(Order.user),
+            selectinload(Order.items),
+        )
     )
     order = result.scalar_one_or_none()
 
@@ -87,7 +91,7 @@ async def create_payment_preference(
             "preference_id": preference_id,
             "init_point": init_point,
         }
-    except ValueError as e:
+    except Exception as e:
         logger.error("Failed to create preference for order %d: %s", order_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -377,7 +381,7 @@ async def simulate_payment(
             "Simulated payment for order %d: status=approved",
             order.id,
         )
-        
+
         return {
             "id": f"SIM-{order.id}",
             "status": "approved",
@@ -391,3 +395,120 @@ async def simulate_payment(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Payment simulation failed: {str(e)}",
         ) from e
+
+
+@router.get("/status/{mp_payment_id}", status_code=status.HTTP_200_OK)
+async def get_payment_status(
+    mp_payment_id: str,
+    current_user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """Query MercadoPago API for real-time payment status.
+
+    Useful for the success page to verify payment completion
+    and for polling until webhooks arrive.
+
+    Args:
+        mp_payment_id: MercadoPago payment ID to query
+        current_user: Authenticated user
+        settings: Application settings
+
+    Returns:
+        dict: Payment status with id, status, status_detail, amount
+
+    Raises:
+        HTTPException 400: Invalid payment ID format
+        HTTPException 404: Payment not found in MP
+        HTTPException 503: MP API unreachable
+    """
+    try:
+        payment_id = int(mp_payment_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid payment ID: {mp_payment_id}",
+        )
+
+    payment_data = await get_payment_status_from_mp(payment_id, settings)
+
+    if not payment_data:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to retrieve payment status from MercadoPago",
+        )
+
+    return {
+        "id": payment_data.get("id"),
+        "status": payment_data.get("status"),
+        "status_detail": payment_data.get("status_detail"),
+        "transaction_amount": payment_data.get("transaction_amount"),
+        "currency_id": payment_data.get("currency_id"),
+        "payment_method_id": payment_data.get("payment_method_id"),
+        "date_approved": payment_data.get("date_approved"),
+        "external_reference": payment_data.get("external_reference"),
+    }
+
+
+@router.get("/order/{order_id}", status_code=status.HTTP_200_OK)
+async def get_order_payment_info(
+    order_id: int,
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> dict:
+    """Get payment information for an order.
+
+    Returns current payment status, last payment record,
+    and order payment fields. Used by frontend to poll
+    status after redirect from MercadoPago.
+
+    Args:
+        order_id: Order ID to get payment info for
+        current_user: Authenticated user (must be order owner)
+        uow: Unit of work for database access
+
+    Returns:
+        dict: Order payment status, payment_method, paid_at, last pago record
+
+    Raises:
+        HTTPException 404: Order not found
+        HTTPException 403: Not authorized
+    """
+    result = await uow.session.execute(
+        select(Order)
+        .where(Order.id == order_id)
+        .options(selectinload(Order.pagos))
+    )
+    order = result.scalar_one_or_none()
+
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order {order_id} not found",
+        )
+
+    is_admin = getattr(current_user, "role", "").lower() == "admin"
+    if order.user_id != current_user.id and not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view this order's payment info",
+        )
+
+    last_pago = order.pagos[-1] if order.pagos else None
+
+    return {
+        "order_id": order.id,
+        "order_status": order.status.value if order.status else None,
+        "payment_status": order.payment_status.value if order.payment_status else None,
+        "payment_method": order.payment_method,
+        "paid_at": order.paid_at.isoformat() if order.paid_at else None,
+        "total_amount": float(order.total_amount),
+        "mp_preference_id": order.mp_preference_id,
+        "mp_payment_id": order.mp_payment_id,
+        "last_payment": {
+            "mp_payment_id": last_pago.mp_payment_id,
+            "mp_status": last_pago.mp_status,
+            "mp_status_detail": last_pago.mp_status_detail,
+            "monto": float(last_pago.monto),
+            "created_at": last_pago.created_at.isoformat(),
+        } if last_pago else None,
+    }

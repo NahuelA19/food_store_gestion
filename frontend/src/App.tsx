@@ -23,6 +23,7 @@ import { ClientsPage } from "./pages/ClientsPage";
 import { HelpPage } from "./pages/HelpPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailurePage from "./pages/PaymentFailurePage";
+import PaymentPendingPage from "./pages/PaymentPendingPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { SettingsPage } from "./pages/SettingsPage";
 
@@ -134,6 +135,7 @@ function App() {
             />
             <Route path="/payment/success" element={<PaymentSuccessPage />} />
             <Route path="/payment/failure" element={<PaymentFailurePage />} />
+            <Route path="/payment/pending" element={<PaymentPendingPage />} />
           </Routes>
         </DashboardLayout>
     </BrowserRouter>
