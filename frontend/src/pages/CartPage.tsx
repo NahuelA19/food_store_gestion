@@ -163,7 +163,7 @@ export function CartPage() {
         <p className="text-text-muted">Agregá productos desde nuestra tienda</p>
         <Link
           to="/products"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3 text-sm font-semibold text-text-on-primary shadow-sm transition-all hover:bg-primary-hover hover:shadow-md"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-[color:var(--color-primary)] text-[color:var(--color-text-on-brand)] shadow-sm hover:bg-[color:var(--color-primary-hover)] hover:shadow-md active:scale-[0.98] px-8 py-3 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-brand-500)] focus-visible:ring-offset-2"
         >
           Ver productos
         </Link>
