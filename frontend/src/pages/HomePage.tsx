@@ -108,66 +108,12 @@ interface OrderRow {
   total: number;
 }
 
-const FALLBACK_ORDERS: OrderRow[] = [
-  {
-    id: 1001,
-    customer: "Juan García",
-    status: "CONFIRMADO",
-    total: 450.0,
-  },
-  {
-    id: 1002,
-    customer: "María López",
-    status: "EN_PREP",
-    total: 320.5,
-  },
-  {
-    id: 1003,
-    customer: "Carlos Martínez",
-    status: "EN_CAMINO",
-    total: 580.75,
-  },
-  {
-    id: 1004,
-    customer: "Ana Rodríguez",
-    status: "PENDIENTE",
-    total: 210.0,
-  },
-  {
-    id: 1005,
-    customer: "Pedro Sánchez",
-    status: "ENTREGADO",
-    total: 645.25,
-  },
-];
-
 interface BranchSummary {
   id: number;
   name: string;
   address: string;
   status: "active" | "inactive";
 }
-
-const FALLBACK_BRANCHES: BranchSummary[] = [
-  {
-    id: 1,
-    name: "Centro Comercial",
-    address: "Av. Principal 123, Centro",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Zona Norte",
-    address: "Calle 45 No. 567, Norte",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "Zona Sur",
-    address: "Av. Sur 890, Sur",
-    status: "inactive",
-  },
-];
 
 const STATUS_LABELS: { [key: string]: string } = {
   PENDIENTE: "Pendiente de Pago",
@@ -264,7 +210,7 @@ function AdminDashboardPage() {
           label: "Pendientes",
           value: String(stats.pending_orders),
           change: `${stats.pending_orders_change >= 0 ? "+" : ""}${stats.pending_orders_change}%`,
-          positive: stats.pending_orders_change <= 0, // Negative change is good for pending
+          positive: stats.pending_orders_change <= 0,
           color: "text-amber-600 bg-amber-100 dark:bg-amber-900/30",
         },
         {
@@ -288,28 +234,24 @@ function AdminDashboardPage() {
     return FALLBACK_KPI;
   }, [stats]);
 
+  // Only use real orders — don't link to fallback IDs that don't exist in the DB
   const recentOrders = useMemo((): OrderRow[] => {
-    if (apiOrders.length > 0) {
-      return apiOrders.slice(0, 5).map((o) => ({
-        id: o.id,
-        customer: o.user_email || `Usuario #${o.user_id}`,
-        status: o.status,
-        total: Number(o.total_amount),
-      }));
-    }
-    return FALLBACK_ORDERS;
+    return apiOrders.slice(0, 5).map((o) => ({
+      id: o.id,
+      customer: o.user_email || `Usuario #${o.user_id}`,
+      status: o.status,
+      total: Number(o.total_amount),
+    }));
   }, [apiOrders]);
 
+  // Only use real branches — don't link to fallback IDs that don't exist in the DB
   const branchesSummary = useMemo((): BranchSummary[] => {
-    if (apiBranches.length > 0) {
-      return apiBranches.map((b: Branch) => ({
-        id: b.id,
-        name: b.name,
-        address: b.address || "",
-        status: b.is_active ? "active" : "inactive",
-      }));
-    }
-    return FALLBACK_BRANCHES;
+    return apiBranches.map((b: Branch) => ({
+      id: b.id,
+      name: b.name,
+      address: b.address || "",
+      status: b.is_active ? "active" : "inactive",
+    }));
   }, [apiBranches]);
 
   if (loading) return <DashboardSkeleton />;
@@ -428,43 +370,51 @@ function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentOrders.map((order) => (
-                      <tr
-                        key={order.id}
-                        className="border-b border-border last:border-0 hover:bg-surface-alt/50 transition-colors"
-                      >
-                        <td className="px-4 py-3">
-                          <span className="font-semibold text-text-primary">
-                            #{order.id}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-text-primary">
-                          {order.customer}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={STATUS_VARIANTS[order.status.toLowerCase()] || "neutral"}
-                            size="sm"
-                          >
-                            {STATUS_LABELS[order.status.toLowerCase()] || order.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-text-secondary">
-                          -
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold text-text-primary">
-                          ${order.total.toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <Link
-                            to={`/orders/${order.id}`}
-                            className="text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
-                          >
-                            Ver
-                          </Link>
+                    {recentOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-sm text-text-muted">
+                          No hay pedidos recientes
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      recentOrders.map((order) => (
+                        <tr
+                          key={order.id}
+                          className="border-b border-border last:border-0 hover:bg-surface-alt/50 transition-colors"
+                        >
+                          <td className="px-4 py-3">
+                            <span className="font-semibold text-text-primary">
+                              #{order.id}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-text-primary">
+                            {order.customer}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge
+                              variant={STATUS_VARIANTS[order.status.toLowerCase()] || "neutral"}
+                              size="sm"
+                            >
+                              {STATUS_LABELS[order.status.toLowerCase()] || order.status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-text-secondary">
+                            -
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold text-text-primary">
+                            ${order.total.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <Link
+                              to={`/orders/${order.id}`}
+                              className="text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+                            >
+                              Ver
+                            </Link>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -479,13 +429,9 @@ function AdminDashboardPage() {
           </h2>
           <Card>
             <CardContent className="p-4">
-              {stats ? (
-                <OrdersByStatusChart data={stats.orders_by_status} />
-              ) : (
-                <div className="flex h-64 items-center justify-center">
-                  <p className="text-sm text-text-muted">Cargando datos...</p>
-                </div>
-              )}
+              <OrdersByStatusChart
+                data={stats?.orders_by_status ?? {}}
+              />
             </CardContent>
           </Card>
         </div>
@@ -496,35 +442,43 @@ function AdminDashboardPage() {
         <h2 className="font-display text-lg font-bold text-text-primary mb-4">
           Resumen de Sucursales
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {branchesSummary.map((branch) => (
-            <Link key={branch.id} to={`/branches/${branch.id}`}>
-              <Card variant="interactive">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">
-                      <Icon icon={Building2} size={20} />
+        {branchesSummary.length === 0 ? (
+          <Card>
+            <CardContent className="flex items-center justify-center py-10">
+              <p className="text-sm text-text-muted">No hay sucursales registradas</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {branchesSummary.map((branch) => (
+              <Link key={branch.id} to={`/branches/${branch.id}`}>
+                <Card variant="interactive">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">
+                        <Icon icon={Building2} size={20} />
+                      </div>
+                      <Badge
+                        variant={
+                          branch.status === "active" ? "success" : "danger"
+                        }
+                        size="sm"
+                      >
+                        {branch.status === "active" ? "Activo" : "Inactivo"}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={
-                        branch.status === "active" ? "success" : "danger"
-                      }
-                      size="sm"
-                    >
-                      {branch.status === "active" ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </div>
-                  <p className="font-display text-base font-bold text-text-primary">
-                    {branch.name}
-                  </p>
-                  <p className="text-xs text-text-muted mt-0.5">
-                    {branch.address}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                    <p className="font-display text-base font-bold text-text-primary">
+                      {branch.name}
+                    </p>
+                    <p className="text-xs text-text-muted mt-0.5">
+                      {branch.address}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
