@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import selectinload
 
 from app.core.uow import UnitOfWork
