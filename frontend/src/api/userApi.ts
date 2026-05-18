@@ -67,6 +67,13 @@ export const userApi = {
     return handleResponse<UsersListResponse>(response);
   },
 
+  async getEmployee(id: number): Promise<AdminUser> {
+    const response = await fetch(`${API_BASE_URL}/users/${id}/admin`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<AdminUser>(response);
+  },
+
   async createEmployee(payload: AdminCreateEmployeePayload): Promise<AdminUser> {
     const response = await fetch(`${API_BASE_URL}/users`, {
       method: "POST",

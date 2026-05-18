@@ -89,18 +89,15 @@ export function EditEmployeePage() {
   const navigate = useNavigate();
   const updateEmployee = useUpdateEmployee(employeeId);
 
-  // Carga todos los usuarios y filtra por ID para obtener datos del empleado
   const {
-    data: usersData,
+    data: employee,
     isLoading,
     error: loadError,
   } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => userApi.getUsers(undefined, 200),
+    queryKey: ["employee", employeeId],
+    queryFn: () => userApi.getEmployee(employeeId),
     enabled: !isNaN(employeeId),
   });
-
-  const employee = usersData?.users.find((u) => u.id === employeeId) ?? null;
 
   // Form state
   const [firstName, setFirstName] = useState("");

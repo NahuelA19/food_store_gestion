@@ -73,6 +73,23 @@ async def get_public_profile(
     return UserPublicResponse.model_validate(user)
 
 
+@router.get("/{user_id}/admin", response_model=AdminUserResponse)
+async def get_employee_detail(
+    user_id: int,
+    current_user: User = Depends(get_admin_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> AdminUserResponse:
+    """Get full user detail for admin (admin only)."""
+    from sqlalchemy.future import select as sa_select
+    result = await uow.session.execute(
+        sa_select(User).where(User.id == user_id, User.deleted_at.is_(None))
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empleado no encontrado")
+    return AdminUserResponse.model_validate(user)
+
+
 @router.put("/me", response_model=UserResponse)
 async def update_profile(
     body: UserProfileUpdate,
