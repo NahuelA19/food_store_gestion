@@ -189,7 +189,7 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
         )}
 
         {/* Wishlist */}
-        {isAuthenticated && (
+        {isAuthenticated && isCustomer && (
           <Link
             to="/wishlist"
             className="flex h-10 w-10 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-alt hover:text-text-primary transition-all duration-200 relative"
