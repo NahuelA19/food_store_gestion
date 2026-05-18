@@ -9,7 +9,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import contains_eager, selectinload
 
 from app.core.uow import UnitOfWork
-from app.dependencies import get_admin_user, get_uow
+from app.dependencies import get_admin_user, get_uow, require_role
 from app.models.branch import Branch
 from app.models.order import Order, OrderStatus
 from app.services.order_service import build_status_condition
@@ -42,10 +42,10 @@ async def admin_list_all_orders(
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     status_filter: str | None = Query(None, alias="status", description="Filter by order status"),
     search: str | None = Query(None, description="Search by order ID or customer email"),
-    current_user: User = Depends(get_admin_user),
+    current_user: User = Depends(require_role("admin", "cajero", "chef")),
     uow: UnitOfWork = Depends(get_uow),
 ) -> OrderListResponse:
-    """List ALL orders (admin only). Supports pagination, status and search filtering."""
+    """List ALL orders (admin, cajero, or chef). Supports pagination, status and search filtering."""
     query = select(Order).outerjoin(Order.user)
 
     if status_filter:
@@ -70,7 +70,10 @@ async def admin_list_all_orders(
 
     offset = (page - 1) * limit
     result = await uow.session.execute(
-        query.options(contains_eager(Order.user))
+        query.options(
+            contains_eager(Order.user),
+            selectinload(Order.items).selectinload(OrderItem.product),
+        )
         .order_by(Order.created_at.desc())
         .offset(offset)
         .limit(limit)
@@ -87,7 +90,20 @@ async def admin_list_all_orders(
                 user_email=o.user.email if o.user else None,
                 status=o.status.value if hasattr(o.status, "value") else o.status,
                 total_amount=o.total_amount,
+                payment_method=o.payment_method,
+                payment_status=o.payment_status.value if hasattr(o.payment_status, "value") else o.payment_status,
                 created_at=o.created_at,
+                items=[
+                    OrderItemResponse(
+                        id=i.id,
+                        order_id=i.order_id,
+                        product_id=i.product_id,
+                        product_name=i.product.name if i.product else None,
+                        quantity=i.quantity,
+                        unit_price=i.unit_price,
+                    )
+                    for i in o.items
+                ],
             )
             for o in orders
         ],
@@ -101,10 +117,10 @@ async def admin_list_all_orders(
 @router.get("/orders/{order_id}", response_model=OrderDetailResponse)
 async def admin_get_order_detail(
     order_id: int,
-    current_user: User = Depends(get_admin_user),
+    current_user: User = Depends(require_role("admin", "cajero", "chef")),
     uow: UnitOfWork = Depends(get_uow),
 ) -> OrderDetailResponse:
-    """Get ANY order detail (admin bypasses ownership check)."""
+    """Get ANY order detail (admin, cajero, or chef bypasses ownership check)."""
     result = await uow.session.execute(
         select(Order)
         .where(Order.id == order_id)

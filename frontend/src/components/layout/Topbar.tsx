@@ -28,15 +28,18 @@ import {
   LogOut,
   HelpCircle,
   Settings,
+  ClipboardList,
+  ChefHat,
 } from "lucide-react";
 
 interface TopbarProps {
   sidebarCollapsed: boolean;
+  hideSidebar?: boolean;
 }
 
 const STORAGE_KEY = "food-store-active-branch";
 
-export function Topbar({ sidebarCollapsed }: TopbarProps) {
+export function Topbar({ sidebarCollapsed, hideSidebar = false }: TopbarProps) {
   const { isDark, toggleTheme } = useTheme();
   const { isAuthenticated, user } = useAuthStore();
   const { logout } = useAuth();
@@ -99,7 +102,7 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
       <header
         className={cn(
           "glass-light dark:glass-dark fixed top-0 right-0 z-30 flex h-16 items-center border-b border-border transition-all duration-300 px-4 sm:px-6",
-          sidebarCollapsed ? "left-[68px]" : "left-60"
+          hideSidebar ? "left-0" : sidebarCollapsed ? "left-[68px]" : "left-60"
         )}
       >
        {/* Logo on mobile */}
@@ -213,6 +216,26 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
           >
             <CartBadge />
           </button>
+        )}
+
+        {/* Panel links — cajero / chef */}
+        {isAuthenticated && user?.role?.toLowerCase() === "cajero" && (
+          <Link
+            to="/cajero"
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-card px-3 py-2 text-sm font-semibold text-text-primary hover:border-brand-300 transition-all duration-200"
+          >
+            <Icon icon={ClipboardList} size={16} />
+            <span className="hidden sm:inline">Pedidos</span>
+          </Link>
+        )}
+        {isAuthenticated && user?.role?.toLowerCase() === "chef" && (
+          <Link
+            to="/chef"
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-card px-3 py-2 text-sm font-semibold text-text-primary hover:border-brand-300 transition-all duration-200"
+          >
+            <Icon icon={ChefHat} size={16} />
+            <span className="hidden sm:inline">Cocina</span>
+          </Link>
         )}
 
         {/* Theme toggle */}

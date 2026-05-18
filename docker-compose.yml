@@ -86,6 +86,7 @@ services:
       # File uploads
       UPLOAD_DIR: /tmp/foodstore_uploads
 
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
@@ -127,14 +128,16 @@ services:
     labels:
       - "com.food_store.service=frontend"
 
-  # ── ngrok (MP webhook tunnel for local dev) ──
+  # ── ngrok (MP webhook tunnel for local dev) ──────────────────────
+  # Opcional — solo necesario para recibir webhooks de MercadoPago.
+  # Levantarlo con: docker compose --profile ngrok up -d ngrok
+  # Una vez activo, obtener la URL: curl http://localhost:4040/api/tunnels
   ngrok:
     image: ngrok/ngrok:latest
     container_name: food_store_ngrok
-    restart: unless-stopped
-    command: http host.docker.internal:8000 --log=stdout
-    environment:
-      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    profiles: ["ngrok"]
+    restart: on-failure
+    command: http host.docker.internal:8000 --authtoken=${NGROK_AUTHTOKEN} --log=stdout
     ports:
       - "4040:4040"
     networks:

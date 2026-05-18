@@ -4,16 +4,18 @@ import hashlib
 import hmac
 import logging
 import time
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
 
 import mercadopago
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.config import Settings
 from app.core.uow import UnitOfWork
-from app.models.order import Order
+from app.models.order import Order, PaymentStatus
 from app.models.pago import Pago
 from app.services.order_service import transition
 
@@ -201,6 +203,14 @@ async def process_card_payment(
     )
 
     uow.session.add(pago)
+
+    # Update order payment fields
+    if mp_status == "approved":
+        order.payment_status = PaymentStatus.APPROVED
+        order.paid_at = datetime.now(timezone.utc)
+    elif mp_status in ("rejected", "cancelled"):
+        order.payment_status = PaymentStatus.FAILED
+
     await uow.flush()
 
     logger.info(
@@ -236,48 +246,12 @@ async def create_preference(
     """
     total_amount = order.total_amount
 
-    # ── Simulated mode (no MP credentials) ──────────────────────────
+    # ── No credentials → reject instead of simulating ───────────────
     if not settings.mp_access_token:
-        logger.warning("MP access token not configured — using simulated payment for order %d", order.id)
-
-        idempotency_key = uuid4()
-        external_ref_uuid = uuid4()
-
-        preference_id = f"SIM-{order.id}"
-        init_point = f"{settings.frontend_url}/payment/success?order_id={order.id}&simulated=true"
-
-        # Simulated MP response
-        simulated_response = {
-            "id": preference_id,
-            "init_point": init_point,
-            "sandbox_init_point": init_point,
-            "status": "simulated",
-        }
-
-        # Store simulated payment record
-        pago = Pago(
-            pedido_id=order.id,
-            idempotency_key=idempotency_key,
-            external_reference=external_ref_uuid,
-            mp_payment_id=preference_id,
-            monto=total_amount,
-            mp_raw_response=simulated_response,
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="MercadoPago no está configurado. Usá efectivo u otro método de pago disponible.",
         )
-        uow.session.add(pago)
-        try:
-            await uow.flush()
-        except IntegrityError:
-            await uow.session.rollback()
-            result = await uow.session.execute(
-                select(Pago).where(Pago.pedido_id == order.id).order_by(Pago.created_at.desc())
-            )
-            existing_pago = result.scalar_one_or_none()
-            if existing_pago:
-                existing_init = existing_pago.mp_raw_response.get("init_point", init_point) if existing_pago.mp_raw_response else init_point
-                return existing_pago.mp_payment_id, existing_init
-
-        logger.info("Created simulated preference for order %d: %s", order.id, preference_id)
-        return preference_id, init_point
 
     # ── Real mode (MP credentials present) ───────────────────────────
     sdk = mercadopago.SDK(settings.mp_access_token)
@@ -460,9 +434,16 @@ async def handle_ipn(
 
     # Update payment record status
     if existing_pago:
-        existing_pago.mp_status = "approved" if mp_status == "approved" else mp_status
+        existing_pago.mp_status = mp_status
         existing_pago.mp_status_detail = status_detail
         existing_pago.mp_raw_response = payment_data
+
+    # Update order payment fields
+    if mp_status == "approved":
+        order.payment_status = PaymentStatus.APPROVED
+        order.paid_at = datetime.now(timezone.utc)
+    elif mp_status in ("rejected", "cancelled", "refunded"):
+        order.payment_status = PaymentStatus.FAILED
 
     logger.info("Order %d: IPN processed - MP status=%s, FSM state=%s", order.id, mp_status, fsm_state)
     return True

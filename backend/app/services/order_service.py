@@ -33,8 +33,9 @@ logger = logging.getLogger(__name__)
 # FSM state transitions — keys/values refer to estados_pedido.codigo
 FSM_TRANSITIONS: dict[str, list[str]] = {
     "PENDIENTE": ["CONFIRMADO", "CANCELADO"],       # Pago via IPN → CONFIRMADO
-    "CONFIRMADO": ["EN_PREP", "CANCELADO"],          # Admin prepara o cancela
-    "EN_PREP": ["EN_CAMINO", "CANCELADO"],           # Sale a delivery o se cancela
+    "CONFIRMADO": ["EN_PREP", "CANCELADO"],          # Chef comienza preparación
+    "EN_PREP": ["LISTO", "CANCELADO"],               # Chef finaliza preparación
+    "LISTO": ["EN_CAMINO", "CANCELADO"],             # Cajero despacha
     "EN_CAMINO": ["ENTREGADO"],                      # Se entrega (terminal)
     "ENTREGADO": [],                                  # Terminal
     "CANCELADO": [],                                  # Terminal
@@ -48,6 +49,7 @@ _FSM_TO_STATUS: dict[str, OrderStatus] = {
     "PENDIENTE": OrderStatus.PENDIENTE,   # Name=PENDIENTE, DB stores 'PENDIENTE' ✓
     "CONFIRMADO": OrderStatus.CONFIRMED,  # Name=CONFIRMED, DB stores 'CONFIRMED' ✓
     "EN_PREP": OrderStatus.EN_PREP,       # Name=EN_PREP, DB stores 'EN_PREP' ✓
+    "LISTO": OrderStatus.LISTO,           # Name=LISTO, DB stores 'LISTO' ✓
     "EN_CAMINO": OrderStatus.EN_CAMINO,   # Name=EN_CAMINO, DB stores 'EN_CAMINO' ✓
     "ENTREGADO": OrderStatus.DELIVERED,   # Name=DELIVERED, DB stores 'DELIVERED' ✓
     "CANCELADO": OrderStatus.CANCELLED,   # Name=CANCELLED, DB stores 'CANCELLED' ✓
@@ -147,6 +149,8 @@ async def create_order_from_cart(
             }
         ],
     )
+    if getattr(body, "payment_method", None):
+        order.payment_method = body.payment_method.upper()
     uow.session.add(order)
     await uow.flush()  # Get order.id
 

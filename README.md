@@ -17,11 +17,7 @@ Aplicación full-stack de gestión de una tienda de comida. Incluye catálogo de
 
 ## Requisitos previos
 
-- **Python** 3.12+
-- **Node.js** 18+ y npm 9+
-- **Docker Desktop** (requerido — PostgreSQL corre en Docker)
-
-> Si tenés PostgreSQL instalado localmente, Docker lo expone en el puerto **5433** para evitar conflictos.
+- **Docker Desktop** (requerido — todos los servicios corren en Docker)
 
 ---
 
@@ -34,48 +30,20 @@ git clone https://github.com/NahuelA19/food_store_gestion.git
 cd food_store_gestion
 ```
 
-### 2. Levantar PostgreSQL con Docker
-
-```bash
-docker compose up -d postgres
-```
-
-Esto levanta PostgreSQL en `localhost:5433` con la base `food_store` y el usuario `food_store_user` ya configurados (ver `docker/init-db.sql`).
-
-### 3. Configurar el backend
-
-```bash
-cd backend
-
-# Crear entorno virtual
-python -m venv venv
-
-# Activar (Windows)
-venv\Scripts\activate
-
-# Activar (Linux/macOS)
-source venv/bin/activate
-
-# Instalar dependencias
-pip install -r requirements.txt
-```
-
-Crear `backend/.env`:
+### 2. Crear el archivo `.env` en la raíz del proyecto
 
 ```env
-DATABASE_URL=postgresql+asyncpg://food_store_user:root@localhost:5433/food_store
-TEST_DATABASE_URL=postgresql+asyncpg://food_store_user:root@localhost:5433/food_store_test
+# Base de datos
 DB_USER=food_store_user
 DB_PASSWORD=root
 DB_NAME=food_store
 DB_PORT=5433
-DB_HOST=localhost
 
+# Servidor
 ENVIRONMENT=development
 DEBUG=true
 SECRET_KEY=change-this-insecure-dev-key-in-production
 ACCESS_TOKEN_EXPIRE_MINUTES=15
-
 BASE_URL=http://localhost:8000
 FRONTEND_URL=http://localhost:5173
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
@@ -87,116 +55,111 @@ MP_PUBLIC_KEY=TEST-tu-public-key
 MP_WEBHOOK_SECRET=
 MP_NOTIFICATION_URL=http://localhost:8000/api/v1/payments/webhook
 
-# ngrok — completar después de levantar el servicio (ver sección MercadoPago)
+# Frontend
+VITE_API_URL=http://localhost:8000/api/v1
+VITE_MP_PUBLIC_KEY=TEST-tu-public-key
+
+# ngrok (opcional — solo para webhooks de MercadoPago)
 # NGROK_AUTHTOKEN=tu-token
 ```
 
-Correr las migraciones y seeds:
+> El `.env` va en la **raíz del proyecto**, no en `backend/`. Docker Compose lo lee desde ahí.
+
+### 3. Levantar el proyecto
 
 ```bash
-alembic upgrade head
-python run_seeds.py
+docker compose up
 ```
 
-### 4. Configurar el frontend
+Eso es todo. Docker levanta PostgreSQL, corre las migraciones y seeds automáticamente, e inicia el backend y el frontend con hot reload.
 
-Instalar dependencias desde la raíz del proyecto:
+| Servicio | URL |
+|----------|-----|
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:8000 |
+| Swagger | http://localhost:8000/docs |
+| PostgreSQL | localhost:5433 |
 
-```bash
-cd ..
-npm install --ignore-scripts
-```
-
-> `--ignore-scripts` evita el error de Husky que ocurre cuando el paquete aún no está instalado.
-
----
-
-## Levantar el proyecto
-
-Necesitás **tres terminales**.
-
-**Terminal 1 — Backend:**
-
-```bash
-cd backend
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # Linux/macOS
-uvicorn app.main:app --reload
-```
-
-Disponible en `http://localhost:8000` · Swagger en `http://localhost:8000/docs`.
-
-**Terminal 2 — Frontend:**
-
-```bash
-npm run dev --workspace frontend
-```
-
-Disponible en `http://localhost:5173`.
-
-**Docker (en segundo plano):**
-
-```bash
-docker compose up -d postgres
-```
+> La primera vez tarda un poco más porque Docker construye las imágenes.
 
 ---
 
 ## MercadoPago — configuración de pagos
 
-Para que los pagos funcionen en sandbox necesitás credenciales de prueba y ngrok para recibir webhooks.
+Si no configurás las credenciales de MP, el botón "Pagar con MercadoPago" devuelve un error 503. Los métodos "Pagar en efectivo" y "Pagar con tarjeta" funcionan sin credenciales.
 
-### 1. Credenciales
+### 1. Credenciales de sandbox
 
 1. Entrá a [mercadopago.com.ar/developers/panel/app](https://www.mercadopago.com.ar/developers/panel/app)
 2. Creá o seleccioná tu app
 3. Copiá el **Access Token** (`TEST-...`) y el **Public Key** (`TEST-...`) de "Credenciales de prueba"
-4. Pegálos en `backend/.env`:
+4. Pegálos en el `.env` de la raíz:
 
 ```env
 MP_ACCESS_TOKEN=TEST-tu-access-token
 MP_PUBLIC_KEY=TEST-tu-public-key
+VITE_MP_PUBLIC_KEY=TEST-tu-public-key
+```
+
+5. Reiniciá el backend para que tome los cambios:
+
+```bash
+docker compose up -d --force-recreate backend
 ```
 
 ### 2. ngrok — webhooks y redirección automática
 
-ngrok expone el backend localmente para que MP pueda llamar al webhook y redirigir automáticamente al usuario después del pago.
+ngrok expone el backend para que MP pueda notificar el resultado del pago. Es opcional para desarrollo básico, necesario si querés que los pedidos se confirmen automáticamente tras el pago.
 
-**Obtener authtoken:**
+**Configurar el authtoken:**
 
 1. Creá cuenta gratuita en [dashboard.ngrok.com](https://dashboard.ngrok.com/get-started/your-authtoken)
-2. Copiá tu authtoken
-
-**Configurar:**
+2. Agregá tu token al `.env` de la raíz:
 
 ```env
-# backend/.env
 NGROK_AUTHTOKEN=tu-token
 ```
 
-**Levantar ngrok:**
+**Levantar ngrok** (perfil opcional — no arranca con el `docker compose up` normal):
 
 ```bash
-docker compose up -d ngrok
+docker compose --profile ngrok up -d ngrok
 ```
 
 **Obtener la URL pública:**
 
 ```bash
 curl http://localhost:4040/api/tunnels
-# buscá el campo "public_url", e.g. https://xxxx.ngrok-free.app
+# buscá "public_url", e.g. https://xxxx.ngrok-free.app
 ```
 
-**Actualizar `backend/.env` con la URL de ngrok:**
+**Actualizar el `.env` con la URL de ngrok:**
 
 ```env
 BASE_URL=https://xxxx.ngrok-free.app
 MP_NOTIFICATION_URL=https://xxxx.ngrok-free.app/api/v1/payments/webhook
 ```
 
-**Reiniciá el backend** para que tome los cambios.
+**Reiniciá el backend** para que tome los cambios:
 
-> La URL de ngrok cambia cada vez que reiniciás el contenedor. Repetí el paso de obtener la URL y actualizar el `.env` en cada sesión.
+```bash
+docker compose up -d --force-recreate backend
+```
+
+> La URL de ngrok cambia en cada reinicio del contenedor. Repetí el paso de obtener la URL y actualizar el `.env` en cada sesión.
+
+---
+
+## Reset completo de la base de datos
+
+Si necesitás partir desde cero (credenciales cambiadas, schema roto, etc.):
+
+```bash
+docker compose down -v
+docker compose up
+```
+
+> `-v` elimina los volúmenes. Se pierden todos los datos pero las migrations y seeds se vuelven a correr solas.
 
 ---
 
@@ -204,6 +167,7 @@ MP_NOTIFICATION_URL=https://xxxx.ngrok-free.app/api/v1/payments/webhook
 
 ```
 food_store_gestion/
+├── .env                        # Variables de entorno (no commitear) ← raíz
 ├── backend/                    # API FastAPI
 │   ├── app/
 │   │   ├── main.py             # Entry point
@@ -214,9 +178,8 @@ food_store_gestion/
 │   │   ├── core/               # UoW, seguridad, base
 │   │   └── dependencies.py     # Inyección de dependencias
 │   ├── alembic/                # Migraciones de base de datos
-│   ├── run_seeds.py            # Poblar base de datos inicial
-│   ├── requirements.txt
-│   └── .env                    # Variables locales (no commitear)
+│   ├── database/seeds.py       # Datos iniciales
+│   └── requirements.txt
 │
 ├── frontend/                   # App React
 │   ├── src/
@@ -226,11 +189,11 @@ food_store_gestion/
 │   │   ├── store/              # Estado global (Zustand)
 │   │   ├── hooks/              # Custom hooks
 │   │   └── App.tsx             # Rutas y layout
-│   └── src/lib/utils.ts        # Utilidades (cn, getProductImageUrl)
+│   └── src/lib/utils.ts
 │
 ├── docker/
 │   └── init-db.sql             # Inicialización de PostgreSQL
-├── docker-compose.yml          # PostgreSQL + ngrok
+├── docker-compose.yml
 ├── package.json                # Workspace raíz
 └── README.md
 ```
@@ -240,17 +203,20 @@ food_store_gestion/
 ## Scripts útiles
 
 ```bash
-# Correr migraciones
-cd backend && alembic upgrade head
+# Levantar todo
+docker compose up
+
+# Levantar en segundo plano
+docker compose up -d
+
+# Ver logs del backend
+docker compose logs -f backend
+
+# Reiniciar backend (para tomar cambios del .env)
+docker compose up -d --force-recreate backend
 
 # Crear nueva migración
-cd backend && alembic revision --autogenerate -m "descripcion"
-
-# Poblar base de datos
-cd backend && python run_seeds.py
-
-# Ver logs de PostgreSQL
-docker compose logs postgres
+docker compose exec backend alembic revision --autogenerate -m "descripcion"
 
 # Ver URL de ngrok
 curl http://localhost:4040/api/tunnels
