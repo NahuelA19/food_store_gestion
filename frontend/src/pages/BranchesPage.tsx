@@ -36,6 +36,8 @@ export function BranchesPage() {
   const { branches: apiBranches, isLoading } = useBranches();
   const { toggleStatus: apiToggle, isLoading: toggling } = useToggleBranchStatus();
 
+  const isUsingFallback = !isLoading && apiBranches.length === 0;
+
   const branches = useMemo((): BranchRow[] => {
     if (apiBranches.length > 0) {
       return apiBranches.map((b) => ({
@@ -67,6 +69,15 @@ export function BranchesPage() {
           Administra las sucursales de tu restaurante
         </p>
       </div>
+
+      {isUsingFallback && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+          <Power size={16} className="text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            No se pudieron cargar las sucursales desde el servidor. Verificá que el backend esté activo.
+          </p>
+        </div>
+      )}
 
       {/* Branch cards grid */}
       {isLoading ? (
@@ -109,18 +120,25 @@ export function BranchesPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2 mt-4 pt-4 border-t border-border">
-                  <Link to={`/branches/${branch.id}`} className="flex-1">
-                    <Button variant="secondary" size="sm" className="w-full gap-1.5">
+                  {isUsingFallback ? (
+                    <Button variant="secondary" size="sm" className="flex-1 gap-1.5 opacity-50" disabled>
                       <Icon icon={Eye} size={14} />
-                      Ver detalle
+                      Sin conexión
                     </Button>
-                  </Link>
+                  ) : (
+                    <Link to={`/branches/${branch.id}`} className="flex-1">
+                      <Button variant="secondary" size="sm" className="w-full gap-1.5">
+                        <Icon icon={Eye} size={14} />
+                        Ver detalle
+                      </Button>
+                    </Link>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
                     className="gap-1.5"
                     onClick={() => toggleStatus(branch.id)}
-                    disabled={toggling}
+                    disabled={toggling || isUsingFallback}
                     aria-label={
                       branch.status === "active"
                         ? `Desactivar ${branch.name}`
