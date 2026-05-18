@@ -15,9 +15,13 @@ version: '3.8'
 #  MercadoPago Sandbox:
 #    Set MP_ACCESS_TOKEN and MP_PUBLIC_KEY from
 #    https://www.mercadopago.com.ar/developers/panel/app
-#    For webhooks in local dev, use ngrok:
-#      ngrok http 8000
-#      Set MP_NOTIFICATION_URL=https://<ngrok>.ngrok.io/api/v1/payments/webhook
+#    For webhooks in local dev, ngrok is included as a service:
+#      1. Get free authtoken at https://dashboard.ngrok.com/get-started/your-authtoken
+#      2. Add NGROK_AUTHTOKEN=<token> to .env
+#      3. docker compose up -d ngrok
+#      4. Get public URL: curl http://localhost:4040/api/tunnels
+#      5. Add MP_NOTIFICATION_URL=https://<id>.ngrok-free.app/api/v1/payments/webhook to .env
+#      6. Restart backend to pick up new MP_NOTIFICATION_URL
 # ─────────────────────────────────────────────
 
 services:
@@ -122,6 +126,21 @@ services:
     restart: unless-stopped
     labels:
       - "com.food_store.service=frontend"
+
+  # ── ngrok (MP webhook tunnel for local dev) ──
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: food_store_ngrok
+    restart: unless-stopped
+    command: http host.docker.internal:8000 --log=stdout
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    networks:
+      - food_store_network
+    labels:
+      - "com.food_store.service=ngrok"
 
 # ── Volumes ─────────────────────────────────
 volumes:
