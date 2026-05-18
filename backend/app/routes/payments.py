@@ -92,6 +92,8 @@ async def create_payment_preference(
             "preference_id": preference_id,
             "init_point": init_point,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Failed to create preference for order %d: %s", order_id, e)
         raise HTTPException(
