@@ -227,6 +227,7 @@ export function EditProductPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", productId] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
       navigate("/products");
     },
   });
