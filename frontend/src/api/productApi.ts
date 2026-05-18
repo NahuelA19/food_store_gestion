@@ -156,7 +156,9 @@ export const productApi = {
 
   // Inventory
   async getInventory(productId: number): Promise<Inventory> {
-    const response = await fetch(`${API_BASE_URL}/inventory/${productId}`);
+    const response = await fetch(`${API_BASE_URL}/inventory/${productId}`, {
+      headers: getAuthHeaders(),
+    });
     if (!response.ok) throw new Error("Failed to fetch inventory");
     return response.json();
   },
