@@ -8,9 +8,10 @@ Aplicación full-stack de gestión de una tienda de comida. Incluye catálogo de
 |------|-----------|
 | Backend | FastAPI + SQLAlchemy (async) + Alembic |
 | Frontend | React 18 + TypeScript + Vite + TailwindCSS v4 |
-| Base de datos | PostgreSQL |
+| Base de datos | PostgreSQL 16 (Docker) |
 | Pagos | MercadoPago (Checkout Pro) |
 | Estado | Zustand + TanStack Query |
+| Tunnel | ngrok (webhooks MercadoPago en desarrollo) |
 
 ---
 
@@ -18,8 +19,9 @@ Aplicación full-stack de gestión de una tienda de comida. Incluye catálogo de
 
 - **Python** 3.12+
 - **Node.js** 18+ y npm 9+
-- **PostgreSQL** 14+ (local o vía Docker)
-- **Docker** (opcional, para levantar PostgreSQL fácilmente)
+- **Docker Desktop** (requerido — PostgreSQL corre en Docker)
+
+> Si tenés PostgreSQL instalado localmente, Docker lo expone en el puerto **5433** para evitar conflictos.
 
 ---
 
@@ -35,16 +37,10 @@ cd food_store_gestion
 ### 2. Levantar PostgreSQL con Docker
 
 ```bash
-docker-compose up -d postgres
+docker compose up -d postgres
 ```
 
-Si no usás Docker, asegurate de tener PostgreSQL corriendo localmente y creá la base de datos:
-
-```sql
-CREATE DATABASE food_store;
-CREATE USER food_store_user WITH PASSWORD 'tu_password';
-GRANT ALL PRIVILEGES ON DATABASE food_store TO food_store_user;
-```
+Esto levanta PostgreSQL en `localhost:5433` con la base `food_store` y el usuario `food_store_user` ya configurados (ver `docker/init-db.sql`).
 
 ### 3. Configurar el backend
 
@@ -64,77 +60,60 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Crear el archivo `backend/.env` copiando el ejemplo:
-
-```bash
-cp .env.example .env
-```
-
-Editá `backend/.env` con tus valores reales:
+Crear `backend/.env`:
 
 ```env
-# Server
+DATABASE_URL=postgresql+asyncpg://food_store_user:root@localhost:5433/food_store
+TEST_DATABASE_URL=postgresql+asyncpg://food_store_user:root@localhost:5433/food_store_test
+DB_USER=food_store_user
+DB_PASSWORD=root
+DB_NAME=food_store
+DB_PORT=5433
+DB_HOST=localhost
+
 ENVIRONMENT=development
-DEBUG=True
-HOST=0.0.0.0
-PORT=8000
-
-# Base de datos
-DATABASE_URL=postgresql+asyncpg://food_store_user:tu_password@localhost:5432/food_store
-
-# Seguridad
-SECRET_KEY=una-clave-secreta-larga-y-aleatoria
-ALGORITHM=HS256
+DEBUG=true
+SECRET_KEY=change-this-insecure-dev-key-in-production
 ACCESS_TOKEN_EXPIRE_MINUTES=15
 
-# URLs
 BASE_URL=http://localhost:8000
 FRONTEND_URL=http://localhost:5173
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
 
-# CORS
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:5175
-
-# Logging
-LOG_LEVEL=INFO
-
-# MercadoPago (requerido para pagos, ver sección más abajo)
+# MercadoPago — obtené las credenciales de sandbox en:
+# https://www.mercadopago.com.ar/developers/panel/app
 MP_ACCESS_TOKEN=TEST-tu-access-token
 MP_PUBLIC_KEY=TEST-tu-public-key
 MP_WEBHOOK_SECRET=
 MP_NOTIFICATION_URL=http://localhost:8000/api/v1/payments/webhook
+
+# ngrok — completar después de levantar el servicio (ver sección MercadoPago)
+# NGROK_AUTHTOKEN=tu-token
 ```
 
-Correr las migraciones:
+Correr las migraciones y seeds:
 
 ```bash
 alembic upgrade head
+python run_seeds.py
 ```
 
 ### 4. Configurar el frontend
 
-```bash
-cd ../frontend
-```
-
-Crear `frontend/.env.local`:
-
-```env
-VITE_API_URL=http://localhost:8000/api/v1
-VITE_MP_PUBLIC_KEY=TEST-tu-public-key-de-mercadopago
-```
-
-Instalar dependencias (desde la raíz del proyecto):
+Instalar dependencias desde la raíz del proyecto:
 
 ```bash
 cd ..
-npm install
+npm install --ignore-scripts
 ```
+
+> `--ignore-scripts` evita el error de Husky que ocurre cuando el paquete aún no está instalado.
 
 ---
 
 ## Levantar el proyecto
 
-Necesitás dos terminales abiertas.
+Necesitás **tres terminales**.
 
 **Terminal 1 — Backend:**
 
@@ -145,8 +124,7 @@ venv\Scripts\activate        # Windows
 uvicorn app.main:app --reload
 ```
 
-El backend queda disponible en `http://localhost:8000`.
-Documentación Swagger en `http://localhost:8000/docs`.
+Disponible en `http://localhost:8000` · Swagger en `http://localhost:8000/docs`.
 
 **Terminal 2 — Frontend:**
 
@@ -154,10 +132,73 @@ Documentación Swagger en `http://localhost:8000/docs`.
 npm run dev --workspace frontend
 ```
 
-El frontend queda disponible en `http://localhost:5173`.
+Disponible en `http://localhost:5173`.
+
+**Docker (en segundo plano):**
+
+```bash
+docker compose up -d postgres
+```
 
 ---
 
+## MercadoPago — configuración de pagos
+
+Para que los pagos funcionen en sandbox necesitás credenciales de prueba y ngrok para recibir webhooks.
+
+### 1. Credenciales
+
+1. Entrá a [mercadopago.com.ar/developers/panel/app](https://www.mercadopago.com.ar/developers/panel/app)
+2. Creá o seleccioná tu app
+3. Copiá el **Access Token** (`TEST-...`) y el **Public Key** (`TEST-...`) de "Credenciales de prueba"
+4. Pegálos en `backend/.env`:
+
+```env
+MP_ACCESS_TOKEN=TEST-tu-access-token
+MP_PUBLIC_KEY=TEST-tu-public-key
+```
+
+### 2. ngrok — webhooks y redirección automática
+
+ngrok expone el backend localmente para que MP pueda llamar al webhook y redirigir automáticamente al usuario después del pago.
+
+**Obtener authtoken:**
+
+1. Creá cuenta gratuita en [dashboard.ngrok.com](https://dashboard.ngrok.com/get-started/your-authtoken)
+2. Copiá tu authtoken
+
+**Configurar:**
+
+```env
+# backend/.env
+NGROK_AUTHTOKEN=tu-token
+```
+
+**Levantar ngrok:**
+
+```bash
+docker compose up -d ngrok
+```
+
+**Obtener la URL pública:**
+
+```bash
+curl http://localhost:4040/api/tunnels
+# buscá el campo "public_url", e.g. https://xxxx.ngrok-free.app
+```
+
+**Actualizar `backend/.env` con la URL de ngrok:**
+
+```env
+BASE_URL=https://xxxx.ngrok-free.app
+MP_NOTIFICATION_URL=https://xxxx.ngrok-free.app/api/v1/payments/webhook
+```
+
+**Reiniciá el backend** para que tome los cambios.
+
+> La URL de ngrok cambia cada vez que reiniciás el contenedor. Repetí el paso de obtener la URL y actualizar el `.env` en cada sesión.
+
+---
 
 ## Estructura del proyecto
 
@@ -173,8 +214,8 @@ food_store_gestion/
 │   │   ├── core/               # UoW, seguridad, base
 │   │   └── dependencies.py     # Inyección de dependencias
 │   ├── alembic/                # Migraciones de base de datos
+│   ├── run_seeds.py            # Poblar base de datos inicial
 │   ├── requirements.txt
-│   ├── .env.example
 │   └── .env                    # Variables locales (no commitear)
 │
 ├── frontend/                   # App React
@@ -185,10 +226,11 @@ food_store_gestion/
 │   │   ├── store/              # Estado global (Zustand)
 │   │   ├── hooks/              # Custom hooks
 │   │   └── App.tsx             # Rutas y layout
-│   ├── .env.example
-│   └── .env.local              # Variables locales (no commitear)
+│   └── src/lib/utils.ts        # Utilidades (cn, getProductImageUrl)
 │
-├── docker-compose.yml          # PostgreSQL para desarrollo
+├── docker/
+│   └── init-db.sql             # Inicialización de PostgreSQL
+├── docker-compose.yml          # PostgreSQL + ngrok
 ├── package.json                # Workspace raíz
 └── README.md
 ```
@@ -198,31 +240,29 @@ food_store_gestion/
 ## Scripts útiles
 
 ```bash
-# Lint
-npm run lint
-
-# Formatear código
-npm run format
-
 # Correr migraciones
 cd backend && alembic upgrade head
 
 # Crear nueva migración
 cd backend && alembic revision --autogenerate -m "descripcion"
 
+# Poblar base de datos
+cd backend && python run_seeds.py
+
 # Ver logs de PostgreSQL
-docker-compose logs postgres
+docker compose logs postgres
+
+# Ver URL de ngrok
+curl http://localhost:4040/api/tunnels
 ```
 
 ---
 
 ## Git Workflow
 
-Este proyecto usa **Conventional Commits**. El formato es:
+Este proyecto usa **Conventional Commits**:
 
 ```
-tipo(scope): descripción
-
 feat      → nueva funcionalidad
 fix       → corrección de bug
 docs      → documentación
