@@ -36,8 +36,9 @@ export function useToggleBranchStatus() {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (id: number) => branchApi.toggleBranchStatus(id),
-    onSuccess: () => {
+    onSuccess: (updatedBranch) => {
       queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.setQueryData(["branch", updatedBranch.id], updatedBranch);
     },
   });
 
