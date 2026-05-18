@@ -62,7 +62,10 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
   const subtotal = Number(item.unit_price) * item.quantity;
 
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-indigo-100/60 dark:border-white/8 last:border-0">
+    <div
+      className="flex items-center gap-3 py-3 last:border-0"
+      style={{ borderBottom: "1px solid var(--cd-border)" }}
+    >
       {/* Color placeholder */}
       <div
         className={cn(
@@ -75,10 +78,13 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+        <p
+          className="text-sm font-semibold truncate"
+          style={{ color: "var(--cd-text)" }}
+        >
           {item.product_name || `Producto #${item.product_id}`}
         </p>
-        <p className="text-xs text-indigo-600 dark:text-white/50 mt-0.5">
+        <p className="text-xs mt-0.5" style={{ color: "var(--cd-text-sub)" }}>
           ${Number(item.unit_price).toFixed(2)} c/u
         </p>
 
@@ -87,7 +93,11 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
           <button
             onClick={handleDecrease}
             disabled={loadingDec || loadingInc}
-            className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 hover:bg-indigo-200 text-indigo-600 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white transition-all disabled:opacity-40"
+            className="flex h-6 w-6 items-center justify-center rounded-md transition-all disabled:opacity-40"
+            style={{
+              background: "var(--cd-qty-bg)",
+              color: "var(--cd-qty-color)",
+            }}
             aria-label="Disminuir cantidad"
           >
             {loadingDec
@@ -96,14 +106,21 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
             }
           </button>
 
-          <span className="min-w-[1.5rem] text-center text-sm font-bold text-gray-900 dark:text-white">
+          <span
+            className="min-w-[1.5rem] text-center text-sm font-bold"
+            style={{ color: "var(--cd-text)" }}
+          >
             {item.quantity}
           </span>
 
           <button
             onClick={handleIncrease}
             disabled={loadingInc || loadingDec}
-            className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-100 hover:bg-indigo-200 text-indigo-600 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white transition-all disabled:opacity-40"
+            className="flex h-6 w-6 items-center justify-center rounded-md transition-all disabled:opacity-40"
+            style={{
+              background: "var(--cd-qty-bg)",
+              color: "var(--cd-qty-color)",
+            }}
             aria-label="Aumentar cantidad"
           >
             {loadingInc
@@ -116,13 +133,16 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }: CartItemRowProp
 
       {/* Subtotal + remove */}
       <div className="flex flex-col items-end gap-2 shrink-0">
-        <span className="text-sm font-bold text-brand-600 dark:text-brand-300">
+        <span className="text-sm font-bold" style={{ color: "var(--cd-price)" }}>
           ${subtotal.toFixed(2)}
         </span>
         <button
           onClick={handleRemove}
           disabled={loadingRem}
-          className="text-indigo-400 hover:text-red-500 dark:text-white/30 dark:hover:text-red-400 transition-colors"
+          className="transition-colors"
+          style={{ color: "var(--cd-remove)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--cd-remove-hover)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--cd-remove)")}
           aria-label="Eliminar del carrito"
         >
           {loadingRem
@@ -215,21 +235,36 @@ export function CartDrawer() {
         aria-modal="true"
         aria-label="Carrito de compras"
         className={cn(
+          "cart-drawer",
           "fixed inset-y-0 right-0 z-50 flex w-full max-w-[400px] flex-col transition-transform duration-300 ease-in-out",
-          "border-l border-indigo-200/50 dark:border-white/10 shadow-2xl",
-          "bg-[rgba(248,246,255,0.97)] text-gray-900 dark:bg-[rgba(10,8,28,0.97)] dark:text-white backdrop-blur-2xl",
+          "shadow-2xl backdrop-blur-2xl",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
+        style={{ borderLeft: "1px solid var(--cd-border)" }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-indigo-100/70 dark:border-white/10 px-5 py-4">
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: "1px solid var(--cd-border)" }}
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-brand-500/20 dark:text-brand-400">
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-xl"
+              style={{
+                background: "var(--cd-icon-bg)",
+                color: "var(--cd-icon-color)",
+              }}
+            >
               <Icon icon={ShoppingCart} size={18} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900 dark:text-white">Tu Carrito</h2>
-              <p className="text-xs text-gray-500 dark:text-white/45">
+              <h2
+                className="text-base font-bold"
+                style={{ color: "var(--cd-text)" }}
+              >
+                Tu Carrito
+              </h2>
+              <p className="text-xs" style={{ color: "var(--cd-text-muted)" }}>
                 {itemCount === 0
                   ? "Vacío"
                   : `${itemCount} ${itemCount === 1 ? "producto" : "productos"}`}
@@ -238,7 +273,16 @@ export function CartDrawer() {
           </div>
           <button
             onClick={close}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 hover:text-gray-900 hover:bg-indigo-100 dark:text-white/40 dark:hover:text-white dark:hover:bg-white/10 transition-all"
+            className="flex h-9 w-9 items-center justify-center rounded-xl transition-all"
+            style={{ color: "var(--cd-text-muted)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--cd-text)";
+              e.currentTarget.style.background = "var(--cd-icon-bg)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--cd-text-muted)";
+              e.currentTarget.style.background = "transparent";
+            }}
             aria-label="Cerrar carrito"
           >
             <Icon icon={X} size={18} />
@@ -249,21 +293,30 @@ export function CartDrawer() {
         <div className="flex-1 overflow-y-auto px-5 py-2 scrollbar-thin">
           {isLoading && items.length === 0 ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 size={28} className="animate-spin text-brand-500 dark:text-brand-400" />
+              <Loader2 size={28} className="animate-spin" style={{ color: "var(--cd-icon-color)" }} />
             </div>
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-100 text-brand-500 dark:bg-brand-500/10 dark:text-brand-400 mb-4">
+              <div
+                className="flex h-16 w-16 items-center justify-center rounded-2xl mb-4"
+                style={{ background: "var(--cd-icon-bg)", color: "var(--cd-icon-color)" }}
+              >
                 <Icon icon={ShoppingBag} size={28} />
               </div>
-              <p className="text-base font-semibold text-gray-900 dark:text-white">Carrito vacío</p>
-              <p className="text-sm text-indigo-600 dark:text-white/40 mt-1">
+              <p className="text-base font-semibold" style={{ color: "var(--cd-text)" }}>
+                Carrito vacío
+              </p>
+              <p className="text-sm mt-1" style={{ color: "var(--cd-text-sub)" }}>
                 Agregá productos para empezar
               </p>
               <Button
                 variant="outline"
                 size="sm"
-                className="mt-5 border-brand-300 text-brand-600 hover:border-brand-500 hover:bg-brand-50 dark:border-brand-500/30 dark:text-brand-300 dark:hover:border-brand-400 dark:hover:bg-transparent"
+                className="mt-5"
+                style={{
+                  borderColor: "var(--cd-icon-color)",
+                  color: "var(--cd-icon-color)",
+                }}
                 onClick={() => { close(); navigate("/products"); }}
               >
                 Ver productos
@@ -286,20 +339,28 @@ export function CartDrawer() {
 
         {/* Footer — only show when items exist */}
         {items.length > 0 && (
-          <div className="border-t border-indigo-100/70 dark:border-white/10 px-5 py-4 space-y-4">
+          <div
+            className="px-5 py-4 space-y-4"
+            style={{ borderTop: "1px solid var(--cd-border)" }}
+          >
             {/* Totals */}
             <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between text-indigo-700 dark:text-white/60">
+              <div className="flex justify-between" style={{ color: "var(--cd-text-sub)" }}>
                 <span>Subtotal</span>
                 <span>${Number(subtotal).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-indigo-700 dark:text-white/60">
+              <div className="flex justify-between" style={{ color: "var(--cd-text-sub)" }}>
                 <span>IVA (10%)</span>
                 <span>${Number(tax).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-base font-bold text-gray-900 dark:text-white pt-2 border-t border-indigo-100/70 dark:border-white/10">
-                <span>Total</span>
-                <span className="text-brand-600 dark:text-brand-300">${Number(total).toFixed(2)}</span>
+              <div
+                className="flex justify-between text-base font-bold pt-2"
+                style={{ borderTop: "1px solid var(--cd-border)" }}
+              >
+                <span style={{ color: "var(--cd-text)" }}>Total</span>
+                <span style={{ color: "var(--cd-total-price)" }}>
+                  ${Number(total).toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -313,19 +374,26 @@ export function CartDrawer() {
                 Continuar compra
                 <Icon icon={ArrowRight} size={16} className="ml-1" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-indigo-600 hover:text-red-600 hover:bg-red-50 dark:text-white/40 dark:hover:text-red-400 dark:hover:bg-red-400/10"
+              <button
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-all"
+                style={{ color: "var(--cd-clear-color)" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "var(--cd-clear-hover-color)";
+                  e.currentTarget.style.background = "var(--cd-clear-hover-bg)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "var(--cd-clear-color)";
+                  e.currentTarget.style.background = "transparent";
+                }}
                 onClick={handleClear}
                 disabled={clearLoading}
               >
                 {clearLoading
-                  ? <Loader2 size={14} className="animate-spin mr-1" />
-                  : <Trash2 size={14} className="mr-1" />
+                  ? <Loader2 size={14} className="animate-spin" />
+                  : <Trash2 size={14} />
                 }
                 Vaciar carrito
-              </Button>
+              </button>
             </div>
           </div>
         )}

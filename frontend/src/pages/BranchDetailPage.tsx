@@ -2,25 +2,30 @@
  * BranchDetailPage — Full branch detail with contact info from API
  */
 
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Icon } from "../components/ui/Icon";
 import { useBranch } from "../hooks/useBranches";
+import { useAuthStore } from "../store/authStore";
 import {
   ArrowLeft,
   Building2,
   MapPin,
   Phone,
   Mail,
+  Pencil,
 } from "lucide-react";
 
 export function BranchDetailPage() {
   const { id } = useParams<{ id: string }>();
   const branchId = Number(id);
+  const navigate = useNavigate();
   const { branch, isLoading, error } = useBranch(branchId);
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role?.toLowerCase() === "admin";
 
   if (isLoading) {
     return (
@@ -93,6 +98,17 @@ export function BranchDetailPage() {
             </div>
           </div>
         </div>
+        {isAdmin && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="gap-1.5 self-start sm:self-center"
+            onClick={() => navigate(`/branches/${branchId}/edit`)}
+          >
+            <Icon icon={Pencil} size={14} />
+            Editar
+          </Button>
+        )}
       </div>
 
       {/* Contact info */}

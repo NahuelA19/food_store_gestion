@@ -3,6 +3,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -102,138 +103,98 @@ async def create_payment_preference(
 @router.post("/webhook", status_code=status.HTTP_200_OK)
 async def mercadopago_webhook(
     request: Request,
+    # Old IPN format
     external_reference: str | None = Query(None),
     topic: str | None = Query(None),
-    id: str | None = Query(None, description="Payment/merchant order ID from MP"),
+    id: str | None = Query(None),
+    # New webhook format uses 'type' instead of 'topic'
+    type: str | None = Query(None),
     x_signature: str | None = Header(None, alias="X-Signature"),
     x_timestamp: str | None = Header(None, alias="X-Timestamp"),
     settings: Settings = Depends(get_settings),
     uow: UnitOfWork = Depends(get_uow),
 ) -> dict[str, str]:
-    """Handle MercadoPago IPN webhook events via query parameters.
+    """Handle MercadoPago webhook/IPN notifications.
 
-    Implements:
-    - Signature verification (HMAC-SHA256) when X-Signature header present
-    - Real payment status query from MP API (not assumed)
-    - Idempotency to prevent duplicate processing
+    Supports both notification formats:
+    - Old IPN: ?id=<id>&topic=payment&external_reference=<order_id>
+    - New webhook: ?data.id=<id>&type=payment  (data.id uses dot notation)
 
-    MercadoPago sends IPN notifications with:
-    - external_reference: order ID (our internal reference)
-    - topic: "payment" or "merchant_order"
-    - id: payment ID (to query actual status)
-
-    Args:
-        request: FastAPI request for signature verification
-        external_reference: Order reference from MercadoPago
-        topic: Type of notification (e.g., "payment")
-        id: Payment ID from MP (for querying status)
-        x_signature: Signature header for verification
-        x_timestamp: Timestamp header for signature
-        settings: App settings (includes mp_webhook_secret)
-        uow: Unit of work for database access
-
-    Returns:
-        dict: Acknowledgment message
-
-    Raises:
-        HTTPException 403: Invalid webhook signature
-        HTTPException 404: Order not found
-        HTTPException 400: Invalid or missing parameters
+    When external_reference is missing (new format), queries MP API to
+    retrieve the order reference from the payment object.
     """
-    # Validate required parameters
-    if not external_reference:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing 'external_reference' parameter",
-        )
+    # New webhook format sends payment ID as 'data.id' (dot notation).
+    # FastAPI can't bind that to a param name, so we read it from raw query string.
+    data_id = request.query_params.get("data.id") or id
 
-    if not topic:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing 'topic' parameter",
-        )
+    # Normalize topic across both formats
+    notification_topic = topic or type  # "payment", "merchant_order", "payment_intent"
 
-    # Verify webhook signature if secret is configured
+    # Verify signature only when secret is configured and headers are present
     if settings.mp_webhook_secret and x_signature and x_timestamp:
-        # Read raw body for signature verification
         raw_body = await request.body()
-        body_str = raw_body.decode("utf-8") if raw_body else external_reference
-
-        is_valid = verify_webhook_signature(
+        body_str = raw_body.decode("utf-8") if raw_body else (external_reference or "")
+        if not verify_webhook_signature(
             data=body_str,
             signature=x_signature,
             secret=settings.mp_webhook_secret,
             timestamp=x_timestamp,
-        )
+        ):
+            logger.warning("Invalid webhook signature from %s", request.client.host if request.client else "unknown")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid webhook signature")
+        logger.info("Webhook signature verified")
 
-        if not is_valid:
-            logger.warning("Invalid webhook signature from IP: %s", request.client.host if request.client else "unknown")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid webhook signature",
-            )
+    # Acknowledge non-payment topics immediately (merchant_order, etc.)
+    if notification_topic and notification_topic != "payment":
+        logger.info("Acknowledging non-payment webhook topic '%s'", notification_topic)
+        return {"status": "acknowledged", "topic": notification_topic}
 
-        logger.info("Webhook signature verified successfully")
-    else:
-        logger.info("Webhook signature verification skipped (no secret or headers)")
+    # Need a payment ID to do anything useful
+    if not data_id:
+        logger.warning("Webhook received with no payment ID (params: %s)", dict(request.query_params))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing payment ID")
 
-    # Only process payment notifications
-    if topic != "payment":
-        logger.info(
-            "Ignoring MercadoPago IPN for topic '%s' (only 'payment' is handled)",
-            topic,
-        )
-        return {"status": "acknowledged", "topic": topic}
-
-    # Find the order by external_reference (order ID)
     try:
-        order_id = int(external_reference)
+        mp_payment_id = int(data_id)
     except (ValueError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid external_reference format: {external_reference}",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid payment ID: {data_id}")
+
+    # Resolve order_id: prefer external_reference from query params,
+    # otherwise query MP API to get it from the payment object.
+    order_id_str = external_reference
+    if not order_id_str:
+        payment_data = await get_payment_status_from_mp(mp_payment_id, settings)
+        if not payment_data:
+            logger.error("Cannot reach MP API to resolve order for payment %d", mp_payment_id)
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Cannot reach MercadoPago API")
+        order_id_str = payment_data.get("external_reference")
+
+    if not order_id_str:
+        logger.warning("No external_reference found for MP payment %d", mp_payment_id)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot determine order from payment")
+
+    try:
+        order_id = int(order_id_str)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid external_reference: {order_id_str}")
 
     result = await uow.session.execute(select(Order).where(Order.id == order_id))
     order = result.scalar_one_or_none()
-
     if not order:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Order with id {order_id} not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Order {order_id} not found")
 
-    # Extract payment ID from webhook - can come as "id" query param
-    mp_payment_id: int | None = None
-    if id:
-        try:
-            mp_payment_id = int(id)
-        except (ValueError, TypeError):
-            logger.warning("Invalid payment ID format in webhook: %s", id)
-
-    # Process IPN with real payment status from MP API
     try:
-        success = await handle_ipn(
-            order=order,
-            mp_payment_id=mp_payment_id,
-            settings=settings,
-            uow=uow,
-        )
-
+        success = await handle_ipn(order=order, mp_payment_id=mp_payment_id, settings=settings, uow=uow)
         if success:
             await uow.commit()
-            logger.info("MercadoPago IPN processed for order %d", order_id)
+            logger.info("Webhook processed: order=%d mp_payment=%d", order_id, mp_payment_id)
             return {"status": "processed", "order_id": str(order_id)}
-        else:
-            logger.warning("IPN processing returned False for order %d", order_id)
-            return {"status": "skipped", "order_id": str(order_id), "reason": "no_payment_id_or_status"}
 
+        logger.info("Webhook skipped (no change): order=%d", order_id)
+        return {"status": "skipped", "order_id": str(order_id)}
     except Exception as e:
-        logger.error("Error processing MercadoPago IPN for order %d: %s", order_id, e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to process payment notification",
-        ) from e
+        logger.error("Error processing webhook for order %d: %s", order_id, e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to process webhook") from e
 
 
 @router.post("/process-card", status_code=status.HTTP_200_OK)
@@ -394,6 +355,104 @@ async def simulate_payment(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Payment simulation failed: {str(e)}",
+        ) from e
+
+
+@router.get("/callback")
+async def payment_callback(
+    request: Request,
+    payment_status: str = Query(..., alias="status"),
+    collection_id: str | None = Query(None),
+    external_reference: str | None = Query(None),
+    settings: Settings = Depends(get_settings),
+    uow: UnitOfWork = Depends(get_uow),
+) -> HTMLResponse:
+    """Handle MercadoPago back_url redirect after checkout.
+
+    Returns an HTML page with JS redirect instead of a 302 so the browser
+    navigates to the frontend even when ngrok's browser interstitial is active.
+    """
+    order_id = external_reference or request.query_params.get("order_id")
+
+    if payment_status == "success" and collection_id and order_id:
+        try:
+            result = await uow.session.execute(select(Order).where(Order.id == int(order_id)))
+            order = result.scalar_one_or_none()
+            if order:
+                await handle_ipn(
+                    order=order,
+                    mp_payment_id=int(collection_id),
+                    settings=settings,
+                    uow=uow,
+                )
+                await uow.commit()
+        except Exception as e:
+            logger.error("Callback: failed to process payment for order %s: %s", order_id, e)
+
+    destination_map = {
+        "success": f"{settings.frontend_url}/orders/{order_id}",
+        "failure": f"{settings.frontend_url}/payment/failure?order_id={order_id}",
+        "pending": f"{settings.frontend_url}/payment/pending?order_id={order_id}",
+    }
+    destination = destination_map.get(payment_status, f"{settings.frontend_url}/orders")
+
+    html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0; url={destination}">
+  <title>Redirigiendo…</title>
+  <script>window.location.replace("{destination}");</script>
+</head>
+<body></body>
+</html>"""
+    return HTMLResponse(content=html)
+
+
+@router.post("/finalize", status_code=status.HTTP_200_OK)
+async def finalize_payment_from_return(
+    order_id: int = Query(..., description="Our internal order ID"),
+    collection_id: str = Query(..., description="MercadoPago payment ID from back_url redirect"),
+    current_user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+    uow: UnitOfWork = Depends(get_uow),
+) -> dict:
+    """Process a payment after MercadoPago redirects back to the app.
+
+    Called by the frontend success page with the collection_id that MP
+    appends to the back_url. Queries MP directly for payment status and
+    transitions the order FSM — bypasses the webhook for localhost dev.
+    """
+    result = await uow.session.execute(select(Order).where(Order.id == order_id))
+    order = result.scalar_one_or_none()
+
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Order {order_id} not found")
+
+    if order.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    try:
+        mp_payment_id = int(collection_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid collection_id: {collection_id}")
+
+    try:
+        success = await handle_ipn(order=order, mp_payment_id=mp_payment_id, settings=settings, uow=uow)
+        if success:
+            await uow.commit()
+
+        return {
+            "processed": success,
+            "order_id": order.id,
+            "order_status": order.status.value if order.status else None,
+            "payment_status": order.payment_status.value if order.payment_status else None,
+        }
+    except Exception as e:
+        logger.error("Failed to finalize payment for order %d: %s", order_id, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Payment finalization failed: {str(e)}",
         ) from e
 
 

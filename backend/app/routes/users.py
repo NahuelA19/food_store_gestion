@@ -10,7 +10,10 @@ from app.core.uow import UnitOfWork
 from app.dependencies import get_admin_user, get_current_user, get_uow
 from app.models.user import User, UserPreference
 from app.models.user_profile import (
+    AdminCreateUserRequest,
+    AdminUpdateUserRequest,
     AdminUserResponse,
+    ChangePasswordRequest,
     UserPreferencesResponse,
     UserPreferenceUpdate,
     UserProfileUpdate,
@@ -18,6 +21,7 @@ from app.models.user_profile import (
     UserResponse,
     UserStatusUpdate,
 )
+from app.services import user_service
 from app.validation import DEFAULT_PREFERENCES
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -67,6 +71,23 @@ async def get_public_profile(
         )
 
     return UserPublicResponse.model_validate(user)
+
+
+@router.get("/{user_id}/admin", response_model=AdminUserResponse)
+async def get_employee_detail(
+    user_id: int,
+    current_user: User = Depends(get_admin_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> AdminUserResponse:
+    """Get full user detail for admin (admin only)."""
+    from sqlalchemy.future import select as sa_select
+    result = await uow.session.execute(
+        sa_select(User).where(User.id == user_id, User.deleted_at.is_(None))
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Empleado no encontrado")
+    return AdminUserResponse.model_validate(user)
 
 
 @router.put("/me", response_model=UserResponse)
@@ -321,3 +342,39 @@ async def update_user_status(
     await uow.refresh(user)
 
     return AdminUserResponse.model_validate(user)
+
+
+@router.post("", response_model=AdminUserResponse, status_code=status.HTTP_201_CREATED)
+async def create_employee(
+    body: AdminCreateUserRequest,
+    current_user: User = Depends(get_admin_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> AdminUserResponse:
+    """Create a new employee with a temporary password (admin only)."""
+    new_user = await user_service.admin_create_employee(uow, body)
+    await uow.commit()
+    return AdminUserResponse.model_validate(new_user)
+
+
+@router.put("/{user_id}", response_model=AdminUserResponse)
+async def update_employee(
+    user_id: int,
+    body: AdminUpdateUserRequest,
+    current_user: User = Depends(get_admin_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> AdminUserResponse:
+    """Update an existing employee's profile (admin only). Does not change password."""
+    updated_user = await user_service.admin_update_employee(uow, user_id, body)
+    await uow.commit()
+    return AdminUserResponse.model_validate(updated_user)
+
+
+@router.post("/me/change-password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    body: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+) -> None:
+    """Change the authenticated user's password and clear the must_change_password flag."""
+    await user_service.change_user_password(uow, current_user, body)
+    await uow.commit()

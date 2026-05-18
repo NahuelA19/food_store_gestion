@@ -14,35 +14,47 @@ import { useAuthStore } from '../store/authStore';
 import type { OrderStatus, StatusHistoryEntry } from '../types/order';
 import { ArrowLeft, ChevronDown, User, Package, CreditCard, Clock } from 'lucide-react';
 
-const STATUS_FLOW: OrderStatus[] = ['payment_pending', 'paid', 'confirmed', 'shipped', 'delivered'];
+// Matches the actual FSM state values returned by the backend
+const STATUS_FLOW: OrderStatus[] = ['pendiente', 'confirmed', 'en_prep', 'en_camino', 'delivered'] as unknown as OrderStatus[];
 
 const STATUS_CONFIG: Record<
   string,
   { label: string; variant: 'warning' | 'info' | 'neutral' | 'success' | 'danger' }
 > = {
+  // Backend FSM values (primary)
+  pendiente: { label: 'Pendiente de Pago', variant: 'warning' },
+  confirmed: { label: 'Confirmado', variant: 'info' },
+  en_prep: { label: 'En Preparación', variant: 'neutral' },
+  en_camino: { label: 'En Camino', variant: 'info' },
+  delivered: { label: 'Entregado', variant: 'success' },
+  cancelled: { label: 'Cancelado', variant: 'danger' },
+  // Legacy / alias values
   payment_pending: { label: 'Pendiente de Pago', variant: 'warning' },
   payment_failed: { label: 'Pago Fallido', variant: 'danger' },
   paid: { label: 'Pagado', variant: 'info' },
   pending: { label: 'Pendiente', variant: 'warning' },
-  confirmed: { label: 'Confirmado', variant: 'info' },
   preparing: { label: 'Preparando', variant: 'neutral' },
+  preparando: { label: 'Preparando', variant: 'neutral' },
   ready: { label: 'Listo', variant: 'success' },
   shipped: { label: 'Enviado', variant: 'info' },
-  delivered: { label: 'Entregado', variant: 'success' },
-  cancelled: { label: 'Cancelado', variant: 'danger' },
 };
 
 const STATUS_DOT_COLOR: Record<string, string> = {
+  pendiente: '#f59e0b',
+  confirmed: '#3b82f6',
+  en_prep: '#6b7280',
+  en_camino: '#6366f1',
+  delivered: '#10b981',
+  cancelled: '#ef4444',
+  // Legacy aliases
   payment_pending: '#f59e0b',
   payment_failed: '#ef4444',
   paid: '#3b82f6',
   pending: '#f59e0b',
-  confirmed: '#3b82f6',
   preparing: '#6b7280',
+  preparando: '#6b7280',
   ready: '#10b981',
   shipped: '#3b82f6',
-  delivered: '#10b981',
-  cancelled: '#ef4444',
 };
 
 export function OrderDetailPage() {

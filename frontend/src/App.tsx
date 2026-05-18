@@ -18,7 +18,12 @@ import { OrdersPage } from "./pages/OrdersPage";
 import { OrderDetailPage } from "./pages/OrderDetailPage";
 import { BranchesPage } from "./pages/BranchesPage";
 import { BranchDetailPage } from "./pages/BranchDetailPage";
+import { CreateBranchPage } from "./pages/CreateBranchPage";
+import { EditBranchPage } from "./pages/EditBranchPage";
 import { EmployeesPage } from "./pages/EmployeesPage";
+import { CreateEmployeePage } from "./pages/CreateEmployeePage";
+import { EditEmployeePage } from "./pages/EditEmployeePage";
+import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { ClientsPage } from "./pages/ClientsPage";
 import { HelpPage } from "./pages/HelpPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
@@ -70,12 +75,52 @@ function App() {
             <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
             <Route path="/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
             <Route path="/branches" element={<ProtectedRoute><BranchesPage /></ProtectedRoute>} />
+            <Route
+              path="/branches/new"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <CreateBranchPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/branches/:id" element={<ProtectedRoute><BranchDetailPage /></ProtectedRoute>} />
+            <Route
+              path="/branches/:id/edit"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <EditBranchPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/employees" element={
               <ProtectedRoute requiredRole="admin">
                 <EmployeesPage />
               </ProtectedRoute>
             } />
+            <Route
+              path="/employees/new"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <CreateEmployeePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/employees/:id/edit"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <EditEmployeePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/change-password"
+              element={
+                <ProtectedRoute>
+                  <ChangePasswordPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/clients" element={
               <ProtectedRoute requiredRole="admin">
                 <ClientsPage />

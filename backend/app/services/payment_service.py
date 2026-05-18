@@ -311,21 +311,32 @@ async def create_preference(
         "payer": {
             "email": payer_email,
         },
-        "back_urls": {
-            # MP redirects users to these frontend URLs after payment
-            "success": f"{settings.frontend_url}/payment/success?order_id={order.id}",
-            "failure": f"{settings.frontend_url}/payment/failure?order_id={order.id}",
-            "pending": f"{settings.frontend_url}/payment/pending?order_id={order.id}",
-        },
         "notification_url": settings.mp_notification_url,
         "external_reference": str(order.id),
         "statement_descriptor": "FoodStore",
         "expires": False,
     }
 
-    # auto_return requires publicly accessible URLs; skip on localhost
-    if "localhost" not in settings.frontend_url and "127.0.0.1" not in settings.frontend_url:
+    # Use backend as callback when BASE_URL is public (e.g. ngrok).
+    # The callback endpoint processes the payment then redirects to the frontend.
+    # This lets auto_return work even when FRONTEND_URL is localhost.
+    base_is_public = (
+        "localhost" not in settings.base_url
+        and "127.0.0.1" not in settings.base_url
+    )
+    if base_is_public:
+        preference_data["back_urls"] = {
+            "success": f"{settings.base_url}/api/v1/payments/callback?status=success",
+            "failure": f"{settings.base_url}/api/v1/payments/callback?status=failure",
+            "pending": f"{settings.base_url}/api/v1/payments/callback?status=pending",
+        }
         preference_data["auto_return"] = "approved"
+    else:
+        preference_data["back_urls"] = {
+            "success": f"{settings.frontend_url}/payment/success?order_id={order.id}",
+            "failure": f"{settings.frontend_url}/payment/failure?order_id={order.id}",
+            "pending": f"{settings.frontend_url}/payment/pending?order_id={order.id}",
+        }
 
     response = sdk.preference().create(preference_data)
 

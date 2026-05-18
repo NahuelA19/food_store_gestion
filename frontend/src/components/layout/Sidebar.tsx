@@ -21,6 +21,7 @@ import {
   ChevronRight,
   PlusCircle,
   FolderPlus,
+  UserPlus,
   Heart,
   Bell,
   ClipboardList,
@@ -72,6 +73,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           links: [
             { to: "/products/new", label: "Nuevo Producto", icon: PlusCircle },
             { to: "/categories/new", label: "Nueva Categoría", icon: FolderPlus },
+            { to: "/branches/new", label: "Nueva Sucursal", icon: Building2 },
+            { to: "/employees/new", label: "Nuevo Empleado", icon: UserPlus },
           ],
         },
       ]

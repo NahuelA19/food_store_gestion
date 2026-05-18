@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from app.models.role import Role
     from app.models.wishlist import WishlistItem
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
@@ -31,6 +31,7 @@ class User(Base, SoftDeleteMixin, TimestampMixin):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False, index=True)
     role: Mapped[str] = mapped_column(String(20), default="user", nullable=False)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Profile fields
     first_name: Mapped[str | None] = mapped_column(String(50), nullable=True)

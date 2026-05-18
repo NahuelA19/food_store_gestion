@@ -59,6 +59,10 @@ _STATUS_TO_FSM: dict[OrderStatus, str] = {v: k for k, v in _FSM_TO_STATUS.items(
 _STATUS_TO_FSM[OrderStatus.CONFIRMED] = "CONFIRMADO"
 _STATUS_TO_FSM[OrderStatus.DELIVERED] = "ENTREGADO"
 _STATUS_TO_FSM[OrderStatus.CANCELLED] = "CANCELADO"
+# Frontend alias mappings
+_STATUS_TO_FSM[OrderStatus.PAID] = "CONFIRMADO"
+_STATUS_TO_FSM[OrderStatus.SHIPPED] = "EN_CAMINO"
+_STATUS_TO_FSM[OrderStatus.PREPARANDO] = "EN_PREP"
 
 
 async def transition(
@@ -500,13 +504,6 @@ async def update_order_status(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"No se puede transicionar a '{new_status.value}'",
-        )
-
-    # Block manual transition to CONFIRMADO — only allowed via MercadoPago webhook
-    if nuevo_fsm == "CONFIRMADO":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Transición a 'CONFIRMADO' solo permitida vía webhook de MercadoPago",
         )
 
     old_estado = order.estado_codigo

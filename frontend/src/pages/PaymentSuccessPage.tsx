@@ -7,7 +7,8 @@ import { CheckCircle, ShoppingBag, Package } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 
-const REDIRECT_SECONDS = 10;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+const REDIRECT_SECONDS = 20;
 
 export default function PaymentSuccessPage() {
   const [params] = useSearchParams();
@@ -15,46 +16,47 @@ export default function PaymentSuccessPage() {
   const { setStatus } = usePaymentStore();
   const accessToken = useAuthStore((s) => s.accessToken);
 
-  const orderId = params.get('order_id');
+  // MP appends these to back_url on redirect
+  const orderId = params.get('order_id') ?? params.get('external_reference');
+  const collectionId = params.get('collection_id') ?? params.get('payment_id');
   const isSimulated = params.get('simulated') === 'true';
 
   const [totalAmount, setTotalAmount] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(REDIRECT_SECONDS);
-  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const attempts = useRef(0);
-  const MAX_POLLS = 5;
+  const finalizedRef = useRef(false);
 
+  // Finalize payment when returning from MP with a real collection_id
   useEffect(() => {
+    if (!orderId || !collectionId || isSimulated || !accessToken || finalizedRef.current) return;
+    finalizedRef.current = true;
+
     setStatus('approved');
 
-    // Poll in background only to fetch totalAmount — success screen shows immediately
-    if (!orderId || isSimulated || !accessToken) return;
-
-    const poll = async () => {
-      attempts.current += 1;
+    const finalize = async () => {
       try {
+        await fetch(
+          `${API_URL}/payments/finalize?order_id=${orderId}&collection_id=${collectionId}`,
+          { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } },
+        );
         const info = await paymentApi.getOrderPaymentInfo(Number(orderId), accessToken);
         if (info.total_amount) setTotalAmount(info.total_amount);
-
-        const isSettled =
-          info.payment_status?.toLowerCase() === 'approved' ||
-          info.order_status?.toLowerCase() === 'confirmado';
-
-        if (!isSettled && attempts.current < MAX_POLLS) {
-          pollRef.current = setTimeout(poll, 2500);
-        }
       } catch {
-        if (attempts.current < MAX_POLLS) {
-          pollRef.current = setTimeout(poll, 2500);
-        }
+        // best-effort — success screen still shows
       }
     };
 
-    poll();
-    return () => {
-      if (pollRef.current) clearTimeout(pollRef.current);
-    };
-  }, [orderId, accessToken, isSimulated, setStatus]);
+    finalize();
+  }, [orderId, collectionId, accessToken, isSimulated, setStatus]);
+
+  // For simulated payments just fetch amount
+  useEffect(() => {
+    if (!orderId || !isSimulated || !accessToken) return;
+    setStatus('approved');
+    paymentApi
+      .getOrderPaymentInfo(Number(orderId), accessToken)
+      .then((info) => { if (info.total_amount) setTotalAmount(info.total_amount); })
+      .catch(() => {});
+  }, [orderId, isSimulated, accessToken, setStatus]);
 
   // Countdown + auto-redirect
   useEffect(() => {
