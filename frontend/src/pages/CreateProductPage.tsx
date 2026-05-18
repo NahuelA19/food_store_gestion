@@ -178,10 +178,9 @@ export function CreateProductPage() {
     mutationFn: (data: { name: string; description?: string; image_url?: string; price: number; category_id: number; is_available: boolean; stock_quantity?: number }) =>
       productApi.createProduct(data),
     onSuccess: () => {
-      // Invalidate products query so the list reflects the new product
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product"] });
-      // Redirect to products page
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
       navigate("/products");
     },
   });

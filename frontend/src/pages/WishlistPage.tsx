@@ -4,6 +4,7 @@
 
 import { Link } from "react-router-dom";
 import { useWishlist } from "../hooks/useWishlist";
+import { useCart } from "../hooks/useCart";
 import { ProductCard } from "../components/ProductCard";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -12,6 +13,7 @@ import { Heart, ArrowLeft, ShoppingBag } from "lucide-react";
 
 export function WishlistPage() {
   const { items, count, isLoading } = useWishlist();
+  const { addItem } = useCart();
 
   if (isLoading) {
     return (
@@ -54,6 +56,7 @@ export function WishlistPage() {
             <ProductCard
               key={item.id}
               product={item.product}
+              onAddToCart={(product, quantity) => addItem(product.id, quantity)}
               onClick={() => {
                 window.location.href = `/products/${item.product.id}`;
               }}
