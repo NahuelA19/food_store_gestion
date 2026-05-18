@@ -18,6 +18,8 @@ import { OrdersPage } from "./pages/OrdersPage";
 import { OrderDetailPage } from "./pages/OrderDetailPage";
 import { BranchesPage } from "./pages/BranchesPage";
 import { BranchDetailPage } from "./pages/BranchDetailPage";
+import { CreateBranchPage } from "./pages/CreateBranchPage";
+import { EditBranchPage } from "./pages/EditBranchPage";
 import { EmployeesPage } from "./pages/EmployeesPage";
 import { ClientsPage } from "./pages/ClientsPage";
 import { HelpPage } from "./pages/HelpPage";
@@ -70,7 +72,23 @@ function App() {
             <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
             <Route path="/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
             <Route path="/branches" element={<ProtectedRoute><BranchesPage /></ProtectedRoute>} />
+            <Route
+              path="/branches/new"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <CreateBranchPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/branches/:id" element={<ProtectedRoute><BranchDetailPage /></ProtectedRoute>} />
+            <Route
+              path="/branches/:id/edit"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <EditBranchPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/employees" element={
               <ProtectedRoute requiredRole="admin">
                 <EmployeesPage />

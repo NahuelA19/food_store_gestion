@@ -3,18 +3,20 @@
  */
 
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Icon } from "../components/ui/Icon";
 import { useBranches, useToggleBranchStatus } from "../hooks/useBranches";
+import { useAuthStore } from "../store/authStore";
 import {
   Building2,
   MapPin,
   Eye,
   Power,
+  PlusCircle,
 } from "lucide-react";
 
 /* ─── Static demo data (fallback) ─── */
@@ -33,8 +35,11 @@ const FALLBACK_BRANCHES: BranchRow[] = [
 ];
 
 export function BranchesPage() {
+  const navigate = useNavigate();
   const { branches: apiBranches, isLoading } = useBranches();
   const { toggleStatus: apiToggle, isLoading: toggling } = useToggleBranchStatus();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role?.toLowerCase() === "admin";
 
   const isUsingFallback = !isLoading && apiBranches.length === 0;
 
@@ -61,13 +66,24 @@ export function BranchesPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Page title */}
-      <div>
-        <h1 className="font-display text-2xl font-bold text-text-primary">
-          Sucursales
-        </h1>
-        <p className="text-sm text-text-muted mt-1">
-          Administra las sucursales de tu restaurante
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-text-primary">
+            Sucursales
+          </h1>
+          <p className="text-sm text-text-muted mt-1">
+            Administra las sucursales de tu restaurante
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={() => navigate("/branches/new")}
+            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-brand-700"
+          >
+            <PlusCircle size={16} />
+            Nueva Sucursal
+          </button>
+        )}
       </div>
 
       {isUsingFallback && (
