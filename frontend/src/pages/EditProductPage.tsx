@@ -233,12 +233,12 @@ export function EditProductPage() {
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
-    if (!name.trim()) newErrors.name = "Product name is required";
-    else if (name.trim().length > 255) newErrors.name = "Name must be 255 characters or less";
-    if (description && description.length > 2000) newErrors.description = "Description must be 2000 characters or less";
+    if (!name.trim()) newErrors.name = "El nombre del producto es obligatorio";
+    else if (name.trim().length > 255) newErrors.name = "El nombre no puede superar los 255 caracteres";
+    if (description && description.length > 2000) newErrors.description = "La descripción no puede superar los 2000 caracteres";
     const priceNum = parseFloat(price);
-    if (!price || isNaN(priceNum) || priceNum <= 0) newErrors.price = "Price must be a positive number";
-    if (!categoryId) newErrors.categoryId = "Please select a category";
+    if (!price || isNaN(priceNum) || priceNum <= 0) newErrors.price = "El precio debe ser un número positivo mayor a 0";
+    if (!categoryId) newErrors.categoryId = "Seleccioná una categoría";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -315,13 +315,13 @@ export function EditProductPage() {
             className="mb-2"
           >
             <Icon icon={ArrowLeft} size={16} />
-            Back to Products
+            Volver a productos
           </Button>
           <h1 className="font-display text-2xl font-bold text-text-primary">
-            Edit Product
+            Editar Producto
           </h1>
           <p className="text-sm text-text-muted mt-0.5">
-            Update product information — #{product.id}
+            Actualizá la información del producto — #{product.id}
           </p>
         </div>
         <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
@@ -333,7 +333,7 @@ export function EditProductPage() {
       {mutation.isSuccess && (
         <div className="flex items-center gap-2 rounded-lg border-2 border-success bg-success/10 p-3 text-sm font-semibold text-success-dark">
           <CheckCircle size={18} />
-          Product updated successfully!
+          ¡Producto actualizado exitosamente!
         </div>
       )}
 
@@ -341,32 +341,32 @@ export function EditProductPage() {
       {mutation.isError && (
         <div className="flex items-center gap-2 rounded-lg border-2 border-danger bg-danger/10 p-3 text-sm font-medium text-danger">
           <AlertTriangle size={18} />
-          {mutation.error instanceof Error ? mutation.error.message : "Failed to update product"}
+          {mutation.error instanceof Error ? mutation.error.message : "Error al actualizar el producto"}
         </div>
       )}
 
       {/* Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Product Information</CardTitle>
+          <CardTitle>Información del Producto</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
-              label="Product Name"
+              label="Nombre del producto"
               value={name}
               onChange={(e) => setName(e.target.value)}
               error={errors.name}
-              placeholder="Enter product name"
+              placeholder="Ingresá el nombre del producto"
               maxLength={255}
             />
 
             <Textarea
-              label="Description"
+              label="Descripción"
               value={description}
               onChange={setDescription}
               error={errors.description}
-              placeholder="A brief description of the product..."
+              placeholder="Descripción breve del producto..."
             />
 
             {/* Image Upload */}
@@ -436,7 +436,7 @@ export function EditProductPage() {
             {/* Price + Category row */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <Input
-                label="Price ($)"
+                label="Precio ($)"
                 type="number"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
@@ -446,12 +446,12 @@ export function EditProductPage() {
                 step="0.01"
               />
               <Select
-                label="Category"
+                label="Categoría"
                 value={categoryId}
                 onChange={setCategoryId}
                 options={categoryOptions}
                 error={errors.categoryId}
-                placeholder="Select a category..."
+                placeholder="Seleccioná una categoría..."
               />
             </div>
 
@@ -465,7 +465,7 @@ export function EditProductPage() {
                 className="h-5 w-5 rounded border-2 border-border text-brand-600 focus:ring-brand-500"
               />
               <label htmlFor="edit-is-available" className="text-sm font-medium text-text-primary">
-                Product is available for purchase
+                Producto disponible para compra
               </label>
             </div>
 
@@ -479,12 +479,12 @@ export function EditProductPage() {
                 {mutation.isPending ? (
                   <>
                     <Loader2 size={16} className="mr-2 animate-spin" />
-                    Saving...
+                    Guardando...
                   </>
                 ) : (
                   <>
                     <Save size={16} className="mr-2" />
-                    Save Changes
+                    Guardar cambios
                   </>
                 )}
               </Button>
@@ -493,7 +493,7 @@ export function EditProductPage() {
                 variant="outline"
                 onClick={() => navigate("/products")}
               >
-                Cancel
+                Cancelar
               </Button>
             </div>
           </form>
@@ -524,7 +524,7 @@ export function EditProductPage() {
           ) : inventoryError ? (
             <div className="flex items-center gap-2 rounded-lg border-2 border-danger bg-danger/10 p-3 text-sm font-medium text-danger">
               <AlertTriangle size={16} />
-              {inventoryError instanceof Error ? inventoryError.message : "Failed to load inventory"}
+              {inventoryError instanceof Error ? inventoryError.message : "Error al cargar el inventario"}
             </div>
           ) : (
             <div className="space-y-6">
@@ -532,15 +532,15 @@ export function EditProductPage() {
               {inventory && (
                 <div className="grid grid-cols-3 gap-4">
                   <div className="rounded-lg bg-surface-alt p-3 text-center">
-                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Total Stock</p>
+                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock Total</p>
                     <p className="mt-1 font-display text-2xl font-bold text-text-primary">{inventory.stock_quantity}</p>
                   </div>
                   <div className="rounded-lg bg-surface-alt p-3 text-center">
-                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Reserved</p>
+                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Reservado</p>
                     <p className="mt-1 font-display text-2xl font-bold text-amber-600">{inventory.reserved_quantity}</p>
                   </div>
                   <div className="rounded-lg bg-surface-alt p-3 text-center">
-                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Available</p>
+                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Disponible</p>
                     <p className="mt-1 font-display text-2xl font-bold text-emerald-600">{inventory.available_quantity}</p>
                   </div>
                 </div>
@@ -549,36 +549,36 @@ export function EditProductPage() {
               {/* Stock form */}
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <Input
-                  label="Stock Quantity"
+                  label="Stock Total"
                   type="number"
                   value={stockQuantity}
                   onChange={(e) => setStockQuantity(e.target.value)}
                   placeholder="0"
                   min="0"
-                  helperText="Total units in stock"
+                  helperText="Total de unidades en inventario"
                 />
                 <Input
-                  label="Low Stock Threshold"
+                  label="Umbral de Stock Bajo"
                   type="number"
                   value={lowStockThreshold}
                   onChange={(e) => setLowStockThreshold(e.target.value)}
                   placeholder="10"
                   min="0"
-                  helperText="Alert when stock drops below this"
+                  helperText="Alerta cuando el stock baje de este número"
                 />
               </div>
 
               {inventoryMutation.isSuccess && (
                 <div className="flex items-center gap-2 rounded-lg border-2 border-success bg-success/10 p-3 text-sm font-semibold text-success-dark">
                   <CheckCircle size={18} />
-                  Inventory updated successfully!
+                  ¡Inventario actualizado exitosamente!
                 </div>
               )}
 
               {inventoryMutation.isError && (
                 <div className="flex items-center gap-2 rounded-lg border-2 border-danger bg-danger/10 p-3 text-sm font-medium text-danger">
                   <AlertTriangle size={16} />
-                  {inventoryMutation.error instanceof Error ? inventoryMutation.error.message : "Failed to update inventory"}
+                  {inventoryMutation.error instanceof Error ? inventoryMutation.error.message : "Error al actualizar el inventario"}
                 </div>
               )}
 
@@ -595,12 +595,12 @@ export function EditProductPage() {
                 {inventoryMutation.isPending ? (
                   <>
                     <Loader2 size={16} className="mr-2 animate-spin" />
-                    Updating...
+                    Guardando...
                   </>
                 ) : (
                   <>
                     <Save size={16} className="mr-2" />
-                    Update Inventory
+                    Actualizar Inventario
                   </>
                 )}
               </Button>
