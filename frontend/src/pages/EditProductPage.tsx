@@ -131,6 +131,7 @@ export function EditProductPage() {
   const [isAvailable, setIsAvailable] = useState(true);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Pre-fill form when product loads
   useEffect(() => {
@@ -228,6 +229,15 @@ export function EditProductPage() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", productId] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
+      navigate("/products");
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: () => productApi.deleteProduct(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       navigate("/products");
     },
   });
@@ -652,6 +662,77 @@ export function EditProductPage() {
                   </p>
                 )}
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="border-danger/20">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-danger/10 text-danger">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <CardTitle className="text-danger">Zona de Peligro</CardTitle>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!showDeleteConfirm ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-text-primary">Eliminar Producto</p>
+                <p className="text-xs text-text-muted mt-0.5">Se ocultará de la tienda (borrado lógico).</p>
+              </div>
+              <Button
+                variant="outline"
+                className="border-danger text-danger hover:bg-danger hover:text-white"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <AlertTriangle size={16} className="mr-2" />
+                Eliminar
+              </Button>
+            </div>
+          ) : (
+            <div className="rounded-lg border-2 border-danger bg-danger/5 p-4 animate-in fade-in zoom-in-95 duration-200">
+              <p className="text-sm font-bold text-danger text-center">
+                ¿Estás seguro de eliminar este producto?
+              </p>
+              <p className="text-xs text-danger/80 text-center mt-1 mb-4">
+                Podés volver a crearlo con el mismo nombre para restaurarlo.
+              </p>
+              <div className="flex justify-center gap-3">
+                <Button
+                  variant="outline"
+                  className="border-border hover:bg-surface-alt"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleteMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="default"
+                  className="bg-danger hover:bg-danger-dark text-white"
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? (
+                    <Loader2 size={16} className="mr-2 animate-spin" />
+                  ) : (
+                    <AlertTriangle size={16} className="mr-2" />
+                  )}
+                  Sí, Eliminar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {deleteMutation.isError && (
+            <div className="mt-4 flex items-center gap-2 rounded-lg border-2 border-danger bg-danger/10 p-3 text-sm font-medium text-danger">
+              <AlertTriangle size={16} />
+              {deleteMutation.error instanceof Error ? deleteMutation.error.message : "Error al eliminar el producto"}
             </div>
           )}
         </CardContent>
