@@ -39,7 +39,9 @@ export function useAuth() {
         lastName: data.last_name ?? "",
         role: data.role ?? "",
       };
-      useAuthStore.getState().setAuth(user, data.access_token, data.refresh_token ?? "");
+      useAuthStore
+        .getState()
+        .setAuth(user, data.access_token, data.refresh_token ?? "", data.must_change_password ?? false);
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });

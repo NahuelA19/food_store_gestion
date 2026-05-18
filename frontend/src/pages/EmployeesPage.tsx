@@ -3,14 +3,17 @@
  */
 
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Icon } from "../components/ui/Icon";
 import { cn } from "@/lib/utils";
 import { useUsers } from "../hooks/useUsers";
+import { useAuthStore } from "../store/authStore";
 import type { AdminUser } from "../api/userApi";
-import { Users } from "lucide-react";
+import { Users, UserPlus, Pencil } from "lucide-react";
 
 const STAFF_ROLES = ["admin", "employee", "manager", "chef", "cashier", "waiter"];
 
@@ -52,6 +55,9 @@ interface Employee {
 export function EmployeesPage() {
   const [activeRole, setActiveRole] = useState("Todos");
   const { users: apiUsers, isLoading } = useUsers();
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role?.toLowerCase() === "admin";
 
   const staffList = useMemo((): Employee[] => {
     return apiUsers
@@ -74,11 +80,19 @@ export function EmployeesPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-text-primary">Empleados</h1>
-        <p className="text-sm text-text-muted mt-1">
-          Gestioná el equipo de todas las sucursales
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-text-primary">Empleados</h1>
+          <p className="text-sm text-text-muted mt-1">
+            Gestioná el equipo de todas las sucursales
+          </p>
+        </div>
+        {isAdmin && (
+          <Button onClick={() => navigate("/employees/new")} className="shrink-0">
+            <Icon icon={UserPlus} size={16} className="mr-2" />
+            Nuevo Empleado
+          </Button>
+        )}
       </div>
 
       {/* Role filter */}
@@ -134,6 +148,9 @@ export function EmployeesPage() {
                     <th className="text-left px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wider">Rol</th>
                     <th className="text-left px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wider">Estado</th>
                     <th className="text-right px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wider">Ingreso</th>
+                    {isAdmin && (
+                      <th className="text-right px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wider">Acciones</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -159,6 +176,19 @@ export function EmployeesPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-right text-text-secondary">{emp.joinDate}</td>
+                      {isAdmin && (
+                        <td className="px-4 py-3 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/employees/${emp.id}/edit`)}
+                            className="gap-1.5"
+                          >
+                            <Icon icon={Pencil} size={14} />
+                            Editar
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

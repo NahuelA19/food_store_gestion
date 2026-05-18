@@ -62,6 +62,7 @@ class AuthResponse(BaseModel):
     refresh_token: str | None = Field(None, description="JWT refresh token")
     token_type: str = Field("bearer", description="Token type")
     role: str = Field(..., description="User role")
+    must_change_password: bool = Field(False, description="True if the user must change their password on first login")
 
 
 class RefreshTokenRequest(BaseModel):

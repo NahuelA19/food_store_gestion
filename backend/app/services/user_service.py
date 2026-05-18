@@ -12,7 +12,10 @@ from app.core.uow import UnitOfWork
 from app.models.auth import AuthResponse, LoginRequest, RegisterRequest
 from app.models.user import User, UserPreference
 from app.models.user_profile import (
+    AdminCreateUserRequest,
+    AdminUpdateUserRequest,
     AdminUserResponse,
+    ChangePasswordRequest,
     UserPreferencesResponse,
     UserPreferenceUpdate,
     UserProfileUpdate,
@@ -220,6 +223,83 @@ async def admin_list_users(uow: UnitOfWork, cursor: Optional[int], limit: int) -
         "users": [AdminUserResponse.model_validate(u) for u in users],
         "next_cursor": next_cursor,
     }
+
+
+async def admin_create_employee(uow: UnitOfWork, data: AdminCreateUserRequest) -> User:
+    """Create a new employee with a temporary password (admin only).
+
+    Sets must_change_password=True so the employee is forced to change their
+    password on first login.
+    """
+    result = await uow.session.execute(select(User).where(User.email == data.email.lower()))
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El email ya está registrado",
+        )
+
+    hashed_password = get_password_hash(data.password)
+    new_user = User(
+        email=data.email.lower(),
+        hashed_password=hashed_password,
+        is_active=True,
+        role=data.role,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        phone=data.phone,
+        must_change_password=True,
+    )
+    uow.session.add(new_user)
+    await uow.flush()
+    await uow.refresh(new_user)
+    return new_user
+
+
+async def admin_update_employee(uow: UnitOfWork, user_id: int, data: AdminUpdateUserRequest) -> User:
+    """Update an existing employee's profile fields (admin only). Does not touch password."""
+    result = await uow.session.execute(
+        select(User).where(User.id == user_id, User.deleted_at.is_(None)),
+    )
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Empleado no encontrado",
+        )
+
+    if data.first_name is not None:
+        user.first_name = data.first_name
+    if data.last_name is not None:
+        user.last_name = data.last_name
+    if data.phone is not None:
+        user.phone = data.phone
+    if data.role is not None:
+        user.role = data.role
+    if data.is_active is not None:
+        user.is_active = data.is_active
+
+    user.updated_at = datetime.now(timezone.utc)
+    uow.session.add(user)
+    await uow.flush()
+    await uow.refresh(user)
+    return user
+
+
+async def change_user_password(uow: UnitOfWork, user: User, data: ChangePasswordRequest) -> User:
+    """Change the authenticated user's password and clear the must_change_password flag."""
+    if not verify_password(data.current_password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La contraseña actual es incorrecta",
+        )
+
+    user.hashed_password = get_password_hash(data.new_password)
+    user.must_change_password = False
+    user.updated_at = datetime.now(timezone.utc)
+    uow.session.add(user)
+    await uow.flush()
+    await uow.refresh(user)
+    return user
 
 
 async def admin_update_user_status(uow: UnitOfWork, user_id: int, data: UserStatusUpdate) -> AdminUserResponse:

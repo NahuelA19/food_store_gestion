@@ -160,6 +160,7 @@ async def login(
         refresh_token=raw_refresh,
         token_type="bearer",
         role=user.role,
+        must_change_password=user.must_change_password,
     )
 
 

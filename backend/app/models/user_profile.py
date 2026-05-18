@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class UserProfile(BaseModel):
@@ -148,6 +148,7 @@ class AdminUserResponse(BaseModel):
     phone: Optional[str] = None
     is_active: bool
     role: str
+    must_change_password: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -158,3 +159,55 @@ class UserStatusUpdate(BaseModel):
     """User status update request (admin)."""
 
     is_active: bool = Field(..., description="Set user active or inactive")
+
+
+# ─── Employee management schemas ───────────────────────────────────────────
+
+
+VALID_EMPLOYEE_ROLES = {"employee", "manager", "chef", "cashier", "waiter"}
+
+
+class AdminCreateUserRequest(BaseModel):
+    """Create a new employee (admin only). Sets must_change_password=True."""
+
+    email: EmailStr
+    password: str = Field(..., min_length=6, description="Contraseña temporal")
+    role: str = Field(default="employee", description="Rol del empleado")
+    first_name: Optional[str] = Field(None, max_length=50)
+    last_name: Optional[str] = Field(None, max_length=50)
+    phone: Optional[str] = Field(None, max_length=20)
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        if v not in VALID_EMPLOYEE_ROLES:
+            raise ValueError(
+                f"Rol inválido. Roles válidos: {', '.join(sorted(VALID_EMPLOYEE_ROLES))}"
+            )
+        return v
+
+
+class AdminUpdateUserRequest(BaseModel):
+    """Update an existing employee (admin only). Password is not editable here."""
+
+    first_name: Optional[str] = Field(None, max_length=50)
+    last_name: Optional[str] = Field(None, max_length=50)
+    phone: Optional[str] = Field(None, max_length=20)
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in VALID_EMPLOYEE_ROLES:
+            raise ValueError(
+                f"Rol inválido. Roles válidos: {', '.join(sorted(VALID_EMPLOYEE_ROLES))}"
+            )
+        return v
+
+
+class ChangePasswordRequest(BaseModel):
+    """Change the current user's password. Clears must_change_password flag."""
+
+    current_password: str = Field(..., description="Contraseña actual")
+    new_password: str = Field(..., min_length=6, description="Nueva contraseña")
