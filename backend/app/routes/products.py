@@ -183,20 +183,51 @@ async def create_product(
             detail=f"Category with id {body.category_id} not found",
         )
 
-    # Create product
-    product = Product(
-        name=body.name,
-        description=body.description,
-        price=body.price,
-        category_id=body.category_id,
-        is_available=body.is_available,
+    # Check if a product with this name already exists
+    result_existing = await uow.session.execute(
+        select(Product).where(Product.name.ilike(body.name)).options(selectinload(Product.inventory))
     )
-    uow.session.add(product)
-    await uow.flush()
+    existing_product = result_existing.scalars().first()
+    
+    if existing_product:
+        if existing_product.deleted_at is not None:
+            # Restore soft-deleted product
+            existing_product.deleted_at = None
+            existing_product.description = body.description
+            existing_product.price = body.price
+            existing_product.category_id = body.category_id
+            existing_product.is_available = body.is_available
+            existing_product.image_url = body.image_url
+            
+            if not existing_product.inventory:
+                inventory = Inventory(product_id=existing_product.id, stock_quantity=body.stock_quantity or 0)
+                uow.session.add(inventory)
+            else:
+                existing_product.inventory.stock_quantity = body.stock_quantity or 0
+                
+            uow.session.add(existing_product)
+            product = existing_product
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A product with the name '{body.name}' already exists.",
+            )
+    else:
+        # Create new product
+        product = Product(
+            name=body.name,
+            description=body.description,
+            price=body.price,
+            category_id=body.category_id,
+            is_available=body.is_available,
+            image_url=body.image_url,
+        )
+        uow.session.add(product)
+        await uow.flush()
 
-    # Auto-create inventory with stock_quantity or 0
-    inventory = Inventory(product_id=product.id, stock_quantity=body.stock_quantity or 0)
-    uow.session.add(inventory)
+        # Auto-create inventory with stock_quantity or 0
+        inventory = Inventory(product_id=product.id, stock_quantity=body.stock_quantity or 0)
+        uow.session.add(inventory)
 
     await uow.flush()
     await uow.refresh(product)
@@ -302,6 +333,8 @@ async def update_product(
         product.category_id = body.category_id
     if body.is_available is not None:
         product.is_available = body.is_available
+    if body.image_url is not None:
+        product.image_url = body.image_url
 
     uow.session.add(product)
     await uow.flush()
@@ -332,6 +365,7 @@ async def delete_product(
         )
 
     product.soft_delete()
+    await uow.commit()
 
 
 @router.get("/{product_id}/related", response_model=list[ProductResponse])

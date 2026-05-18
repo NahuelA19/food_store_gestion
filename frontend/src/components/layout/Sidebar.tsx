@@ -21,6 +21,12 @@ import {
   ChevronRight,
   PlusCircle,
   FolderPlus,
+  UserPlus,
+  Heart,
+  Bell,
+  ClipboardList,
+  Tag,
+  UserCheck,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -39,6 +45,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   };
 
   const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isEmployee = user?.role?.toLowerCase() === "employee";
 
   // Diferentes menús según el rol
   const navSections = isAdmin
@@ -56,6 +63,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           links: [
             { to: "/branches", label: "Sucursales", icon: Building2 },
             { to: "/employees", label: "Empleados", icon: Users },
+            { to: "/clients", label: "Clientes", icon: UserCheck },
+            { to: "/categories", label: "Categorías", icon: Tag },
             { to: "/settings", label: "Configuración", icon: Settings },
           ],
         },
@@ -64,6 +73,26 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           links: [
             { to: "/products/new", label: "Nuevo Producto", icon: PlusCircle },
             { to: "/categories/new", label: "Nueva Categoría", icon: FolderPlus },
+            { to: "/branches/new", label: "Nueva Sucursal", icon: Building2 },
+            { to: "/employees/new", label: "Nuevo Empleado", icon: UserPlus },
+          ],
+        },
+      ]
+    : isEmployee
+    ? [
+        {
+          title: "Operaciones",
+          links: [
+            { to: "/orders", label: "Pedidos", icon: ClipboardList },
+            { to: "/products", label: "Productos", icon: Package },
+            { to: "/branches", label: "Sucursales", icon: Building2 },
+          ],
+        },
+        {
+          title: "Mi cuenta",
+          links: [
+            { to: "/notifications", label: "Notificaciones", icon: Bell },
+            { to: "/settings", label: "Configuración", icon: Settings },
           ],
         },
       ]
@@ -72,8 +101,16 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           title: "Mi Tienda",
           links: [
             { to: "/products", label: "Productos", icon: Package },
+            { to: "/orders", label: "Mis Pedidos", icon: ShoppingCart },
+            { to: "/wishlist", label: "Favoritos", icon: Heart },
             { to: "/cart", label: "Carrito", icon: ShoppingCart },
-            { to: "/profile", label: "Mi Perfil", icon: Users },
+          ],
+        },
+        {
+          title: "Mi cuenta",
+          links: [
+            { to: "/notifications", label: "Notificaciones", icon: Bell },
+            { to: "/settings", label: "Configuración", icon: Settings },
           ],
         },
       ];
@@ -127,7 +164,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                       "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200",
                       collapsed && "justify-center px-0",
                       isActive(link.to)
-                        ? "bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
+                        ? "pill-active"
                         : "text-text-secondary hover:bg-surface-alt hover:text-text-primary"
                     )}
                     title={collapsed ? link.label : undefined}

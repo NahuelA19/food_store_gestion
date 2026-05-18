@@ -1,319 +1,280 @@
-# 🍕 Food Store - Modern E-commerce Platform
+# Food Store - Plataforma de E-commerce
 
-A full-stack e-commerce platform built with modern web technologies. This monorepo contains both backend (FastAPI) and frontend (React) applications.
+Aplicación full-stack de gestión de una tienda de comida. Incluye catálogo de productos, carrito, pedidos, panel de administración y pago con MercadoPago.
 
 ## Tech Stack
 
-### Backend
-- **Framework**: FastAPI (Python)
-- **Server**: Uvicorn
-- **Validation**: Pydantic v2
-- **Package Manager**: pip (with venv)
+| Capa | Tecnología |
+|------|-----------|
+| Backend | FastAPI + SQLAlchemy (async) + Alembic |
+| Frontend | React 18 + TypeScript + Vite + TailwindCSS v4 |
+| Base de datos | PostgreSQL 16 (Docker) |
+| Pagos | MercadoPago (Checkout Pro) |
+| Estado | Zustand + TanStack Query |
+| Tunnel | ngrok (webhooks MercadoPago en desarrollo) |
 
-### Frontend
-- **Framework**: React 18
-- **Language**: TypeScript
-- **Build Tool**: Vite
-- **Testing**: Vitest
-- **Linting**: ESLint
-- **Formatting**: Prettier
+---
 
-### DevOps & Quality
-- **Monorepo**: npm workspaces
-- **Git Hooks**: Husky
-- **Commit Linting**: commitlint (Conventional Commits)
-- **CI/CD**: GitHub Actions
-- **Code Formatting**: Black (Python), Prettier (JS/TS)
-- **Linting**: Ruff (Python), ESLint (JS/TS)
+## Requisitos previos
 
-## Quick Start
+- **Python** 3.12+
+- **Node.js** 18+ y npm 9+
+- **Docker Desktop** (requerido — PostgreSQL corre en Docker)
 
-### Prerequisites
-- **Docker & Docker Compose** (for PostgreSQL)
-- **Node.js** 18+ and npm 9+
-- **Python** 3.10+
-- **Git**
+> Si tenés PostgreSQL instalado localmente, Docker lo expone en el puerto **5433** para evitar conflictos.
 
-### Installation (Automated)
+---
 
-**Recommended**: Use the setup script (Linux/macOS/WSL):
+## Instalación
+
+### 1. Clonar el repositorio
 
 ```bash
-# Clone the repository
 git clone https://github.com/NahuelA19/food_store_gestion.git
 cd food_store_gestion
-
-# Run automatic setup (installs everything)
-chmod +x scripts/setup-dev.sh
-bash scripts/setup-dev.sh
 ```
 
-The script will:
-- ✅ Start PostgreSQL in Docker
-- ✅ Create Python virtual environment
-- ✅ Install all dependencies
-- ✅ Run database migrations
-- ✅ Set up environment variables
-
-### Installation (Manual)
-
-Or install manually (see [Docker Setup Guide](./docs/DOCKER-SETUP.md)):
+### 2. Levantar PostgreSQL con Docker
 
 ```bash
-# Clone and navigate
-git clone https://github.com/NahuelA19/food_store_gestion.git
-cd food_store_gestion
+docker compose up -d postgres
+```
 
-# Start PostgreSQL
-docker-compose up -d postgres
+Esto levanta PostgreSQL en `localhost:5433` con la base `food_store` y el usuario `food_store_user` ya configurados (ver `docker/init-db.sql`).
 
-# Install and run backend
+### 3. Configurar el backend
+
+```bash
 cd backend
+
+# Crear entorno virtual
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.docker-example .env
-alembic upgrade head
-cd ..
 
-# Install and run frontend
-npm install
+# Activar (Windows)
+venv\Scripts\activate
+
+# Activar (Linux/macOS)
+source venv/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
 ```
 
-### Development
+Crear `backend/.env`:
 
-**Start backend** (Terminal 1):
+```env
+DATABASE_URL=postgresql+asyncpg://food_store_user:root@localhost:5433/food_store
+TEST_DATABASE_URL=postgresql+asyncpg://food_store_user:root@localhost:5433/food_store_test
+DB_USER=food_store_user
+DB_PASSWORD=root
+DB_NAME=food_store
+DB_PORT=5433
+DB_HOST=localhost
+
+ENVIRONMENT=development
+DEBUG=true
+SECRET_KEY=change-this-insecure-dev-key-in-production
+ACCESS_TOKEN_EXPIRE_MINUTES=15
+
+BASE_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:5173
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
+
+# MercadoPago — obtené las credenciales de sandbox en:
+# https://www.mercadopago.com.ar/developers/panel/app
+MP_ACCESS_TOKEN=TEST-tu-access-token
+MP_PUBLIC_KEY=TEST-tu-public-key
+MP_WEBHOOK_SECRET=
+MP_NOTIFICATION_URL=http://localhost:8000/api/v1/payments/webhook
+
+# ngrok — completar después de levantar el servicio (ver sección MercadoPago)
+# NGROK_AUTHTOKEN=tu-token
+```
+
+Correr las migraciones y seeds:
+
+```bash
+alembic upgrade head
+python run_seeds.py
+```
+
+### 4. Configurar el frontend
+
+Instalar dependencias desde la raíz del proyecto:
+
+```bash
+cd ..
+npm install --ignore-scripts
+```
+
+> `--ignore-scripts` evita el error de Husky que ocurre cuando el paquete aún no está instalado.
+
+---
+
+## Levantar el proyecto
+
+Necesitás **tres terminales**.
+
+**Terminal 1 — Backend:**
+
 ```bash
 cd backend
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Linux/macOS
 uvicorn app.main:app --reload
-# API available at http://localhost:8000
-# Swagger docs at http://localhost:8000/docs
 ```
 
-**Start frontend** (Terminal 2):
+Disponible en `http://localhost:8000` · Swagger en `http://localhost:8000/docs`.
+
+**Terminal 2 — Frontend:**
+
 ```bash
 npm run dev --workspace frontend
-# Open http://localhost:5173
 ```
 
-**Check PostgreSQL**:
+Disponible en `http://localhost:5173`.
+
+**Docker (en segundo plano):**
+
 ```bash
-docker-compose exec postgres psql -U food_store_user -d food_store
-# You can now run SQL queries
+docker compose up -d postgres
 ```
 
-**All scripts:**
+---
+
+## MercadoPago — configuración de pagos
+
+Para que los pagos funcionen en sandbox necesitás credenciales de prueba y ngrok para recibir webhooks.
+
+### 1. Credenciales
+
+1. Entrá a [mercadopago.com.ar/developers/panel/app](https://www.mercadopago.com.ar/developers/panel/app)
+2. Creá o seleccioná tu app
+3. Copiá el **Access Token** (`TEST-...`) y el **Public Key** (`TEST-...`) de "Credenciales de prueba"
+4. Pegálos en `backend/.env`:
+
+```env
+MP_ACCESS_TOKEN=TEST-tu-access-token
+MP_PUBLIC_KEY=TEST-tu-public-key
+```
+
+### 2. ngrok — webhooks y redirección automática
+
+ngrok expone el backend localmente para que MP pueda llamar al webhook y redirigir automáticamente al usuario después del pago.
+
+**Obtener authtoken:**
+
+1. Creá cuenta gratuita en [dashboard.ngrok.com](https://dashboard.ngrok.com/get-started/your-authtoken)
+2. Copiá tu authtoken
+
+**Configurar:**
+
+```env
+# backend/.env
+NGROK_AUTHTOKEN=tu-token
+```
+
+**Levantar ngrok:**
+
 ```bash
-npm run dev          # Start all dev servers
-npm run build        # Build all packages
-npm run test         # Run all tests
-npm run lint         # Lint all code
-npm run format       # Format all code
-npm run check:all    # Lint + test + build (local verification)
+docker compose up -d ngrok
 ```
 
-## Project Structure
+**Obtener la URL pública:**
+
+```bash
+curl http://localhost:4040/api/tunnels
+# buscá el campo "public_url", e.g. https://xxxx.ngrok-free.app
+```
+
+**Actualizar `backend/.env` con la URL de ngrok:**
+
+```env
+BASE_URL=https://xxxx.ngrok-free.app
+MP_NOTIFICATION_URL=https://xxxx.ngrok-free.app/api/v1/payments/webhook
+```
+
+**Reiniciá el backend** para que tome los cambios.
+
+> La URL de ngrok cambia cada vez que reiniciás el contenedor. Repetí el paso de obtener la URL y actualizar el `.env` en cada sesión.
+
+---
+
+## Estructura del proyecto
 
 ```
-foodstore/
-├── backend/                 # FastAPI backend
+food_store_gestion/
+├── backend/                    # API FastAPI
 │   ├── app/
-│   │   ├── main.py         # FastAPI app entry point
-│   │   ├── routes/         # API route modules
-│   │   └── models/         # Pydantic models
-│   ├── tests/              # Backend tests
-│   ├── venv/               # Python virtual environment
-│   ├── requirements.txt    # Python dependencies
-│   ├── pyproject.toml      # Python project config
-│   └── .env.example        # Environment variables template
+│   │   ├── main.py             # Entry point
+│   │   ├── config.py           # Settings (pydantic-settings)
+│   │   ├── models/             # SQLAlchemy models
+│   │   ├── routes/             # Endpoints por dominio
+│   │   ├── services/           # Lógica de negocio
+│   │   ├── core/               # UoW, seguridad, base
+│   │   └── dependencies.py     # Inyección de dependencias
+│   ├── alembic/                # Migraciones de base de datos
+│   ├── run_seeds.py            # Poblar base de datos inicial
+│   ├── requirements.txt
+│   └── .env                    # Variables locales (no commitear)
 │
-├── frontend/               # React frontend
+├── frontend/                   # App React
 │   ├── src/
-│   │   ├── main.tsx        # Entry point
-│   │   ├── App.tsx         # Root component
-│   │   ├── components/     # Reusable components
-│   │   ├── pages/          # Page components
-│   │   ├── hooks/          # Custom React hooks
-│   │   └── .env.example    # Environment variables template
-│   ├── public/             # Static assets
-│   ├── package.json        # Frontend config
-│   └── tsconfig.json       # TypeScript config
+│   │   ├── api/                # Clientes HTTP por dominio
+│   │   ├── components/         # Componentes reutilizables
+│   │   ├── pages/              # Páginas de la app
+│   │   ├── store/              # Estado global (Zustand)
+│   │   ├── hooks/              # Custom hooks
+│   │   └── App.tsx             # Rutas y layout
+│   └── src/lib/utils.ts        # Utilidades (cn, getProductImageUrl)
 │
-├── packages/               # Shared libraries
-│   ├── core/              # Shared utilities
-│   └── ui/                # Shared UI components
-│
-├── docs/                  # Documentation
-│   ├── SETUP.md          # Setup instructions
-│   ├── ARCHITECTURE.md   # System architecture
-│   ├── CONTRIBUTING.md   # Contribution guidelines
-│   ├── guides/           # How-to guides
-│   ├── api/              # API documentation
-│   └── architecture/     # Architecture diagrams
-│
-├── .github/workflows/     # CI/CD pipelines
-├── .husky/               # Git hooks
-├── package.json          # Root workspace config
-├── .eslintrc.json        # ESLint config
-├── .prettierrc.json      # Prettier config
-├── commitlint.config.js  # Commit lint config
-├── .editorconfig         # Editor settings
-└── .gitignore            # Git ignore rules
+├── docker/
+│   └── init-db.sql             # Inicialización de PostgreSQL
+├── docker-compose.yml          # PostgreSQL + ngrok
+├── package.json                # Workspace raíz
+└── README.md
 ```
 
-## Documentation
+---
 
-- **[Docker Setup Guide](./docs/DOCKER-SETUP.md)** ⭐ **START HERE** - Quick setup with PostgreSQL in Docker
-- **[Setup Instructions](./docs/SETUP.md)** - Detailed development environment setup
-- **[Database Layer](./docs/DATABASE.md)** - PostgreSQL ORM, migrations, and connection management
-- **[Database Setup](./docs/DATABASE_SETUP.md)** - PostgreSQL installation and configuration
-- **[Architecture](./docs/ARCHITECTURE.md)** - System design and layers
-- **[Authentication](./docs/AUTHENTICATION.md)** - JWT auth flow, registration, login, protected endpoints
-- **[User Service](./docs/USER-SERVICE.md)** - User profiles, preferences, and admin endpoints
-- **[Contributing](./docs/CONTRIBUTING.md)** - Git workflow and code standards
-- **[API Documentation](./docs/API.md)** - Backend API endpoints
-- **[Getting Started](./GETTING-STARTED.md)** - First-time developer guide
-- **[Guides](./docs/guides/)** - How-to guides for common tasks
-- **[E2E Testing Guide](./docs/E2E-TESTING-GUIDE.md)** - Complete end-to-end flow verification
+## Scripts útiles
 
-## Screenshots
+```bash
+# Correr migraciones
+cd backend && alembic upgrade head
 
-See the complete visual walkthrough of the Food Store interface:
+# Crear nueva migración
+cd backend && alembic revision --autogenerate -m "descripcion"
 
-📸 **[Full Screenshot Gallery](./docs/screenshots/README.md)**
+# Poblar base de datos
+cd backend && python run_seeds.py
 
-The gallery includes 10 key screens:
-1. Login page
-2. Registration page
-3. Product catalog/home
-4. Product detail page
-5. Shopping cart
-6. Checkout process
-7. Order detail page
-8. Order history
-9. Admin dashboard
-10. Admin orders management
+# Ver logs de PostgreSQL
+docker compose logs postgres
 
-Each screenshot includes detailed descriptions of UI elements and features.
+# Ver URL de ngrok
+curl http://localhost:4040/api/tunnels
+```
 
-## Demo Video
-
-Watch the complete end-to-end flow demonstration:
-
-🎬 **[View Demo Video](https://youtu.be/PLACEHOLDER)** (≥3 minutes)
-
-The demo covers:
-- User registration and authentication
-- Browsing the product catalog
-- Product selection and details
-- Adding items to cart
-- Checkout and shipping
-- Payment integration with MercadoPago
-- Order confirmation and history
-
-**Note**: Replace `PLACEHOLDER` with the actual YouTube or Google Drive link after recording the video.
+---
 
 ## Git Workflow
 
-This project follows **Conventional Commits**. All commits must follow this format:
+Este proyecto usa **Conventional Commits**:
 
 ```
-type(scope): subject
-
-body
-footer
+feat      → nueva funcionalidad
+fix       → corrección de bug
+docs      → documentación
+refactor  → refactoring sin cambio funcional
+style     → cambios de estilo/formato
+chore     → tareas de mantenimiento
 ```
 
-**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`
+Los hooks de Husky validan el formato automáticamente al commitear.
 
-**Example**:
-```
-feat(auth): add login endpoint
+---
 
-- Implement JWT-based authentication
-- Add password hashing with bcrypt
-
-Closes #42
-```
-
-Git hooks will validate commits automatically. See [Contributing Guidelines](./docs/CONTRIBUTING.md) for details.
-
-## CI/CD Pipeline
-
-Automated checks run on every pull request:
-
-✅ **Linting** - ESLint (frontend), Ruff (backend)
-✅ **Code Formatting** - Prettier (frontend), Black (backend)
-✅ **Tests** - Vitest (frontend), pytest (backend)
-✅ **Build** - Vite (frontend), syntax check (backend)
-✅ **Security** - npm audit, Python dependency scanning
-
-Branch protection rules require all checks to pass before merging.
-
-## Testing
-
-```bash
-# Frontend tests
-npm run test --workspace frontend
-npm run test:ui --workspace frontend  # With UI
-
-# Backend tests
-cd backend && python -m pytest
-cd backend && python -m pytest --cov=app  # With coverage
-
-# Both
-npm run test  # Runs all test workspaces
-```
-
-## Code Quality
-
-```bash
-# Lint all code
-npm run lint
-
-# Format all code (auto-fixes)
-npm run format
-
-# Type checking
-npm run type-check --workspace frontend
-
-# Full checks (before committing)
-npm run check:all
-```
-
-## Environment Variables
-
-### Frontend (`.env.local`)
-```
-VITE_API_URL=http://localhost:8000/api
-VITE_API_TIMEOUT=30000
-VITE_ENV=development
-VITE_DEBUG=true
-```
-
-### Backend (`.env`)
-```
-ENVIRONMENT=development
-DEBUG=True
-HOST=0.0.0.0
-PORT=8000
-SECRET_KEY=your-secret-key-change-in-production
-```
-
-See `.env.example` files in each directory for all available variables.
-
-## Troubleshooting
-
-See [Getting Started](./GETTING-STARTED.md) for common issues and solutions.
-
-## License
+## Licencia
 
 MIT
-
-## Support
-
-- 📖 [Documentation](./docs/)
-- 🐛 [Issues](https://github.com/yourusername/foodstore/issues)
-- 💬 [Discussions](https://github.com/yourusername/foodstore/discussions)
-.

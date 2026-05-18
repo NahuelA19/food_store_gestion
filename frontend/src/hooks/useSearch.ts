@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { debounce } from 'lodash';
+import { useAuthStore } from '../store/authStore';
 
 // Base URL for API calls. VITE_API_URL already includes /api/v1 prefix.
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
@@ -87,6 +87,7 @@ function parseFiltersFromUrl(params: URLSearchParams): Filters {
 
 export function useSearch(): UseSearchReturn {
   const [searchParams, setSearchParams] = useSearchParams();
+  const accessToken = useAuthStore((s) => s.accessToken);
 
   // State
   const [query, setQueryState] = useState(searchParams.get('q') || '');
@@ -153,29 +154,32 @@ export function useSearch(): UseSearchReturn {
       params.set('page', page.toString());
       params.set('limit', '20');
 
-      const res = await fetch(`${API_BASE_URL}/products/search?${params}`);
+      const headers: Record<string, string> = {};
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
+      const res = await fetch(`${API_BASE_URL}/products/search?${params}`, { headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
       setItems(data.items);
       setPagination(data.pagination);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch results');
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar los productos');
       setItems([]);
     } finally {
       setLoading(false);
     }
-  }, [query, filters, page]);
+  }, [query, filters, page, accessToken]);
 
   // Fetch results whenever query/filters/page change
   useEffect(() => {
     fetchResults();
   }, [fetchResults]);
 
-  const handleSetQuery = debounce((newQuery: string) => {
+  function handleSetQuery(newQuery: string) {
     setQueryState(newQuery);
     setPageState(1);
-  }, 300);
+  }
 
   function handleSetFilters(newFilters: Filters) {
     setFiltersState(newFilters);
@@ -207,7 +211,7 @@ export function useSearch(): UseSearchReturn {
     loading,
     error,
     categories,
-    setQuery: handleSetQuery as (q: string) => void,
+    setQuery: handleSetQuery,
     setFilters: handleSetFilters,
     setPage: setPageState,
     resetFilters: handleResetFilters,

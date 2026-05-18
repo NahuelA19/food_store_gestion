@@ -50,7 +50,7 @@ def build_search_filters(
     min_stock: int | None = None,
 ) -> list[ColumnElement[bool]]:
     """Build WHERE clause filters for search query."""
-    filters = []
+    filters = [Product.deleted_at.is_(None)]
 
     # Full-text search filter
     if q:

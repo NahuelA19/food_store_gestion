@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { branchApi } from "../api/branchApi";
+import type { CreateBranchPayload, UpdateBranchPayload } from "../types/branch";
 
 export function useBranches() {
   const query = useQuery({
@@ -32,12 +33,46 @@ export function useBranch(id: number) {
   };
 }
 
+export function useCreateBranch() {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (payload: CreateBranchPayload) => branchApi.createBranch(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
+    },
+  });
+  return {
+    createBranch: mutation.mutateAsync,
+    isPending: mutation.isPending,
+    isSuccess: mutation.isSuccess,
+    error: mutation.error instanceof Error ? mutation.error.message : null,
+  };
+}
+
+export function useUpdateBranch(id: number) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (payload: UpdateBranchPayload) => branchApi.updateBranch(id, payload),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.setQueryData(["branch", id], updated);
+    },
+  });
+  return {
+    updateBranch: mutation.mutateAsync,
+    isPending: mutation.isPending,
+    isSuccess: mutation.isSuccess,
+    error: mutation.error instanceof Error ? mutation.error.message : null,
+  };
+}
+
 export function useToggleBranchStatus() {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (id: number) => branchApi.toggleBranchStatus(id),
-    onSuccess: () => {
+    onSuccess: (updatedBranch) => {
       queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.setQueryData(["branch", updatedBranch.id], updatedBranch);
     },
   });
 

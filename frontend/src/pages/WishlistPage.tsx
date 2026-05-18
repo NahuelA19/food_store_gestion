@@ -4,6 +4,7 @@
 
 import { Link } from "react-router-dom";
 import { useWishlist } from "../hooks/useWishlist";
+import { useCart } from "../hooks/useCart";
 import { ProductCard } from "../components/ProductCard";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -12,6 +13,7 @@ import { Heart, ArrowLeft, ShoppingBag } from "lucide-react";
 
 export function WishlistPage() {
   const { items, count, isLoading } = useWishlist();
+  const { addItem } = useCart();
 
   if (isLoading) {
     return (
@@ -33,17 +35,17 @@ export function WishlistPage() {
           <div className="flex items-center gap-3">
             <Heart size={28} className="fill-red-500 text-red-500" />
             <h1 className="font-display text-3xl font-bold text-text-primary">
-              My Favorites
+              Mis Favoritos
             </h1>
           </div>
           <p className="mt-1 text-text-muted">
-            {count} {count === 1 ? "item" : "items"} saved
+            {count} {count === 1 ? "producto guardado" : "productos guardados"}
           </p>
         </div>
         <Link to="/products">
           <Button variant="outline">
             <Icon icon={ArrowLeft} size={16} />
-            Browse Products
+            Ver productos
           </Button>
         </Link>
       </div>
@@ -54,6 +56,7 @@ export function WishlistPage() {
             <ProductCard
               key={item.id}
               product={item.product}
+              onAddToCart={(product, quantity) => addItem(product.id, quantity)}
               onClick={() => {
                 window.location.href = `/products/${item.product.id}`;
               }}
@@ -64,16 +67,15 @@ export function WishlistPage() {
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Heart size={64} className="mb-4 text-gray-300 dark:text-gray-600" />
           <h2 className="mb-2 font-display text-2xl font-bold text-text-primary">
-            No favorites yet
+            Todavía no tenés favoritos
           </h2>
           <p className="mb-8 max-w-md text-text-muted">
-            Start browsing products and click the heart icon to save your
-            favorites for later.
+            Explorá los productos y hacé clic en el corazón para guardar tus favoritos.
           </p>
           <Link to="/products">
             <Button variant="default" size="lg">
               <Icon icon={ShoppingBag} size={18} />
-              Browse Products
+              Ver productos
             </Button>
           </Link>
         </div>

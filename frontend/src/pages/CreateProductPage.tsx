@@ -178,10 +178,9 @@ export function CreateProductPage() {
     mutationFn: (data: { name: string; description?: string; image_url?: string; price: number; category_id: number; is_available: boolean; stock_quantity?: number }) =>
       productApi.createProduct(data),
     onSuccess: () => {
-      // Invalidate products query so the list reflects the new product
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product"] });
-      // Redirect to products page
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
       navigate("/products");
     },
   });
@@ -190,22 +189,22 @@ export function CreateProductPage() {
     const newErrors: Record<string, string> = {};
 
     if (!name.trim()) {
-      newErrors.name = "Product name is required";
+      newErrors.name = "El nombre del producto es obligatorio";
     } else if (name.trim().length > 255) {
-      newErrors.name = "Name must be 255 characters or less";
+      newErrors.name = "El nombre no puede superar los 255 caracteres";
     }
 
     if (description && description.length > 2000) {
-      newErrors.description = "Description must be 2000 characters or less";
+      newErrors.description = "La descripción no puede superar los 2000 caracteres";
     }
 
     const priceNum = parseFloat(price);
     if (!price || isNaN(priceNum) || priceNum <= 0) {
-      newErrors.price = "Price must be a positive number";
+      newErrors.price = "El precio debe ser un número positivo mayor a 0";
     }
 
     if (!categoryId) {
-      newErrors.categoryId = "Please select a category";
+      newErrors.categoryId = "Seleccioná una categoría";
     }
 
     setErrors(newErrors);
@@ -275,7 +274,7 @@ export function CreateProductPage() {
         className="mb-6"
       >
         <Icon icon={ArrowLeft} size={16} />
-        Back to Products
+        Volver a productos
       </Button>
 
       <Card>
@@ -285,9 +284,9 @@ export function CreateProductPage() {
               <Icon icon={Package} size={20} />
             </div>
             <div>
-              <CardTitle>New Product</CardTitle>
+              <CardTitle>Nuevo Producto</CardTitle>
               <p className="text-sm text-text-muted mt-0.5">
-                Fill in the details to add a new product to the catalog
+                Completá los datos para agregar un nuevo producto al catálogo
               </p>
             </div>
           </div>
@@ -297,27 +296,27 @@ export function CreateProductPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Name */}
             <Input
-              label="Product Name"
+              label="Nombre del producto"
               value={name}
               onChange={(e) => setName(e.target.value)}
               error={errors.name}
-              placeholder="e.g. Artisan Sourdough Bread"
+              placeholder="Ej: Pan Artesanal de Masa Madre"
               maxLength={255}
             />
 
             {/* Description */}
             <Textarea
-              label="Description"
+              label="Descripción"
               value={description}
               onChange={setDescription}
               error={errors.description}
-              placeholder="A brief description of the product..."
+              placeholder="Descripción breve del producto..."
             />
 
             {/* Image Upload */}
             <div className="space-y-1.5">
               <label className="block text-sm font-semibold text-text-primary">
-                Product Image
+                Imagen del producto
               </label>
               
               {/* File input */}
@@ -336,7 +335,7 @@ export function CreateProductPage() {
                       Uploading...
                     </span>
                   ) : (
-                    <span className="text-text-secondary">Choose file...</span>
+                    <span className="text-text-secondary">Elegir archivo...</span>
                   )}
                 </label>
                 <input
@@ -364,9 +363,9 @@ export function CreateProductPage() {
               <Input
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://example.com/product-image.jpg (or upload above)"
+                placeholder="https://ejemplo.com/imagen-producto.jpg (o subí un archivo arriba)"
                 maxLength={2048}
-                helperText="Optional. Paste a URL or upload a file above (max 5MB)."
+                helperText="Opcional. Pegá una URL o subí un archivo (máx. 5MB)."
                 error={imageUploadError || undefined}
               />
 
@@ -391,7 +390,7 @@ export function CreateProductPage() {
             {/* Price + Category row */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <Input
-                label="Price ($)"
+                label="Precio ($)"
                 type="number"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
@@ -402,12 +401,12 @@ export function CreateProductPage() {
               />
 
               <Select
-                label="Category"
+                label="Categoría"
                 value={categoryId}
                 onChange={setCategoryId}
                 options={categoryOptions}
                 error={errors.categoryId}
-                placeholder="Select a category..."
+                placeholder="Seleccioná una categoría..."
               />
             </div>
 
@@ -443,12 +442,12 @@ export function CreateProductPage() {
               </button>
               <div>
                 <p className="text-sm font-semibold text-text-primary">
-                  {isAvailable ? "Available" : "Unavailable"}
+                  {isAvailable ? "Disponible" : "No disponible"}
                 </p>
                 <p className="text-xs text-text-muted">
                   {isAvailable
-                    ? "Product will be visible in the catalog immediately"
-                    : "Product will be hidden from customers"}
+                    ? "El producto será visible en el catálogo inmediatamente"
+                    : "El producto estará oculto para los clientes"}
                 </p>
               </div>
             </div>
@@ -460,12 +459,12 @@ export function CreateProductPage() {
                   <Icon icon={AlertTriangle} size={18} className="mt-0.5 shrink-0 text-danger" />
                   <div>
                     <p className="text-sm font-semibold text-danger-text">
-                      Failed to create product
+                      Error al crear el producto
                     </p>
                     <p className="text-sm text-danger-text/80 mt-0.5">
                       {mutation.error instanceof Error
                         ? mutation.error.message
-                        : "An unexpected error occurred. Please try again."}
+                        : "Ocurrió un error inesperado. Intentá de nuevo."}
                     </p>
                   </div>
                 </div>
@@ -479,10 +478,10 @@ export function CreateProductPage() {
                   <Icon icon={CheckCircle} size={18} className="mt-0.5 shrink-0 text-emerald-600" />
                   <div>
                     <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                      Product created successfully!
+                      ¡Producto creado exitosamente!
                     </p>
                     <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">
-                      Redirecting to products page...
+                      Redirigiendo a productos...
                     </p>
                   </div>
                 </div>
@@ -501,14 +500,14 @@ export function CreateProductPage() {
                 ) : (
                   <Icon icon={Save} size={16} />
                 )}
-                {mutation.isPending ? "Creating..." : "Create Product"}
+                {mutation.isPending ? "Creando..." : "Crear producto"}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => navigate("/products")}
               >
-                Cancel
+                Cancelar
               </Button>
             </div>
           </form>

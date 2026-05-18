@@ -23,9 +23,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export const orderApi = {
-  async getOrders(page = 1, status?: string): Promise<OrderListResponse> {
+  async getOrders(page = 1, status?: string, search?: string, branchId?: number): Promise<OrderListResponse> {
     const params = new URLSearchParams({ page: String(page) });
     if (status && status !== "all") params.append("status", status);
+    if (search && search.trim()) params.append("search", search.trim());
+    if (branchId) params.append("branch_id", String(branchId));
 
     const user = useAuthStore.getState().user;
     const endpoint = user?.role === "admin" ? "/admin/orders" : "/orders";

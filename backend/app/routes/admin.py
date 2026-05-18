@@ -6,12 +6,13 @@ from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select, text
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import contains_eager, selectinload
 
 from app.core.uow import UnitOfWork
 from app.dependencies import get_admin_user, get_uow
 from app.models.branch import Branch
-from app.models.order import Order
+from app.models.order import Order, OrderStatus
+from app.services.order_service import build_status_condition
 from app.models.order_item import OrderItem
 from app.models.product import Product
 from app.models.user import User
@@ -40,29 +41,28 @@ async def admin_list_all_orders(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     status_filter: str | None = Query(None, alias="status", description="Filter by order status"),
+    search: str | None = Query(None, description="Search by order ID or customer email"),
     current_user: User = Depends(get_admin_user),
     uow: UnitOfWork = Depends(get_uow),
 ) -> OrderListResponse:
-    """List ALL orders (admin only). Supports pagination and status filtering."""
-    query = select(Order)
+    """List ALL orders (admin only). Supports pagination, status and search filtering."""
+    query = select(Order).outerjoin(Order.user)
 
     if status_filter:
-        # Map common status names to DB enum values
-        _status_map = {
-            "pending": "pending",
-            "payment_pending": "pending",
-            "confirmed": "confirmed",
-            "shipped": "shipped",
-            "delivered": "delivered",
-            "cancelled": "cancelled",
-        }
-        db_status = _status_map.get(status_filter.lower())
-        if not db_status:
+        cond = build_status_condition(status_filter)
+        if cond is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid status: '{status_filter}'",
-            ) from None
-        query = query.where(text("status::text = :st")).params(st=db_status)
+            )
+        query = query.where(cond)
+
+    if search:
+        term = search.strip()
+        if term.isdigit():
+            query = query.where(Order.id == int(term))
+        else:
+            query = query.where(User.email.ilike(f"%{term}%"))
 
     count_query = select(func.count()).select_from(query.subquery())
     count_result = await uow.session.execute(count_query)
@@ -70,9 +70,12 @@ async def admin_list_all_orders(
 
     offset = (page - 1) * limit
     result = await uow.session.execute(
-        query.order_by(Order.created_at.desc()).offset(offset).limit(limit)
+        query.options(contains_eager(Order.user))
+        .order_by(Order.created_at.desc())
+        .offset(offset)
+        .limit(limit)
     )
-    orders = result.scalars().all()
+    orders = result.unique().scalars().all()
 
     total_pages = max(1, ceil(total / limit)) if total > 0 else 1
 
@@ -81,6 +84,7 @@ async def admin_list_all_orders(
             OrderResponse(
                 id=o.id,
                 user_id=o.user_id,
+                user_email=o.user.email if o.user else None,
                 status=o.status.value if hasattr(o.status, "value") else o.status,
                 total_amount=o.total_amount,
                 created_at=o.created_at,

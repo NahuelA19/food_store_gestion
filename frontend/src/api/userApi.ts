@@ -29,8 +29,26 @@ export interface AdminUser {
   phone: string | null;
   is_active: boolean;
   role: string;
+  must_change_password: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface AdminCreateEmployeePayload {
+  email: string;
+  password: string;
+  role: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+}
+
+export interface AdminUpdateEmployeePayload {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  role?: string;
+  is_active?: boolean;
 }
 
 interface UsersListResponse {
@@ -47,5 +65,42 @@ export const userApi = {
       headers: getAuthHeaders(),
     });
     return handleResponse<UsersListResponse>(response);
+  },
+
+  async getEmployee(id: number): Promise<AdminUser> {
+    const response = await fetch(`${API_BASE_URL}/users/${id}/admin`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse<AdminUser>(response);
+  },
+
+  async createEmployee(payload: AdminCreateEmployeePayload): Promise<AdminUser> {
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<AdminUser>(response);
+  },
+
+  async updateEmployee(id: number, payload: AdminUpdateEmployeePayload): Promise<AdminUser> {
+    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<AdminUser>(response);
+  },
+
+  async changePassword(payload: { current_password: string; new_password: string }): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/users/me/change-password`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+    }
   },
 };

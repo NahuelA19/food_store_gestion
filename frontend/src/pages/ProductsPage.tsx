@@ -27,7 +27,8 @@ export function ProductsPage() {
   } = useSearch();
   const { items: wishlistItems, toggle } = useWishlist();
 
-  // Base set from server data, plus optimistic local overrides for instant feedback
+  const isCustomer = !user?.role || ["customer", "client", "user"].includes(user.role.toLowerCase());
+
   const baseFavIds = useMemo(
     () => new Set(wishlistItems.map((item) => item.product_id)),
     [wishlistItems],
@@ -35,10 +36,8 @@ export function ProductsPage() {
   const [optimisticFavs, setOptimisticFavs] = useState<Set<number> | null>(null);
   const favoriteIds = optimisticFavs ?? baseFavIds;
 
-  // When server data catches up with optimistic state, clear the overlay
   useEffect(() => {
     if (!optimisticFavs) return;
-    // If server now has the same state, stop overriding
     let shouldClear = true;
     for (const id of optimisticFavs) {
       if (baseFavIds.has(id) !== optimisticFavs.has(id)) {
@@ -50,7 +49,6 @@ export function ProductsPage() {
   }, [baseFavIds, optimisticFavs]);
 
   const handleToggleFavorite = async (productId: number) => {
-    // 1. Optimistic: flip heart immediately (no waiting for refetch)
     setOptimisticFavs((prev) => {
       const current = prev ?? baseFavIds;
       const next = new Set(current);
@@ -58,28 +56,24 @@ export function ProductsPage() {
       else next.add(productId);
       return next;
     });
-
-    // 2. Fire real backend toggle
     await toggle(productId);
-
-    // 3. Refetch in background will update baseFavIds → useEffect clears overlay
   };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <header className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold text-text-primary">Products</h1>
-          <p className="mt-1 text-text-secondary">Browse our collection of fresh food products</p>
+          <h1 className="font-display text-3xl font-bold text-text-primary">Productos</h1>
+          <p className="mt-1 text-text-muted">Explorá nuestra selección de productos frescos</p>
         </div>
-        {user?.role?.toLowerCase() === "admin" && (
+        {user?.role?.toLowerCase() === 'admin' && (
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate("/products/new")}
+              onClick={() => navigate('/products/new')}
               className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-brand-700"
             >
               <PlusCircle size={16} />
-              New Product
+              Nuevo Producto
             </button>
           </div>
         )}
@@ -91,6 +85,7 @@ export function ProductsPage() {
           onChange={setQuery}
           onClear={clearSearch}
           isLoading={loading}
+          placeholder="Buscar productos..."
         />
       </div>
 
@@ -115,6 +110,7 @@ export function ProductsPage() {
             onProductClick={(id) => navigate(`/products/${id}`)}
             favoriteIds={favoriteIds}
             onToggleFavorite={handleToggleFavorite}
+            showCartControls={isCustomer}
           />
         </main>
       </div>

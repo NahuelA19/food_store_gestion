@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 
@@ -14,6 +15,7 @@ function getAuthHeaders(): Record<string, string> {
 export function useAuth() {
   const { user, isAuthenticated } = useAuthStore();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [actionError, setActionError] = useState<string | null>(null);
 
   const loginMutation = useMutation({
@@ -37,7 +39,9 @@ export function useAuth() {
         lastName: data.last_name ?? "",
         role: data.role ?? "",
       };
-      useAuthStore.getState().setAuth(user, data.access_token, data.refresh_token ?? "");
+      useAuthStore
+        .getState()
+        .setAuth(user, data.access_token, data.refresh_token ?? "", data.must_change_password ?? false);
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
@@ -74,6 +78,7 @@ export function useAuth() {
         role: data.role ?? "",
       };
       useAuthStore.getState().setAuth(user, data.access_token, data.refresh_token ?? "");
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
 
@@ -93,8 +98,9 @@ export function useAuth() {
     } finally {
       useAuthStore.getState().clearAuth();
       queryClient.clear();
+      navigate("/login", { replace: true });
     }
-  }, [queryClient]);
+  }, [queryClient, navigate]);
 
   const updateProfile = useCallback(
     async (profile: { first_name?: string; last_name?: string; phone?: string }) => {

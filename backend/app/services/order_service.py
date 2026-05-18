@@ -6,7 +6,7 @@ from decimal import Decimal
 from math import ceil
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -59,6 +59,10 @@ _STATUS_TO_FSM: dict[OrderStatus, str] = {v: k for k, v in _FSM_TO_STATUS.items(
 _STATUS_TO_FSM[OrderStatus.CONFIRMED] = "CONFIRMADO"
 _STATUS_TO_FSM[OrderStatus.DELIVERED] = "ENTREGADO"
 _STATUS_TO_FSM[OrderStatus.CANCELLED] = "CANCELADO"
+# Frontend alias mappings
+_STATUS_TO_FSM[OrderStatus.PAID] = "CONFIRMADO"
+_STATUS_TO_FSM[OrderStatus.SHIPPED] = "EN_CAMINO"
+_STATUS_TO_FSM[OrderStatus.PREPARANDO] = "EN_PREP"
 
 
 async def transition(
@@ -215,29 +219,59 @@ async def create_order_from_cart(
     return order
 
 
+# Maps each frontend filter key to all DB enum values that belong to that group.
+# The enum has Spanish + English aliases for the same semantic state.
+STATUS_FILTER_GROUPS: dict[str, list[str]] = {
+    "payment_pending": ["pendiente", "pending", "pago_pendiente", "payment_pending"],
+    "confirmado":      ["confirmado", "confirmed", "pagado", "paid"],
+    "en_prep":         ["en_prep", "preparando", "listo", "ready"],
+    "en_camino":       ["en_camino", "enviado", "shipped"],
+    "entregado":       ["entregado", "delivered"],
+    "cancelado":       ["cancelado", "cancelled", "pago_fallido", "payment_failed"],
+}
+
+
+def build_status_condition(status: str):
+    """Return a SQLAlchemy condition for a status filter key (handles alias groups)."""
+    group = STATUS_FILTER_GROUPS.get(status.lower())
+    if group:
+        valid = [v for v in group if any(e.value == v for e in OrderStatus)]
+        if valid:
+            return Order.status.in_(valid)
+    # Fallback: exact match via enum
+    try:
+        return Order.status == OrderStatus(status.lower())
+    except ValueError:
+        return None
+
+
 async def get_user_orders(
     user_id: int,
     page: int = 1,
     limit: int = 20,
+    status: str | None = None,
+    search: str | None = None,
     uow: UnitOfWork = None,
 ) -> OrderListResponse:
-    """Get paginated list of orders for a user.
-
-    Args:
-        user_id: User ID
-        page: Page number (1-indexed)
-        limit: Items per page (max 100)
-        db: Database session
-
-    Returns:
-        OrderListResponse: Paginated order list
-    """
+    """Get paginated list of orders for a user, with optional status and search filters."""
     page = max(1, page)
     limit = min(max(1, limit), 100)
 
+    conditions = [Order.user_id == user_id]
+
+    if status:
+        cond = build_status_condition(status)
+        if cond is not None:
+            conditions.append(cond)
+
+    if search and search.strip().isdigit():
+        conditions.append(Order.id == int(search.strip()))
+
+    where_clause = and_(*conditions)
+
     # Get total count
     count_result = await uow.session.execute(
-        select(func.count(Order.id)).where(Order.user_id == user_id)
+        select(func.count(Order.id)).where(where_clause)
     )
     total = count_result.scalar_one()
 
@@ -245,7 +279,7 @@ async def get_user_orders(
     offset = (page - 1) * limit
     result = await uow.session.execute(
         select(Order)
-        .where(Order.user_id == user_id)
+        .where(where_clause)
         .options(selectinload(Order.user))
         .order_by(Order.created_at.desc())
         .offset(offset)
@@ -470,13 +504,6 @@ async def update_order_status(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"No se puede transicionar a '{new_status.value}'",
-        )
-
-    # Block manual transition to CONFIRMADO — only allowed via MercadoPago webhook
-    if nuevo_fsm == "CONFIRMADO":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Transición a 'CONFIRMADO' solo permitida vía webhook de MercadoPago",
         )
 
     old_estado = order.estado_codigo

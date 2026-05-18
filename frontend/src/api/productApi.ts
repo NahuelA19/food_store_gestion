@@ -203,8 +203,13 @@ export const productApi = {
     const formData = new FormData();
     formData.append("file", file);
 
+    const token = useAuthStore.getState().accessToken;
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     const response = await fetch(`${API_BASE_URL}/products/upload-image`, {
       method: "POST",
+      headers,
       body: formData,
     });
 
@@ -213,7 +218,14 @@ export const productApi = {
       throw new Error(error.detail || "Failed to upload image");
     }
 
-    return response.json();
+    const result = await response.json() as { url: string; path: string };
+    // Normalize: if backend returns absolute URL with localhost, keep as-is;
+    // if it returns a relative path, prefix with backend base URL
+    if (result.url && result.url.startsWith("/")) {
+      const backendBase = API_BASE_URL.replace("/api/v1", "");
+      result.url = `${backendBase}${result.url}`;
+    }
+    return result;
   },
 
   async deleteImage(path: string): Promise<void> {

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import { getProductImageUrl } from "@/lib/utils";
 import { useAuthStore } from "../store/authStore";
 import { useWishlist } from "../hooks/useWishlist";
 import { FavoriteButton } from "./wishlist/FavoriteButton";
@@ -50,9 +51,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br from-brand-50 to-amber-50"
         aria-label={`${product.name} image`}
       >
-        {product.image_url && !imgError ? (
+        {getProductImageUrl(product.image_url) && !imgError ? (
           <img
-            src={product.image_url}
+            src={getProductImageUrl(product.image_url)!}
             alt={product.name}
             className="h-full w-full object-cover"
             onError={() => setImgError(true)}

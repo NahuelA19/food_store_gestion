@@ -1,53 +1,155 @@
 version: '3.8'
 
+# ─────────────────────────────────────────────
+#  Food Store — Docker Compose (Development)
+#
+#  Services:
+#    postgres  → PostgreSQL 16
+#    backend   → FastAPI + uvicorn (hot reload)
+#    frontend  → Vite dev server (hot reload)
+#
+#  Usage:
+#    cp .env.example .env          # fill in your credentials
+#    docker compose up --build
+#
+#  MercadoPago Sandbox:
+#    Set MP_ACCESS_TOKEN and MP_PUBLIC_KEY from
+#    https://www.mercadopago.com.ar/developers/panel/app
+#    For webhooks in local dev, ngrok is included as a service:
+#      1. Get free authtoken at https://dashboard.ngrok.com/get-started/your-authtoken
+#      2. Add NGROK_AUTHTOKEN=<token> to .env
+#      3. docker compose up -d ngrok
+#      4. Get public URL: curl http://localhost:4040/api/tunnels
+#      5. Add MP_NOTIFICATION_URL=https://<id>.ngrok-free.app/api/v1/payments/webhook to .env
+#      6. Restart backend to pick up new MP_NOTIFICATION_URL
+# ─────────────────────────────────────────────
+
 services:
-  # PostgreSQL Database Service
+
+  # ── PostgreSQL ──────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: food_store_postgres
     environment:
-      # Root PostgreSQL user
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-food_store}
-      
-      # PostgreSQL configuration for development
-      POSTGRES_INITDB_ARGS: >
-        -c shared_preload_libraries=uuid-ossp
-        -c log_statement=all
-        -c log_duration=on
-        -c log_min_duration_statement=100
-    
     ports:
-      # Docker PostgreSQL on 5433 (to avoid conflicts with local PostgreSQL on 5432)
-      # Change to 5432:5432 if you don't have local PostgreSQL
       - "${DB_PORT:-5433}:5432"
-    
     volumes:
-      # Persistent data volume
-      # PostgreSQL 18+ requires PGDATA to be a subdirectory of the mount point
       - postgres_data:/var/lib/postgresql/data
-      
-      # Initialization script to create application user and test database
       - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
-    
     networks:
       - food_store_network
-    
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-food_store}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    
     labels:
       - "com.food_store.service=database"
-      - "com.food_store.description=PostgreSQL database for Food Store application"
 
+  # ── Backend (FastAPI) ───────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: food_store_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database — connects to postgres service inside Docker network
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-food_store}
+
+      # Server
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-true}
+      BASE_URL: ${BASE_URL:-http://localhost:8000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+
+      # Security
+      SECRET_KEY: ${SECRET_KEY:-change-this-insecure-dev-key-in-production}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+
+      # MercadoPago Sandbox
+      # Get credentials from: https://www.mercadopago.com.ar/developers/panel/app
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY:-}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:-}
+      # For local dev: use ngrok URL. For production: use your public backend URL.
+      MP_NOTIFICATION_URL: ${MP_NOTIFICATION_URL:-http://localhost:8000/api/v1/payments/webhook}
+
+      # CORS — allow frontend origins
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174,http://localhost:3000}
+
+      # File uploads
+      UPLOAD_DIR: /tmp/foodstore_uploads
+
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      # Source code volume for hot reload
+      - ./backend:/app
+      # Exclude venv from volume mount
+      - /app/venv
+      # Shared uploads volume
+      - uploads_data:/tmp/foodstore_uploads
+    networks:
+      - food_store_network
+    restart: unless-stopped
+    labels:
+      - "com.food_store.service=backend"
+
+  # ── Frontend (Vite dev server) ──────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: food_store_frontend
+    depends_on:
+      - backend
+    environment:
+      # Vite env vars (VITE_ prefix required for browser exposure)
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api/v1}
+      # MercadoPago public key (safe to expose — used in browser SDK)
+      VITE_MP_PUBLIC_KEY: ${VITE_MP_PUBLIC_KEY:-}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      # Source code volume for hot reload
+      - ./frontend:/app
+      # Exclude node_modules from volume mount (use container's)
+      - /app/node_modules
+    networks:
+      - food_store_network
+    restart: unless-stopped
+    labels:
+      - "com.food_store.service=frontend"
+
+  # ── ngrok (MP webhook tunnel for local dev) ──
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: food_store_ngrok
+    restart: unless-stopped
+    command: http host.docker.internal:8000 --log=stdout
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    networks:
+      - food_store_network
+    labels:
+      - "com.food_store.service=ngrok"
+
+# ── Volumes ─────────────────────────────────
 volumes:
   postgres_data:
     driver: local
+  uploads_data:
+    driver: local
 
+# ── Networks ─────────────────────────────────
 networks:
   food_store_network:
     driver: bridge

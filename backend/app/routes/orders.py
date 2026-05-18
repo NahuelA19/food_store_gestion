@@ -33,6 +33,8 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 async def list_orders(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    status: str | None = Query(None, description="Filter by order status"),
+    search: str | None = Query(None, description="Search by order ID"),
     current_user: User = Depends(get_current_user),
     uow: UnitOfWork = Depends(get_uow),
 ) -> OrderListResponse:
@@ -41,6 +43,8 @@ async def list_orders(
         user_id=current_user.id,
         page=page,
         limit=limit,
+        status=status,
+        search=search,
         uow=uow,
     )
 

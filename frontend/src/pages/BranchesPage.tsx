@@ -3,18 +3,20 @@
  */
 
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Icon } from "../components/ui/Icon";
 import { useBranches, useToggleBranchStatus } from "../hooks/useBranches";
+import { useAuthStore } from "../store/authStore";
 import {
   Building2,
   MapPin,
   Eye,
   Power,
+  PlusCircle,
 } from "lucide-react";
 
 /* ─── Static demo data (fallback) ─── */
@@ -33,8 +35,13 @@ const FALLBACK_BRANCHES: BranchRow[] = [
 ];
 
 export function BranchesPage() {
+  const navigate = useNavigate();
   const { branches: apiBranches, isLoading } = useBranches();
   const { toggleStatus: apiToggle, isLoading: toggling } = useToggleBranchStatus();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+
+  const isUsingFallback = !isLoading && apiBranches.length === 0;
 
   const branches = useMemo((): BranchRow[] => {
     if (apiBranches.length > 0) {
@@ -59,14 +66,34 @@ export function BranchesPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Page title */}
-      <div>
-        <h1 className="font-display text-2xl font-bold text-text-primary">
-          Sucursales
-        </h1>
-        <p className="text-sm text-text-muted mt-1">
-          Administra las sucursales de tu restaurante
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-text-primary">
+            Sucursales
+          </h1>
+          <p className="text-sm text-text-muted mt-1">
+            Administra las sucursales de tu restaurante
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={() => navigate("/branches/new")}
+            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-brand-700"
+          >
+            <PlusCircle size={16} />
+            Nueva Sucursal
+          </button>
+        )}
       </div>
+
+      {isUsingFallback && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+          <Power size={16} className="text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            No se pudieron cargar las sucursales desde el servidor. Verificá que el backend esté activo.
+          </p>
+        </div>
+      )}
 
       {/* Branch cards grid */}
       {isLoading ? (
@@ -109,18 +136,25 @@ export function BranchesPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2 mt-4 pt-4 border-t border-border">
-                  <Link to={`/branches/${branch.id}`} className="flex-1">
-                    <Button variant="secondary" size="sm" className="w-full gap-1.5">
+                  {isUsingFallback ? (
+                    <Button variant="secondary" size="sm" className="flex-1 gap-1.5 opacity-50" disabled>
                       <Icon icon={Eye} size={14} />
-                      Ver detalle
+                      Sin conexión
                     </Button>
-                  </Link>
+                  ) : (
+                    <Link to={`/branches/${branch.id}`} className="flex-1">
+                      <Button variant="secondary" size="sm" className="w-full gap-1.5">
+                        <Icon icon={Eye} size={14} />
+                        Ver detalle
+                      </Button>
+                    </Link>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
                     className="gap-1.5"
                     onClick={() => toggleStatus(branch.id)}
-                    disabled={toggling}
+                    disabled={toggling || isUsingFallback}
                     aria-label={
                       branch.status === "active"
                         ? `Desactivar ${branch.name}`

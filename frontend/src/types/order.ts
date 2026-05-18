@@ -17,6 +17,7 @@ export interface Order {
   created_at: string;
   updated_at?: string;
   payment_status?: string | null;
+  branch_id?: number | null;
   items?: OrderItem[];
 }
 
