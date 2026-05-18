@@ -36,7 +36,9 @@ export function ChangePasswordPage() {
       }),
     onSuccess: () => {
       setMustChangePassword(false);
-      setTimeout(() => navigate("/"), 1200);
+      const role = useAuthStore.getState().user?.role?.toLowerCase() ?? "";
+      const target = role === "cajero" ? "/cajero" : role === "chef" ? "/chef" : "/";
+      setTimeout(() => navigate(target), 1200);
     },
   });
 

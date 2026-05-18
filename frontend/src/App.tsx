@@ -31,6 +31,8 @@ import PaymentFailurePage from "./pages/PaymentFailurePage";
 import PaymentPendingPage from "./pages/PaymentPendingPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { SettingsPage } from "./pages/SettingsPage";
+import { CajeroPage } from "./pages/CajeroPage";
+import { ChefPage } from "./pages/ChefPage";
 
 function App() {
   return (
@@ -181,6 +183,22 @@ function App() {
             <Route path="/payment/success" element={<PaymentSuccessPage />} />
             <Route path="/payment/failure" element={<PaymentFailurePage />} />
             <Route path="/payment/pending" element={<PaymentPendingPage />} />
+            <Route
+              path="/cajero"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "cajero"]}>
+                  <CajeroPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chef"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "chef"]}>
+                  <ChefPage />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </DashboardLayout>
     </BrowserRouter>

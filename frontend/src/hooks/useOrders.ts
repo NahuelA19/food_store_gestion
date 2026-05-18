@@ -37,6 +37,7 @@ export function useOrder(id: number) {
         ? query.error.message
         : "Failed to fetch order"
       : null,
+    refetch: query.refetch,
   };
 }
 

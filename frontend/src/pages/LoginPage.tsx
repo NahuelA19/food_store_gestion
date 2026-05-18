@@ -1,6 +1,7 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useAuthStore } from "../store/authStore";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -20,7 +21,10 @@ export function LoginPage() {
 
     try {
       await login(email, password);
-      navigate("/");
+      const role = useAuthStore.getState().user?.role?.toLowerCase() ?? "";
+      if (role === "cajero") navigate("/cajero");
+      else if (role === "chef") navigate("/chef");
+      else navigate("/");
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Login failed");
     }

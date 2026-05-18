@@ -11,8 +11,10 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { Icon } from '../components/ui/Icon';
 import { useOrder, useUpdateOrderStatus } from '../hooks/useOrders';
 import { useAuthStore } from '../store/authStore';
+import { paymentApi } from '../api/paymentApi';
+import { usePaymentStore } from '../store/paymentStore';
 import type { OrderStatus, StatusHistoryEntry } from '../types/order';
-import { ArrowLeft, ChevronDown, User, Package, CreditCard, Clock } from 'lucide-react';
+import { ArrowLeft, ChevronDown, User, Package, CreditCard, Clock, Banknote, RefreshCw, Loader2 } from 'lucide-react';
 
 // Matches the actual FSM state values returned by the backend
 const STATUS_FLOW: OrderStatus[] = ['pendiente', 'confirmed', 'en_prep', 'en_camino', 'delivered'] as unknown as OrderStatus[];
@@ -60,14 +62,19 @@ const STATUS_DOT_COLOR: Record<string, string> = {
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const orderId = Number(id);
-  const { user } = useAuthStore();
+
+  const { user, accessToken } = useAuthStore();
   const isAdmin = user?.role?.toLowerCase() === 'admin';
-  const { order: apiOrder, isLoading, error } = useOrder(orderId);
+  const isCustomer = !user?.role || ['customer', 'client', 'user'].includes(user.role.toLowerCase());
+  const { order: apiOrder, isLoading, error, refetch } = useOrder(orderId);
   const { updateStatus, isLoading: isUpdating } = useUpdateOrderStatus();
+  const { setPreference } = usePaymentStore();
 
   const [currentStatus, setCurrentStatus] = useState<string>('');
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [paymentActionLoading, setPaymentActionLoading] = useState(false);
+  const [paymentActionError, setPaymentActionError] = useState<string | null>(null);
 
   const order = useMemo(() => {
     if (apiOrder) return apiOrder;
@@ -126,6 +133,37 @@ export function OrderDetailPage() {
 
   const isAtEnd = resolvedStatus === 'delivered' || resolvedStatus === 'cancelled';
   const availableStatuses = isAtEnd ? [] : [...nextStatuses, 'cancelled' as OrderStatus];
+
+  const handleRetryMp = async () => {
+    if (!accessToken || !order) return;
+    setPaymentActionLoading(true);
+    setPaymentActionError(null);
+    try {
+      if (order.payment_method !== 'MERCADOPAGO') {
+        await paymentApi.switchPaymentMethod(order.id, 'MERCADOPAGO', accessToken);
+      }
+      const { preference_id, init_point } = await paymentApi.createPreference(order.id, accessToken);
+      setPreference(preference_id);
+      window.location.href = init_point;
+    } catch (err) {
+      setPaymentActionError(err instanceof Error ? err.message : 'Error al iniciar el pago');
+      setPaymentActionLoading(false);
+    }
+  };
+
+  const handleSwitchToCash = async () => {
+    if (!accessToken || !order) return;
+    setPaymentActionLoading(true);
+    setPaymentActionError(null);
+    try {
+      await paymentApi.switchPaymentMethod(order.id, 'EFECTIVO', accessToken);
+      await refetch();
+    } catch (err) {
+      setPaymentActionError(err instanceof Error ? err.message : 'Error al cambiar método de pago');
+    } finally {
+      setPaymentActionLoading(false);
+    }
+  };
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
     setStatusOpen(false);
@@ -390,20 +428,68 @@ export function OrderDetailPage() {
 
           {/* Payment */}
           <Card>
-            <CardContent className="p-5">
+            <CardContent className="p-5 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                  <Icon icon={CreditCard} size={16} />
+                  <Icon icon={order.payment_method === 'EFECTIVO' ? Banknote : CreditCard} size={16} />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-text-primary">
-                    {order.payment_status ? `Pago: ${order.payment_status}` : 'Estado de pago'}
+                    {order.payment_method === 'EFECTIVO' ? 'Efectivo en local' : order.payment_method === 'MERCADOPAGO' ? 'MercadoPago' : 'Sin método asignado'}
                   </p>
-                  <p className="text-xs text-text-muted">
-                    {order.updated_at ? new Date(order.updated_at).toLocaleString('es-AR') : ''}
+                  <p className="text-xs text-text-muted capitalize">
+                    {order.payment_status === 'approved' ? 'Pagado' : order.payment_status === 'pending' ? 'Pendiente de pago' : order.payment_status === 'failed' ? 'Pago fallido' : order.payment_status ?? ''}
+                    {order.paid_at ? ` · ${new Date(order.paid_at).toLocaleString('es-AR')}` : ''}
                   </p>
                 </div>
               </div>
+
+              {/* Retry / switch actions — solo para clientes con pago pendiente o fallido */}
+              {isCustomer && (order.payment_status === 'pending' || order.payment_status === 'failed') && resolvedStatus === 'pendiente' && (
+                <div className="space-y-2 pt-1 border-t border-border">
+                  {order.payment_method === 'EFECTIVO' ? (
+                    <>
+                      <p className="text-xs text-text-muted">Tu pedido será cobrado en el local por el cajero.</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2"
+                        disabled={paymentActionLoading}
+                        onClick={handleRetryMp}
+                      >
+                        {paymentActionLoading ? <Icon icon={Loader2} size={15} className="animate-spin" /> : <Icon icon={CreditCard} size={15} />}
+                        Pagar con MercadoPago en cambio
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="w-full gap-2"
+                        disabled={paymentActionLoading}
+                        onClick={handleRetryMp}
+                      >
+                        {paymentActionLoading ? <Icon icon={Loader2} size={15} className="animate-spin" /> : <Icon icon={RefreshCw} size={15} />}
+                        {order.payment_status === 'failed' ? 'Reintentar con MercadoPago' : 'Continuar pago con MercadoPago'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2"
+                        disabled={paymentActionLoading}
+                        onClick={handleSwitchToCash}
+                      >
+                        {paymentActionLoading ? <Icon icon={Loader2} size={15} className="animate-spin" /> : <Icon icon={Banknote} size={15} />}
+                        Cambiar a efectivo
+                      </Button>
+                    </>
+                  )}
+                  {paymentActionError && (
+                    <p className="text-xs text-danger font-medium">{paymentActionError}</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
