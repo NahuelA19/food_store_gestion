@@ -27,7 +27,7 @@ export function ProductsPage() {
   } = useSearch();
   const { items: wishlistItems, toggle } = useWishlist();
 
-  const isCustomer = !user?.role || ["customer", "client"].includes(user.role.toLowerCase());
+  const isCustomer = !user?.role || ["customer", "client", "user"].includes(user.role.toLowerCase());
 
   const baseFavIds = useMemo(
     () => new Set(wishlistItems.map((item) => item.product_id)),

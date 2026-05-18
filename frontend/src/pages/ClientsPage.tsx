@@ -38,7 +38,7 @@ export function ClientsPage() {
 
   const clientsList = useMemo((): Client[] => {
     return apiUsers
-      .filter((u: AdminUser) => u.role.toLowerCase() === "customer" || u.role.toLowerCase() === "client")
+      .filter((u: AdminUser) => ["customer", "client", "user"].includes(u.role.toLowerCase()))
       .map((u: AdminUser) => ({
         id: u.id,
         name: formatUserName(u),

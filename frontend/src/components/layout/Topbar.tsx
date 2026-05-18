@@ -42,7 +42,7 @@ export function Topbar({ sidebarCollapsed }: TopbarProps) {
   const { logout } = useAuth();
   const { count: wishlistCount } = useWishlist();
   const { toggle: toggleCart } = useCartUIStore();
-  const isCustomer = !user?.role || ["customer", "client"].includes(user.role.toLowerCase());
+  const isCustomer = !user?.role || ["customer", "client", "user"].includes(user.role.toLowerCase());
   const [branchOpen, setBranchOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);

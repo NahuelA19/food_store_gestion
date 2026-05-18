@@ -76,6 +76,7 @@ export function useAuth() {
         role: data.role ?? "",
       };
       useAuthStore.getState().setAuth(user, data.access_token, data.refresh_token ?? "");
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
 
