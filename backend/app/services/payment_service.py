@@ -378,9 +378,9 @@ async def handle_ipn(
     # Check idempotency: only process if payment status changed
     # Query existing payment record
     result = await uow.session.execute(
-        select(Pago).where(Pago.pedido_id == order.id).order_by(Pago.created_at.desc())
+        select(Pago).where(Pago.pedido_id == order.id).order_by(Pago.created_at.desc()).limit(1)
     )
-    existing_pago = result.scalar_one_or_none()
+    existing_pago = result.scalars().first()
 
     if existing_pago and existing_pago.mp_status == "approved":
         logger.info("Order %d: payment already approved, skipping duplicate IPN", order.id)
