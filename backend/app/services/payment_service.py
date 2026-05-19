@@ -175,21 +175,14 @@ async def process_card_payment(
     status_detail = payment_response.get("status_detail", "")
     mp_payment_id = str(payment_response.get("id", ""))
 
-    # Map MP status to FSM state and transition the order
-    fsm_state = map_mp_status_to_fsm(mp_status)
-    if fsm_state:
-        motivos = {
-            "CONFIRMADO": "Pago con tarjeta confirmado",
-            "CANCELADO": f"Pago con tarjeta rechazado: {status_detail}",
-            "PENDIENTE": "Pago con tarjeta en proceso",
-        }
-        motivo = motivos.get(fsm_state, f"Pago con tarjeta MP estado: {mp_status}")
+    # Only approved card payments trigger the FSM transition.
+    if mp_status == "approved" and order.estado_codigo == "PENDIENTE":
         await transition(
             order,
-            fsm_state,
+            "CONFIRMADO",
             usuario_id=None,
             session=uow.session,
-            motivo=motivo,
+            motivo="Pago con tarjeta confirmado",
         )
 
     # Store payment record
@@ -385,9 +378,9 @@ async def handle_ipn(
     # Check idempotency: only process if payment status changed
     # Query existing payment record
     result = await uow.session.execute(
-        select(Pago).where(Pago.pedido_id == order.id).order_by(Pago.created_at.desc())
+        select(Pago).where(Pago.pedido_id == order.id).order_by(Pago.created_at.desc()).limit(1)
     )
-    existing_pago = result.scalar_one_or_none()
+    existing_pago = result.scalars().first()
 
     if existing_pago and existing_pago.mp_status == "approved":
         logger.info("Order %d: payment already approved, skipping duplicate IPN", order.id)
@@ -409,41 +402,38 @@ async def handle_ipn(
 
     logger.info("Order %d: MP payment status=%s, detail=%s", order.id, mp_status, status_detail)
 
-    # Map MP status to FSM state
-    fsm_state = map_mp_status_to_fsm(mp_status)
-    if not fsm_state:
-        logger.warning("Order %d: unhandled MP status '%s'", order.id, mp_status)
-        return False
-
-    # Get motivo based on status
-    motivos = {
-        "CONFIRMADO": "Pago confirmado vía MercadoPago",
-        "CANCELADO": f"Pago rechazado: {status_detail}",
-        "PENDIENTE": "Pago en proceso",
-    }
-    motivo = motivos.get(fsm_state, f"Pago MP estado: {mp_status}")
-
-    # Trigger FSM transition
-    await transition(
-        order,
-        fsm_state,
-        usuario_id=None,
-        session=uow.session,
-        motivo=motivo,
-    )
-
-    # Update payment record status
+    # Always update the payment record
     if existing_pago:
         existing_pago.mp_status = mp_status
         existing_pago.mp_status_detail = status_detail
         existing_pago.mp_raw_response = payment_data
 
-    # Update order payment fields
     if mp_status == "approved":
+        # Only approved payments trigger the FSM transition.
+        # Guard against double-processing if already confirmed.
+        if order.estado_codigo == "PENDIENTE":
+            await transition(
+                order,
+                "CONFIRMADO",
+                usuario_id=None,
+                session=uow.session,
+                motivo="Pago confirmado vía MercadoPago",
+            )
         order.payment_status = PaymentStatus.APPROVED
         order.paid_at = datetime.now(timezone.utc)
+
     elif mp_status in ("rejected", "cancelled", "refunded"):
+        # Payment failed: keep order in PENDIENTE so the user can retry.
+        # Transitioning to CANCELADO would make the order terminal and block retries.
         order.payment_status = PaymentStatus.FAILED
 
-    logger.info("Order %d: IPN processed - MP status=%s, FSM state=%s", order.id, mp_status, fsm_state)
+    elif mp_status in ("pending", "in_process", "in_mediation"):
+        # Payment still processing — no FSM change, no payment_status update yet.
+        pass
+
+    else:
+        logger.warning("Order %d: unhandled MP status '%s'", order.id, mp_status)
+        return False
+
+    logger.info("Order %d: IPN processed - MP status=%s", order.id, mp_status)
     return True

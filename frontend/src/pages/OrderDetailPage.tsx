@@ -3,6 +3,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -75,6 +76,7 @@ export function OrderDetailPage() {
   const [statusError, setStatusError] = useState<string | null>(null);
   const [paymentActionLoading, setPaymentActionLoading] = useState(false);
   const [paymentActionError, setPaymentActionError] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const order = useMemo(() => {
     if (apiOrder) return apiOrder;
@@ -144,6 +146,7 @@ export function OrderDetailPage() {
       }
       const { preference_id, init_point } = await paymentApi.createPreference(order.id, accessToken);
       setPreference(preference_id);
+      flushSync(() => setIsRedirecting(true));
       window.location.href = init_point;
     } catch (err) {
       setPaymentActionError(err instanceof Error ? err.message : 'Error al iniciar el pago');
@@ -175,6 +178,16 @@ export function OrderDetailPage() {
       setStatusError(err instanceof Error ? err.message : 'Error al actualizar estado');
     }
   };
+
+  if (isRedirecting) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background/80 backdrop-blur-sm">
+        <Icon icon={Loader2} size={40} className="animate-spin text-primary" />
+        <p className="text-lg font-semibold text-text-primary">Redirigiendo a Mercado Pago...</p>
+        <p className="text-sm text-text-muted">No cierres esta ventana</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
