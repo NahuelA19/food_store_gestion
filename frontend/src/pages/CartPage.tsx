@@ -33,6 +33,7 @@ export function CartPage() {
   const user = useAuthStore((s) => s.user);
   const [shippingAddress, setShippingAddress] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
   const [cardError, setCardError] = useState<string | null>(null);
@@ -41,18 +42,21 @@ export function CartPage() {
     if (!shippingAddress.trim()) return;
     if (!accessToken) return;
     setIsProcessing(true);
+    let redirecting = false;
     try {
       const checkoutResult = await checkout({ shipping_address: shippingAddress, payment_method: "MERCADOPAGO" });
       const orderId = checkoutResult.order_id;
       if (!orderId) throw new Error("No se pudo crear la orden");
       const { preference_id, init_point } = await paymentApi.createPreference(orderId, accessToken);
       setPreference(preference_id);
+      redirecting = true;
+      setIsRedirecting(true);
       window.location.href = init_point;
     } catch (err) {
       console.error("Checkout error:", err);
       setCardError(err instanceof Error ? err.message : "Error al iniciar el pago con MercadoPago");
     } finally {
-      setIsProcessing(false);
+      if (!redirecting) setIsProcessing(false);
     }
   };
 
@@ -183,6 +187,16 @@ export function CartPage() {
         >
           Ver productos
         </Link>
+      </div>
+    );
+  }
+
+  if (isRedirecting) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background/80 backdrop-blur-sm">
+        <Icon icon={Loader2} size={40} className="animate-spin text-primary" />
+        <p className="text-lg font-semibold text-text-primary">Redirigiendo a Mercado Pago...</p>
+        <p className="text-sm text-text-muted">No cierres esta ventana</p>
       </div>
     );
   }
