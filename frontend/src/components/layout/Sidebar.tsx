@@ -8,7 +8,6 @@ import { useAuthStore } from "../../store/authStore";
 import { useAuth } from "../../hooks/useAuth";
 import { Icon } from "../ui/Icon";
 import { cn } from "@/lib/utils";
-import logoImg from "../../assets/images/logo.png";
 import {
   LayoutDashboard,
   Package,
@@ -118,34 +117,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "glass fixed left-0 top-0 z-40 flex h-full flex-col border-r border-border transition-all duration-300",
+        "glass fixed left-0 top-16 z-40 flex h-[calc(100vh-4rem)] flex-col border-r border-border transition-all duration-300",
         collapsed ? "w-[68px]" : "w-60"
       )}
     >
-      {/* Logo */}
-      <div
-        className={cn(
-          "flex h-16 items-center border-b border-border px-4",
-          collapsed ? "justify-center" : "gap-3"
-        )}
-      >
-        <Link to="/" className="flex items-center gap-3 group">
-          <img
-            src={logoImg}
-            alt="Food Store"
-            className={cn(
-              "shrink-0 object-contain transition-transform duration-200 group-hover:scale-105",
-              collapsed ? "h-9 w-9" : "h-12 w-12"
-            )}
-          />
-          {!collapsed && (
-            <span className="font-display text-lg font-bold tracking-tight text-text-primary truncate">
-              Food Store
-            </span>
-          )}
-        </Link>
-      </div>
-
       {/* Nav Sections */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-5 scrollbar-thin">
         {navSections.map((section) => (

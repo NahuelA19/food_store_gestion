@@ -29,7 +29,10 @@ class OrderResponse(BaseModel):
     user_email: str | None = None
     status: str
     total_amount: Decimal
+    payment_method: str | None = None
+    payment_status: str | None = None
     created_at: datetime
+    items: list[OrderItemResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -4,7 +4,14 @@
 -- ============================================================================
 
 -- Create application-specific user (not using root postgres user)
-CREATE USER food_store_user WITH PASSWORD 'root';
+-- Use DO block to avoid error if user already exists (e.g. when DB_USER=food_store_user)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'food_store_user') THEN
+    CREATE USER food_store_user WITH PASSWORD 'root';
+  END IF;
+END
+$$;
 
 -- Note: food_store database is created by POSTGRES_DB env var automatically.
 -- We only create the test database here.

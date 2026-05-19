@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install dependencies first (layer cache)
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy source (overridden by volume mount in docker-compose)
 COPY . .

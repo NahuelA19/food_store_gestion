@@ -9,6 +9,7 @@ import { Topbar } from "./Topbar";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { CartDrawer } from "../Cart/CartDrawer";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "../../store/authStore";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -18,6 +19,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const isStaff = ["cajero", "chef"].includes(user?.role?.toLowerCase() ?? "");
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -30,14 +33,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen">
-      {/* Sidebar — overlay on mobile */}
-      {isMobile && mobileOpen && (
+      {/* Sidebar — hidden for staff roles (cajero, chef) */}
+      {!isStaff && isMobile && mobileOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+            className="fixed top-16 inset-x-0 bottom-0 z-40 bg-black/20 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 z-50 animate-slide-down">
+          <div className="fixed top-16 bottom-0 left-0 z-50 animate-slide-down">
             <Sidebar
               collapsed={false}
               onToggle={() => setMobileOpen(false)}
@@ -46,46 +49,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </>
       )}
 
-      {/* Desktop sidebar */}
-      {!isMobile && (
+      {!isStaff && !isMobile && (
         <Sidebar
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
       )}
 
-       {/* Mobile hamburger — fixed button */}
-       {isMobile && (
-         <button
-           onClick={() => setMobileOpen(true)}
-           className="fixed bottom-6 left-4 z-30 flex h-12 w-12 items-center justify-center rounded-xl bg-[color:var(--color-primary)] text-white shadow-lg shadow-[color:var(--color-primary)]/30"
-           aria-label="Abrir menú"
-         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
-      )}
-
       {/* Topbar */}
-      <Topbar sidebarCollapsed={effectiveCollapsed} />
+      <Topbar
+        showMenuButton={!isStaff && isMobile}
+        onMenuToggle={() => setMobileOpen((prev) => !prev)}
+      />
 
       {/* Main content area */}
       <main
         className={cn(
           "pt-16 min-h-screen transition-all duration-300",
-          isMobile ? "ml-0" : effectiveCollapsed ? "ml-[68px]" : "ml-60"
+          isStaff ? "ml-0" : isMobile ? "ml-0" : effectiveCollapsed ? "ml-[68px]" : "ml-60"
         )}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 md:py-8">
@@ -94,23 +75,23 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </main>
 
-       {/* Cart Drawer — available app-wide */}
+      {/* Cart Drawer — available app-wide */}
       <CartDrawer />
 
-      {/* Mobile bottom nav (quick access) */}
-       {isMobile && (
-         <nav className="glass fixed bottom-0 left-0 right-0 z-30 flex h-16 items-center justify-around border-t border-border px-2">
-           {[
-             { to: "/", icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", label: "Dashboard" },
-             { to: "/orders", icon: "M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0", label: "Pedidos" },
-             { to: "/branches", icon: "M3 21h18 M3 10h18 M5 6l7-3 7 3 M4 10v11 M20 10v11 M8 14v3 M12 14v3 M16 14v3", label: "Sucursales" },
-             { to: "/employees", icon: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z", label: "Empleados" },
-           ].map((item) => (
-             <a
-               key={item.to}
-               href={item.to}
-               className="flex flex-col items-center gap-0.5 text-text-muted hover:text-[color:var(--color-primary)] transition-colors"
-             >
+      {/* Mobile bottom nav — hidden for staff */}
+      {!isStaff && isMobile && (
+        <nav className="glass fixed bottom-0 left-0 right-0 z-30 flex h-16 items-center justify-around border-t border-border px-2">
+          {[
+            { to: "/", icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", label: "Dashboard" },
+            { to: "/orders", icon: "M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0", label: "Pedidos" },
+            { to: "/branches", icon: "M3 21h18 M3 10h18 M5 6l7-3 7 3 M4 10v11 M20 10v11 M8 14v3 M12 14v3 M16 14v3", label: "Sucursales" },
+            { to: "/employees", icon: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z", label: "Empleados" },
+          ].map((item) => (
+            <a
+              key={item.to}
+              href={item.to}
+              className="flex flex-col items-center gap-0.5 text-text-muted hover:text-[color:var(--color-primary)] transition-colors"
+            >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d={item.icon} />
               </svg>

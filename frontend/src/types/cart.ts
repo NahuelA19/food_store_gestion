@@ -38,6 +38,7 @@ export interface CheckoutRequest {
   shipping_address: string;
   shipping_method?: string;
   notes?: string | null;
+  payment_method?: string | null;
 }
 
 export interface CheckoutResponse {

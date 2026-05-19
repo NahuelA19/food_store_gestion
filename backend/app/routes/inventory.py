@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 
 from app.core.uow import UnitOfWork
-from app.dependencies import get_uow
+from app.dependencies import get_current_user, get_uow, require_role
+from app.models.user import User
 from app.models.inventory import Inventory
 from app.models.product import Product
 from app.schemas.inventory import (
@@ -21,6 +22,7 @@ router = APIRouter(prefix="/inventory", tags=["inventory"])
 @router.get("/{product_id}", response_model=InventoryResponse)
 async def get_inventory(
     product_id: int,
+    current_user: User = Depends(require_role("admin", "chef")),
     uow: UnitOfWork = Depends(get_uow),
 ) -> InventoryResponse:
     """Get inventory for a product."""
@@ -50,6 +52,7 @@ async def get_inventory(
 async def update_inventory(
     product_id: int,
     body: InventoryUpdate,
+    current_user: User = Depends(require_role("admin", "chef")),
     uow: UnitOfWork = Depends(get_uow),
 ) -> InventoryResponse:
     """Update inventory stock levels."""

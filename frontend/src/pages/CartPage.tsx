@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -9,7 +10,7 @@ import { usePaymentStore } from "../store/paymentStore";
 import { useAuthStore } from "../store/authStore";
 import { paymentApi } from "../api/paymentApi";
 import { CardPaymentForm } from "../components/CardPaymentForm";
-import { ShoppingBag, Package, Trash2, Plus, Minus, ArrowLeft, CreditCard, Loader2, Landmark } from "lucide-react";
+import { ShoppingBag, Package, Trash2, Plus, Minus, ArrowLeft, CreditCard, Loader2, Landmark, Banknote } from "lucide-react";
 
 type PaymentMethod = "redirect" | "card";
 
@@ -33,6 +34,7 @@ export function CartPage() {
   const user = useAuthStore((s) => s.user);
   const [shippingAddress, setShippingAddress] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
   const [cardError, setCardError] = useState<string | null>(null);
@@ -41,16 +43,35 @@ export function CartPage() {
     if (!shippingAddress.trim()) return;
     if (!accessToken) return;
     setIsProcessing(true);
+    let redirecting = false;
     try {
-      const checkoutResult = await checkout({ shipping_address: shippingAddress });
+      const checkoutResult = await checkout({ shipping_address: shippingAddress, payment_method: "MERCADOPAGO" });
       const orderId = checkoutResult.order_id;
       if (!orderId) throw new Error("No se pudo crear la orden");
       const { preference_id, init_point } = await paymentApi.createPreference(orderId, accessToken);
       setPreference(preference_id);
+      redirecting = true;
+      flushSync(() => setIsRedirecting(true));
       window.location.href = init_point;
     } catch (err) {
       console.error("Checkout error:", err);
-      navigate("/payment/failure");
+      setCardError(err instanceof Error ? err.message : "Error al iniciar el pago con MercadoPago");
+    } finally {
+      if (!redirecting) setIsProcessing(false);
+    }
+  };
+
+  const handleCashCheckout = async () => {
+    if (!shippingAddress.trim()) return;
+    if (!accessToken) return;
+    setIsProcessing(true);
+    try {
+      const checkoutResult = await checkout({ shipping_address: shippingAddress, payment_method: "EFECTIVO" });
+      const orderId = checkoutResult.order_id;
+      if (!orderId) throw new Error("No se pudo crear la orden");
+      navigate(`/orders/${orderId}`);
+    } catch (err) {
+      setCardError(err instanceof Error ? err.message : "Error al crear la orden");
     } finally {
       setIsProcessing(false);
     }
@@ -167,6 +188,16 @@ export function CartPage() {
         >
           Ver productos
         </Link>
+      </div>
+    );
+  }
+
+  if (isRedirecting) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background/80 backdrop-blur-sm">
+        <Icon icon={Loader2} size={40} className="animate-spin text-primary" />
+        <p className="text-lg font-semibold text-text-primary">Redirigiendo a Mercado Pago...</p>
+        <p className="text-sm text-text-muted">No cierres esta ventana</p>
       </div>
     );
   }
@@ -361,6 +392,21 @@ export function CartPage() {
                       <Icon icon={Landmark} size={18} />
                     )}
                     Pagar con Tarjeta
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full gap-2"
+                    disabled={!shippingAddress.trim() || isProcessing}
+                    onClick={handleCashCheckout}
+                  >
+                    {isProcessing ? (
+                      <Icon icon={Loader2} size={18} className="animate-spin" />
+                    ) : (
+                      <Icon icon={Banknote} size={18} />
+                    )}
+                    Pagar en efectivo
                   </Button>
                 </div>
 

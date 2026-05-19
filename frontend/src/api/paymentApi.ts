@@ -69,6 +69,18 @@ export const paymentApi = {
     return res.json();
   },
 
+  /** Switch payment method for a pending order (EFECTIVO ↔ MERCADOPAGO). */
+  async switchPaymentMethod(orderId: number, method: string, authToken: string): Promise<void> {
+    const res = await fetch(`${API_URL}/orders/${orderId}/switch-payment-method?method=${method}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${authToken}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || 'Error al cambiar el método de pago');
+    }
+  },
+
   /** Get payment info for an order (polling after redirect from MP). */
   async getOrderPaymentInfo(orderId: number, authToken: string): Promise<OrderPaymentInfo> {
     const res = await fetch(`${API_URL}/payments/order/${orderId}`, {
