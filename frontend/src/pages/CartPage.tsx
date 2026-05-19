@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -50,7 +51,7 @@ export function CartPage() {
       const { preference_id, init_point } = await paymentApi.createPreference(orderId, accessToken);
       setPreference(preference_id);
       redirecting = true;
-      setIsRedirecting(true);
+      flushSync(() => setIsRedirecting(true));
       window.location.href = init_point;
     } catch (err) {
       console.error("Checkout error:", err);

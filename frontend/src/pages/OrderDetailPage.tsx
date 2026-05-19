@@ -3,6 +3,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -145,7 +146,7 @@ export function OrderDetailPage() {
       }
       const { preference_id, init_point } = await paymentApi.createPreference(order.id, accessToken);
       setPreference(preference_id);
-      setIsRedirecting(true);
+      flushSync(() => setIsRedirecting(true));
       window.location.href = init_point;
     } catch (err) {
       setPaymentActionError(err instanceof Error ? err.message : 'Error al iniciar el pago');
