@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.core.uow import UnitOfWork
-from app.dependencies import get_admin_user, get_current_user, get_uow, require_role
+from app.dependencies import get_admin_user, get_current_user, get_uow, require_role, get_websocket_manager
 from app.models.order import Order, OrderStatus, PaymentStatus
 from app.models.user import User
 from app.schemas.order import (
@@ -78,6 +78,7 @@ async def cancel_user_order(
     order_id: int,
     current_user: User = Depends(get_current_user),
     uow: UnitOfWork = Depends(get_uow),
+    websocket_manager = Depends(get_websocket_manager),
 ) -> OrderDetailResponse:
     """Cancel a pending order. Releases reserved inventory."""
     order = await cancel_order(
@@ -85,6 +86,7 @@ async def cancel_user_order(
         user_id=current_user.id,
         uow=uow,
         is_admin=current_user.role == "admin",
+        websocket_manager=websocket_manager,
     )
     logger.info(
         "Order cancelled: user_id=%s, order_id=%s",
@@ -104,6 +106,7 @@ async def update_status(
     body: OrderStatusUpdate,
     current_user: User = Depends(require_role("admin", "cajero", "chef")),
     uow: UnitOfWork = Depends(get_uow),
+    websocket_manager = Depends(get_websocket_manager),
 ) -> OrderDetailResponse:
     """Update order status (admin, cajero, or chef). Validates status transitions and role permissions."""
     from app.services.order_service import _STATUS_TO_FSM
@@ -142,6 +145,7 @@ async def update_status(
         new_status=new_status,
         admin_id=current_user.id,
         uow=uow,
+        websocket_manager=websocket_manager,
     )
     logger.info(
         "Order status updated: order_id=%s, new_status=%s, by=%s",

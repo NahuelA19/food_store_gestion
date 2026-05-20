@@ -1,0 +1,122 @@
+/**
+ * UrgencyTimer.css
+ * Visual urgency indicator with color-coded alerts.
+ */
+
+.urgency-timer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  height: 48px;
+  border-radius: var(--kds-radius-md);
+  background: var(--kds-bg-secondary);
+  border: 2px solid var(--kds-bg-tertiary);
+  transition: var(--kds-transition);
+  flex-shrink: 0;
+}
+
+.timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.timer-value {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.timer-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+/* Green: Fresh (< 5 min) */
+.urgency-timer.green {
+  background: rgba(46, 204, 113, 0.1);
+  border-color: var(--kds-status-green);
+  color: var(--kds-status-green);
+  box-shadow: 0 0 8px rgba(46, 204, 113, 0.2);
+}
+
+/* Yellow: Warning (5-10 min) */
+.urgency-timer.yellow {
+  background: rgba(241, 196, 15, 0.1);
+  border-color: var(--kds-status-yellow);
+  color: var(--kds-status-yellow);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.2);
+  animation: pulse-yellow 1s infinite;
+}
+
+@keyframes pulse-yellow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(241, 196, 15, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(241, 196, 15, 0.4);
+  }
+}
+
+/* Orange: Urgent (10-15 min) */
+.urgency-timer.orange {
+  background: rgba(230, 126, 34, 0.1);
+  border-color: var(--kds-status-orange);
+  color: var(--kds-status-orange);
+  box-shadow: 0 0 8px rgba(230, 126, 34, 0.3);
+  animation: pulse-orange 0.8s infinite;
+}
+
+@keyframes pulse-orange {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(230, 126, 34, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(230, 126, 34, 0.6);
+  }
+}
+
+/* Red: Critical (> 15 min) */
+.urgency-timer.red {
+  background: rgba(231, 76, 60, 0.1);
+  border-color: var(--kds-status-red);
+  color: var(--kds-status-red);
+  box-shadow: 0 0 12px rgba(231, 76, 60, 0.4);
+  animation: pulse-red 0.6s infinite;
+}
+
+@keyframes pulse-red {
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(231, 76, 60, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(231, 76, 60, 0.8);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .urgency-timer {
+    min-width: 70px;
+    height: 40px;
+    font-size: 0.875rem;
+  }
+
+  .timer-value {
+    font-size: 0.875rem;
+  }
+
+  .timer-label {
+    font-size: 0.5rem;
+  }
+}

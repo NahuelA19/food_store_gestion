@@ -1,0 +1,209 @@
+/**
+ * OrderCard.css
+ * Styling for individual order cards in KDS Kanban layout.
+ */
+
+.order-card {
+  background: var(--kds-bg-tertiary);
+  border-radius: var(--kds-radius-md);
+  border-left: 4px solid var(--kds-bg-secondary);
+  overflow: hidden;
+  transition: var(--kds-transition);
+  cursor: pointer;
+}
+
+.order-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Status-based border colors */
+.order-card.confirmado {
+  border-left-color: var(--kds-status-yellow);
+}
+
+.order-card.en_prep {
+  border-left-color: var(--kds-status-orange);
+}
+
+/* Card Header */
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--kds-spacing-md);
+  background: var(--kds-bg-secondary);
+  border-bottom: 1px solid var(--kds-bg-tertiary);
+  gap: var(--kds-spacing-md);
+}
+
+.order-id-section {
+  display: flex;
+  align-items: center;
+  gap: var(--kds-spacing-md);
+  flex: 1;
+}
+
+.order-id {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--kds-accent);
+  letter-spacing: 0.05em;
+}
+
+.item-count {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--kds-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.expand-indicator {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--kds-text-muted);
+  transition: var(--kds-transition);
+}
+
+.order-card.expanded .expand-indicator {
+  color: var(--kds-accent);
+}
+
+/* Card Body */
+.order-card-body {
+  padding: var(--kds-spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--kds-spacing-md);
+}
+
+.section-title {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--kds-text-secondary);
+  margin: 0 0 var(--kds-spacing-sm) 0;
+}
+
+/* Items section */
+.items-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--kds-spacing-xs);
+}
+
+.item-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--kds-spacing-sm);
+  font-size: 0.875rem;
+  padding: var(--kds-spacing-xs) var(--kds-spacing-sm);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--kds-radius-sm);
+}
+
+.item-quantity {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  color: var(--kds-accent);
+  min-width: 28px;
+}
+
+.item-name {
+  flex: 1;
+  color: var(--kds-text-primary);
+  font-weight: 500;
+}
+
+.item-price {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--kds-text-muted);
+}
+
+/* Notes section */
+.notes-section {
+  padding: var(--kds-spacing-sm);
+  background: rgba(232, 193, 160, 0.1);
+  border-left: 2px solid var(--kds-status-orange);
+  border-radius: var(--kds-radius-sm);
+}
+
+.notes-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--kds-text-secondary);
+  line-height: 1.4;
+  font-style: italic;
+}
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  gap: var(--kds-spacing-sm);
+  padding-top: var(--kds-spacing-sm);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-primary {
+  flex: 1;
+  padding: var(--kds-spacing-sm) var(--kds-spacing-md);
+  background: var(--kds-accent);
+  color: #000;
+  border: none;
+  border-radius: var(--kds-radius-sm);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--kds-transition);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--kds-accent-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Error message */
+.error-message {
+  padding: var(--kds-spacing-sm);
+  background: rgba(231, 76, 60, 0.15);
+  border-left: 2px solid var(--kds-status-red);
+  border-radius: var(--kds-radius-sm);
+}
+
+.error-message p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--kds-status-red);
+  line-height: 1.4;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .order-card-header {
+    flex-wrap: wrap;
+  }
+
+  .item-entry {
+    flex-wrap: wrap;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}

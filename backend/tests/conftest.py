@@ -12,7 +12,7 @@ from sqlalchemy.pool import NullPool
 
 os.environ["TESTING"] = "1"
 if "DATABASE_URL" not in os.environ:
-    os.environ["DATABASE_URL"] = "postgresql+asyncpg://food_store_user:root@localhost:5432/food_store_test"
+    os.environ["DATABASE_URL"] = "postgresql+asyncpg://food_store_user:root@127.0.0.1:5433/food_store_test"
 if "SECRET_KEY" not in os.environ:
     os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
 
@@ -48,7 +48,7 @@ app.include_router(_test_router, prefix="/api/v1")
 
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://food_store_user:root@localhost:5432/food_store_test",
+    "postgresql+asyncpg://food_store_user:root@127.0.0.1:5433/food_store_test",
 )
 
 

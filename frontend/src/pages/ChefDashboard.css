@@ -1,0 +1,457 @@
+/**
+ * ChefDashboard.css
+ * Industrial minimalism design for Kitchen Display System (KDS).
+ * Dark theme, high contrast, optimized for kitchen environment.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+
+:root {
+  /* Color palette: industrial dark + high contrast */
+  --kds-bg-primary: #0a0a0a;
+  --kds-bg-secondary: #1a1a1a;
+  --kds-bg-tertiary: #2a2a2a;
+  --kds-text-primary: #ffffff;
+  --kds-text-secondary: #d0d0d0;
+  --kds-text-muted: #888888;
+
+  /* Status colors (high visibility) */
+  --kds-status-green: #2ecc71;
+  --kds-status-yellow: #f1c40f;
+  --kds-status-orange: #e67e22;
+  --kds-status-red: #e74c3c;
+
+  /* Accent */
+  --kds-accent: #3498db;
+  --kds-accent-dark: #2980b9;
+
+  /* Spacing */
+  --kds-spacing-xs: 0.25rem;
+  --kds-spacing-sm: 0.5rem;
+  --kds-spacing-md: 1rem;
+  --kds-spacing-lg: 1.5rem;
+  --kds-spacing-xl: 2rem;
+  --kds-spacing-2xl: 3rem;
+
+  /* Border radius */
+  --kds-radius-sm: 2px;
+  --kds-radius-md: 4px;
+  --kds-radius-lg: 8px;
+
+  /* Transitions */
+  --kds-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--kds-bg-primary);
+  color: var(--kds-text-primary);
+  font-family: "IBM Plex Sans", sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* ============================================================================
+   CHEF DASHBOARD CONTAINER
+   ========================================================================= */
+
+.chef-dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--kds-bg-primary);
+  overflow: hidden;
+}
+
+/* Header */
+.kds-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--kds-spacing-xl);
+  background: var(--kds-bg-secondary);
+  border-bottom: 2px solid var(--kds-bg-tertiary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.kds-header-content {
+  flex: 1;
+}
+
+.kds-title {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--kds-spacing-md) 0;
+  text-transform: uppercase;
+  color: var(--kds-text-primary);
+}
+
+.kds-status-bar {
+  display: flex;
+  gap: var(--kds-spacing-xl);
+  font-size: 0.875rem;
+  color: var(--kds-text-secondary);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--kds-spacing-sm);
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.connected .status-dot {
+  background: var(--kds-status-green);
+}
+
+.status-indicator.disconnected .status-dot {
+  background: var(--kds-status-orange);
+  animation: none;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.order-count {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.kds-actions {
+  display: flex;
+  gap: var(--kds-spacing-md);
+}
+
+/* Buttons */
+.btn {
+  padding: var(--kds-spacing-sm) var(--kds-spacing-lg);
+  border: none;
+  border-radius: var(--kds-radius-sm);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  cursor: pointer;
+  transition: var(--kds-transition);
+  text-transform: uppercase;
+}
+
+.btn-secondary {
+  background: var(--kds-bg-tertiary);
+  color: var(--kds-text-primary);
+  border: 1px solid var(--kds-text-muted);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--kds-accent);
+  border-color: var(--kds-accent);
+  color: #000;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-small {
+  padding: var(--kds-spacing-xs) var(--kds-spacing-sm);
+  font-size: 0.75rem;
+}
+
+/* Error banner */
+.error-banner {
+  background: rgba(231, 76, 60, 0.15);
+  border-left: 3px solid var(--kds-status-red);
+  padding: var(--kds-spacing-md) var(--kds-spacing-lg);
+  margin: var(--kds-spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: var(--kds-radius-md);
+  color: var(--kds-text-primary);
+}
+
+.error-banner p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Loading state */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 200px);
+  gap: var(--kds-spacing-lg);
+  color: var(--kds-text-secondary);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--kds-bg-tertiary);
+  border-top-color: var(--kds-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   KANBAN LAYOUT
+   ========================================================================= */
+
+.kanban-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--kds-spacing-lg);
+  padding: var(--kds-spacing-xl);
+  background: var(--kds-bg-primary);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.kanban-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kds-spacing-md);
+  background: var(--kds-bg-secondary);
+  border-radius: var(--kds-radius-lg);
+  padding: var(--kds-spacing-lg);
+  border-left: 3px solid var(--kds-bg-tertiary);
+  min-height: 300px;
+}
+
+.kanban-column:nth-child(1) {
+  border-left-color: var(--kds-status-yellow);
+}
+
+.kanban-column:nth-child(2) {
+  border-left-color: var(--kds-status-orange);
+}
+
+.kanban-column.info-column {
+  border-left-color: var(--kds-accent);
+}
+
+.kanban-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--kds-spacing-md);
+  padding-bottom: var(--kds-spacing-md);
+  border-bottom: 1px solid var(--kds-bg-tertiary);
+}
+
+.kanban-header h2 {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin: 0;
+  text-transform: uppercase;
+  color: var(--kds-text-primary);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--kds-spacing-sm);
+  background: var(--kds-accent);
+  color: #000;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  border-radius: var(--kds-radius-sm);
+  font-size: 0.875rem;
+}
+
+.kanban-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kds-spacing-md);
+  overflow-y: auto;
+  padding-right: var(--kds-spacing-sm);
+}
+
+.kanban-cards::-webkit-scrollbar {
+  width: 6px;
+}
+
+.kanban-cards::-webkit-scrollbar-track {
+  background: var(--kds-bg-tertiary);
+  border-radius: var(--kds-radius-sm);
+}
+
+.kanban-cards::-webkit-scrollbar-thumb {
+  background: var(--kds-text-muted);
+  border-radius: var(--kds-radius-sm);
+}
+
+.kanban-cards::-webkit-scrollbar-thumb:hover {
+  background: var(--kds-text-secondary);
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+  color: var(--kds-text-muted);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Info column */
+.kanban-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kds-spacing-lg);
+  overflow-y: auto;
+  padding-right: var(--kds-spacing-sm);
+}
+
+.info-section {
+  padding: var(--kds-spacing-md);
+  background: var(--kds-bg-tertiary);
+  border-radius: var(--kds-radius-md);
+}
+
+.info-section h3 {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--kds-spacing-md) 0;
+  text-transform: uppercase;
+  color: var(--kds-text-primary);
+}
+
+.urgency-legend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--kds-spacing-sm);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--kds-spacing-sm);
+  font-size: 0.75rem;
+}
+
+.legend-item .color {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--kds-radius-sm);
+}
+
+.legend-item .color.green {
+  background: var(--kds-status-green);
+}
+
+.legend-item .color.yellow {
+  background: var(--kds-status-yellow);
+}
+
+.legend-item .color.orange {
+  background: var(--kds-status-orange);
+}
+
+.legend-item .color.red {
+  background: var(--kds-status-red);
+}
+
+.legend-item p {
+  margin: 0;
+  color: var(--kds-text-secondary);
+  font-weight: 500;
+}
+
+.action-list {
+  margin: 0;
+  padding-left: var(--kds-spacing-lg);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.action-list li {
+  color: var(--kds-text-secondary);
+  margin-bottom: var(--kds-spacing-xs);
+}
+
+.status-text {
+  margin: 0 0 var(--kds-spacing-sm) 0;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--kds-text-secondary);
+  line-height: 1.5;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ========================================================================= */
+
+@media (max-width: 1200px) {
+  .kanban-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .kanban-column.info-column {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .kanban-container {
+    grid-template-columns: 1fr;
+  }
+
+  .kanban-column.info-column {
+    grid-column: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kds-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--kds-spacing-lg);
+  }
+
+  .kds-title {
+    font-size: 1.25rem;
+  }
+}

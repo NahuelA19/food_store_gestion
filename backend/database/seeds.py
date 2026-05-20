@@ -45,6 +45,7 @@ async def seed_roles(session: AsyncSession) -> None:
         ("ADMIN", "Administrador", "Acceso total al sistema"),
         ("CAJERO", "Cajero", "Gestiona cobros, pagos en efectivo y estados de pedidos"),
         ("CHEF", "Chef", "Gestiona la cocina y el stock de productos"),
+        ("COCINA", "Cocinero", "Operación de cocina: recibe pedidos confirmados y gestiona su preparación"),
         ("CLIENT", "Cliente", "Compra productos y consulta pedidos"),
     ]
     await session.execute(
@@ -100,6 +101,7 @@ async def seed_staff_users(session: AsyncSession) -> None:
     staff_users = [
         ("cajero@foodstore.com", "cajero", "Carlos", "Mendoza", "+5491123456789", "CAJERO"),
         ("chef@foodstore.com", "chef", "Luciana", "Torres", "+5491134567890", "CHEF"),
+        ("cocina@foodstore.com", "cocina", "Diego", "García", "+5491145678901", "COCINA"),
     ]
 
     for email, role, first_name, last_name, phone, rol_codigo in staff_users:

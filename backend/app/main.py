@@ -18,6 +18,7 @@ from app.routes.admin_reviews import router as admin_reviews_router
 from app.routes.auth import router as auth_router
 from app.routes.branches import router as branches_router
 from app.routes.cart import router as cart_router
+from app.routes.cocina import router as cocina_router, set_websocket_manager
 from app.routes.direcciones_entrega import router as direcciones_router
 from app.routes.categories import router as categories_router
 from app.routes.inventory import router as inventory_router
@@ -29,6 +30,7 @@ from app.routes.reviews import router as reviews_router
 from app.routes.search import router as search_router
 from app.routes.users import router as users_router
 from app.routes.wishlist import router as wishlist_router
+from app.services.websocket_manager import ConnectionManager
 from app.services.logging_service import RequestLoggingMiddleware, configure_logging
 from database.client import dispose_engine, init_engine
 
@@ -48,7 +50,15 @@ async def lifespan(app: FastAPI):
         configure_logging(environment=environment)
         logger.info("Starting up Food Store API")
         await init_engine()
+    
+    # Initialize WebSocket connection manager for KDS
+    websocket_manager = ConnectionManager()
+    app.state.websocket_manager = websocket_manager  # Store in app.state for dependency injection
+    set_websocket_manager(websocket_manager)  # Also set globally in cocina.py for backward compatibility
+    logger.info("Initialized WebSocket manager for Kitchen Display System")
+    
     yield
+    
     if os.getenv("TESTING") != "1":
         await dispose_engine()
 
@@ -80,6 +90,7 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(branches_router, prefix="/api/v1")
 app.include_router(categories_router, prefix="/api/v1")
 app.include_router(cart_router, prefix="/api/v1")
+app.include_router(cocina_router, prefix="/api/v1")
 app.include_router(direcciones_router, prefix="/api/v1")
 app.include_router(inventory_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")

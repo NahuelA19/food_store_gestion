@@ -1,0 +1,31 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.12, pytest-9.0.3, pluggy-1.5.0 -- C:\Users\giuli\miniconda3\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\giuli\OneDrive\Documentos\footstore\food_store_gestion\backend
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: anyio-4.10.0, asyncio-1.3.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 389 items
+
+tests/test_auth_middleware.py::TestAuthMiddleware::test_protected_route_with_valid_token ERROR [  0%]
+
+=================================== ERRORS ====================================
+_ ERROR at setup of TestAuthMiddleware.test_protected_route_with_valid_token __
+E   OSError: [WinError 64] El nombre de red especificado ya no estß disponible
+
+During handling of the above exception, another exception occurred:
+E   ConnectionResetError: [WinError 64] El nombre de red especificado ya no estß disponible
+
+The above exception was the direct cause of the following exception:
+E   asyncpg.exceptions.ConnectionDoesNotExistError: connection was closed in the middle of operation
+============================== warnings summary ===============================
+..\..\..\..\..\miniconda3\Lib\site-packages\pydantic\_internal\_generate_schema.py:325
+..\..\..\..\..\miniconda3\Lib\site-packages\pydantic\_internal\_generate_schema.py:325
+  C:\Users\giuli\miniconda3\Lib\site-packages\pydantic\_internal\_generate_schema.py:325: PydanticDeprecatedSince20: `json_encoders` is deprecated. See https://docs.pydantic.dev/2.13/concepts/serialization/#custom-serializers for alternatives. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/test_auth_middleware.py::TestAuthMiddleware::test_protected_route_with_valid_token
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+======================== 2 warnings, 1 error in 0.52s =========================

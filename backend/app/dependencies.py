@@ -3,7 +3,7 @@
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import Settings, settings
@@ -141,3 +141,12 @@ async def get_current_user_optional(
         return None
 
     return user
+
+
+def get_websocket_manager(request: Request):
+    """Get the WebSocket connection manager from app.state.
+    
+    Returns:
+        ConnectionManager: The globally initialized ConnectionManager, or None if not yet initialized.
+    """
+    return getattr(request.app.state, "websocket_manager", None)

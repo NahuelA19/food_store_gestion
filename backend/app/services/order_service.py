@@ -73,23 +73,55 @@ async def transition(
     usuario_id: int | None,
     session: AsyncSession,
     motivo: str | None = None,
+    usuario_rol: str | None = None,
+    websocket_manager = None,  # ConnectionManager | None
 ) -> None:
-    """Validate and execute a state machine transition for an order."""
+    """Validate and execute a state machine transition for an order.
+    
+    Args:
+        order: Order to transition
+        nuevo_estado: Target state code
+        usuario_id: User performing the transition
+        session: Database session
+        motivo: Optional reason for transition
+        usuario_rol: User's role (e.g., 'COCINA', 'PEDIDOS', 'ADMIN') — for RN-CO03 validation
+        websocket_manager: Optional ConnectionManager for broadcasting events (RN-CO05, RN-CO06)
+    
+    Implements RN-CO03: COCINA role can only do CONFIRMADO→EN_PREP and EN_PREP→EN_CAMINO
+    Implements RN-CO05/RN-CO06: Emit events for real-time KDS updates
+    """
     if not order.estado_codigo:
         raise HTTPException(
             status_code=422,
             detail="El pedido no tiene un estado FSM inicial.",
         )
 
-    validos = FSM_TRANSITIONS.get(order.estado_codigo, [])
-    if nuevo_estado not in validos:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"Transición inválida: {order.estado_codigo} → {nuevo_estado}. "
-                f"Transiciones permitidas: {', '.join(validos) if validos else 'ninguna (estado terminal)'}"
-            ),
-        )
+    # RN-CO03: Validate role-based transitions for COCINA
+    if usuario_rol == "COCINA":
+        cocina_allowed_transitions = {
+            "CONFIRMADO": ["EN_PREP"],
+            "EN_PREP": ["EN_CAMINO"],
+        }
+        validos = cocina_allowed_transitions.get(order.estado_codigo, [])
+        if nuevo_estado not in validos:
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    f"El cocinero no puede hacer la transición: {order.estado_codigo} → {nuevo_estado}. "
+                    f"Solo puede: CONFIRMADO→EN_PREP, EN_PREP→EN_CAMINO"
+                ),
+            )
+    else:
+        # For other roles (PEDIDOS, ADMIN), validate against standard FSM
+        validos = FSM_TRANSITIONS.get(order.estado_codigo, [])
+        if nuevo_estado not in validos:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Transición inválida: {order.estado_codigo} → {nuevo_estado}. "
+                    f"Transiciones permitidas: {', '.join(validos) if validos else 'ninguna (estado terminal)'}"
+                ),
+            )
 
     historial = HistorialEstadoPedido(
         pedido_id=order.id,
@@ -103,6 +135,30 @@ async def transition(
     # Sync legacy status field for backward compatibility
     if nuevo_estado in _FSM_TO_STATUS:
         order.status = _FSM_TO_STATUS[nuevo_estado]
+
+    # RN-CO05, RN-CO06: Broadcast events for real-time KDS updates
+    if websocket_manager:
+        event_name = None
+        if nuevo_estado == "CONFIRMADO":
+            event_name = "PEDIDO_CONFIRMADO"
+        elif nuevo_estado == "EN_PREP":
+            event_name = "PEDIDO_EN_PREPARACION"
+        elif nuevo_estado == "EN_CAMINO":
+            event_name = "PEDIDO_EN_CAMINO"
+        elif nuevo_estado == "CANCELADO":
+            event_name = "PEDIDO_CANCELADO"
+
+        if event_name:
+            try:
+                await websocket_manager.broadcast({
+                    "event": event_name,
+                    "order_id": order.id,
+                    "estado_codigo": nuevo_estado,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                })
+                logger.info(f"Broadcasted event {event_name} for order {order.id}")
+            except Exception as e:
+                logger.error(f"Failed to broadcast event {event_name}: {e}")
 
 
 async def create_order_from_cart(
@@ -394,14 +450,16 @@ async def cancel_order(
     user_id: int,
     uow: UnitOfWork,
     is_admin: bool = False,
+    websocket_manager = None,  # ConnectionManager | None
 ) -> Order:
     """Cancel a pending order and release reserved inventory.
 
     Args:
         order_id: Order ID
         user_id: User ID (for ownership check)
-        db: Database session
+        uow: Unit of Work for DB access
         is_admin: Allow cancelling any user's order
+        websocket_manager: Optional ConnectionManager for broadcasting events (RN-CO05, RN-CO06)
 
     Returns:
         Order: The cancelled order
@@ -433,7 +491,15 @@ async def cancel_order(
     old_estado = order.estado_codigo
 
     # Use FSM transition (validates state machine internally)
-    await transition(order, "CANCELADO", user_id, uow.session, motivo="Cancelación solicitada")
+    # Pass websocket_manager to broadcast events after successful transition
+    await transition(
+        order,
+        "CANCELADO",
+        user_id,
+        uow.session,
+        motivo="Cancelación solicitada",
+        websocket_manager=websocket_manager,
+    )
 
     # Track status change (legacy JSON history for backward compat)
     history_entry = {
@@ -472,6 +538,7 @@ async def update_order_status(
     new_status: OrderStatus,
     admin_id: int,
     uow: UnitOfWork,
+    websocket_manager = None,  # ConnectionManager | None
 ) -> Order:
     """Update order status with FSM validation (admin only).
 
@@ -479,7 +546,8 @@ async def update_order_status(
         order_id: Order ID
         new_status: Target status
         admin_id: Admin user ID
-        db: Database session
+        uow: Unit of Work for DB access
+        websocket_manager: Optional ConnectionManager for broadcasting events (RN-CO05, RN-CO06)
 
     Returns:
         Order: The updated order
@@ -513,7 +581,15 @@ async def update_order_status(
     old_estado = order.estado_codigo
 
     # Execute FSM transition
-    await transition(order, nuevo_fsm, admin_id, uow.session, motivo=f"Admin #{admin_id}")
+    # Pass websocket_manager to broadcast events after successful transition
+    await transition(
+        order,
+        nuevo_fsm,
+        admin_id,
+        uow.session,
+        motivo=f"Admin #{admin_id}",
+        websocket_manager=websocket_manager,
+    )
 
     # Track status change (legacy JSON history for backward compat)
     history_entry = {
