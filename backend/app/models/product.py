@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from app.models.inventory import Inventory
     from app.models.review import Review
     from app.models.wishlist import WishlistItem
-from sqlalchemy.dialects.postgresql import TSVECTOR
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
@@ -38,7 +38,7 @@ class Product(Base, SoftDeleteMixin, TimestampMixin):
     )
     is_available: Mapped[bool] = mapped_column(default=True, nullable=False, index=True)
     image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
-    search_vector: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True)
+    search_vector: Mapped[str | None] = mapped_column(String(5000), nullable=True)  # PostgreSQL TSVECTOR stored as string for SQLite compatibility
 
     # Relationships
     category: Mapped["Category"] = relationship("Category", back_populates="products")  # noqa: F821

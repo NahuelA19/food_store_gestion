@@ -1,4 +1,10 @@
-"""Pytest configuration and fixtures for Food Store tests."""
+"""Pytest configuration and fixtures for Food Store tests.
+
+Uses SQLite in-memory database (sqlite+aiosqlite:///:memory:) for fast, isolated tests.
+No Docker or PostgreSQL required.
+
+This module patches PostgreSQL-specific types (JSONB, TSVECTOR, UUID) to work with SQLite.
+"""
 
 import os
 from decimal import Decimal
@@ -8,13 +14,50 @@ import pytest
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import StaticPool
 
+# =====================================================================
+# PATCH PostgreSQL types for SQLite compatibility BEFORE importing models
+# =====================================================================
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
+from sqlalchemy import JSON, String, TypeDecorator
+
+# Create SQLite-compatible replacements
+class SQLiteUUID(TypeDecorator):
+    """SQLite-compatible UUID type."""
+    impl = String(36)
+    cache_ok = True
+
+class SQLiteJSONB(TypeDecorator):
+    """SQLite-compatible JSONB type."""
+    impl = JSON
+    cache_ok = True
+
+class SQLiteTSVECTOR(TypeDecorator):
+    """SQLite-compatible TSVECTOR (full-text search) type."""
+    impl = String(5000)
+    cache_ok = True
+
+# Monkey-patch SQLAlchemy type compiler for SQLite
+from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler
+original_process = SQLiteTypeCompiler.process
+
+def patched_process(self, type_, **kw):
+    if isinstance(type_, JSONB):
+        return self.process(JSON(), **kw)
+    elif isinstance(type_, TSVECTOR):
+        return self.process(String(5000), **kw)
+    elif isinstance(type_, UUID):
+        return self.process(String(36), **kw)
+    return original_process(self, type_, **kw)
+
+SQLiteTypeCompiler.process = patched_process
+
+# =====================================================================
+# Set testing mode BEFORE importing app
+# =====================================================================
 os.environ["TESTING"] = "1"
-if "DATABASE_URL" not in os.environ:
-    os.environ["DATABASE_URL"] = "postgresql+asyncpg://food_store_user:root@127.0.0.1:5433/food_store_test"
-if "SECRET_KEY" not in os.environ:
-    os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
+os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
 
 from fastapi import APIRouter, Depends
 
@@ -46,15 +89,19 @@ async def public_test_route():
 
 app.include_router(_test_router, prefix="/api/v1")
 
-TEST_DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL",
-    "postgresql+asyncpg://food_store_user:root@127.0.0.1:5433/food_store_test",
-)
+# Use SQLite in-memory for tests (no Docker required)
+TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
 @pytest.fixture
 async def test_engine():
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
+    """Create in-memory SQLite test database."""
+    engine = create_async_engine(
+        TEST_DATABASE_URL,
+        echo=False,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,  # Required for in-memory SQLite
+    )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield engine
