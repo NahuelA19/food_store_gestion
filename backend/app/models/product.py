@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Numeric, String
+from sqlalchemy import ForeignKey, Numeric, String, FetchedValue
 
 if TYPE_CHECKING:
     from app.models.category import Category
@@ -38,7 +38,7 @@ class Product(Base, SoftDeleteMixin, TimestampMixin):
     )
     is_available: Mapped[bool] = mapped_column(default=True, nullable=False, index=True)
     image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
-    search_vector: Mapped[str | None] = mapped_column(String(5000), nullable=True)  # PostgreSQL TSVECTOR stored as string for SQLite compatibility
+    search_vector: Mapped[str | None] = mapped_column(String(5000), nullable=True, server_default=FetchedValue(), server_onupdate=FetchedValue())  # PostgreSQL TSVECTOR stored as string for SQLite compatibility
 
     # Relationships
     category: Mapped["Category"] = relationship("Category", back_populates="products")  # noqa: F821

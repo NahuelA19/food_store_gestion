@@ -30,7 +30,7 @@ def set_websocket_manager(manager: ConnectionManager) -> None:
     _websocket_manager = manager
 
 
-@router.get("/pedidos", response_model=KitchenOrderListResponse, dependencies=[Depends(require_role(["COCINA", "PEDIDOS", "ADMIN"]))])
+@router.get("/pedidos", response_model=KitchenOrderListResponse, dependencies=[Depends(require_role("COCINA", "PEDIDOS", "ADMIN"))])
 async def list_kitchen_orders(
     current_user: User = Depends(get_current_user),
     uow: UnitOfWork = Depends(get_uow),
@@ -42,80 +42,81 @@ async def list_kitchen_orders(
     Implements RN-CO01 and RN-CO02:
     - RN-CO01: Cocina solo ve pedidos en CONFIRMADO y EN_PREP
     - RN-CO02: Pedidos ordenados por antigüedad ascendente (el que entró primero, primero)
+    
+    Note: UoW context is already managed by the get_uow dependency.
     """
-    async with uow.begin():
-        # Subquery: find the created_at when each order entered CONFIRMADO state
-        # (this is the time they entered the kitchen queue)
-        kitchen_entry_time = (
+    # Subquery: find the created_at when each order entered CONFIRMADO state
+    # (this is the time they entered the kitchen queue)
+    kitchen_entry_time = (
+        select(HistorialEstadoPedido.created_at)
+        .where(
+            and_(
+                HistorialEstadoPedido.pedido_id == Order.id,
+                HistorialEstadoPedido.estado_hasta == "CONFIRMADO"
+            )
+        )
+        .order_by(HistorialEstadoPedido.created_at.asc())
+        .limit(1)
+        .correlate(Order)
+        .scalar_subquery()
+    )
+    
+    # Main query: get orders in CONFIRMADO or EN_PREP, ordered by their kitchen entry time
+    stmt = (
+        select(Order)
+        .where(or_(
+            Order.estado_codigo == "CONFIRMADO",
+            Order.estado_codigo == "EN_PREP"
+        ))
+        .order_by(kitchen_entry_time.asc())
+    )
+    
+    result = await uow.session.execute(stmt)
+    orders = result.scalars().all()
+    
+    # Build response with enriched data
+    orders_response = []
+    for order in orders:
+        # Get items for this order
+        items_stmt = select(OrderItem).where(OrderItem.order_id == order.id)
+        items_result = await uow.session.execute(items_stmt)
+        items = items_result.scalars().all()
+        
+        # Get the historial entry to find kitchen entry time
+        hist_stmt = (
             select(HistorialEstadoPedido.created_at)
             .where(
                 and_(
-                    HistorialEstadoPedido.pedido_id == Order.id,
+                    HistorialEstadoPedido.pedido_id == order.id,
                     HistorialEstadoPedido.estado_hasta == "CONFIRMADO"
                 )
             )
             .order_by(HistorialEstadoPedido.created_at.asc())
             .limit(1)
-            .correlate(Order)
-            .scalar_subquery()
         )
+        hist_result = await uow.session.execute(hist_stmt)
+        kitchen_entry = hist_result.scalar()
         
-        # Main query: get orders in CONFIRMADO or EN_PREP, ordered by their kitchen entry time
-        stmt = (
-            select(Order)
-            .where(or_(
-                Order.estado_codigo == "CONFIRMADO",
-                Order.estado_codigo == "EN_PREP"
-            ))
-            .order_by(kitchen_entry_time.asc())
-        )
+        # Build item list with snapshots
+        items_list = [
+            {
+                "id": item.id,
+                "nombre_snapshot": item.nombre_snapshot or item.product_name or f"Producto {item.product_id}",
+                "cantidad": item.quantity,
+                "precio_snapshot": item.precio_snapshot or item.unit_price,
+            }
+            for item in items
+        ]
         
-        result = await uow.session.execute(stmt)
-        orders = result.scalars().all()
-        
-        # Build response with enriched data
-        orders_response = []
-        for order in orders:
-            # Get items for this order
-            items_stmt = select(OrderItem).where(OrderItem.order_id == order.id)
-            items_result = await uow.session.execute(items_stmt)
-            items = items_result.scalars().all()
-            
-            # Get the historial entry to find kitchen entry time
-            hist_stmt = (
-                select(HistorialEstadoPedido.created_at)
-                .where(
-                    and_(
-                        HistorialEstadoPedido.pedido_id == order.id,
-                        HistorialEstadoPedido.estado_hasta == "CONFIRMADO"
-                    )
-                )
-                .order_by(HistorialEstadoPedido.created_at.asc())
-                .limit(1)
-            )
-            hist_result = await uow.session.execute(hist_stmt)
-            kitchen_entry = hist_result.scalar()
-            
-            # Build item list with snapshots
-            items_list = [
-                {
-                    "id": item.id,
-                    "nombre_snapshot": item.nombre_snapshot or item.product_name or f"Producto {item.product_id}",
-                    "cantidad": item.quantity,
-                    "precio_snapshot": item.precio_snapshot or item.unit_price,
-                }
-                for item in items
-            ]
-            
-            orders_response.append(KitchenOrderResponse(
-                id=order.id,
-                estado_codigo=order.estado_codigo,
-                notas=order.notas or "",
-                items=items_list,
-                kitchen_entry_at=kitchen_entry or order.created_at,
-            ))
-        
-        return KitchenOrderListResponse(items=orders_response, total=len(orders_response))
+        orders_response.append(KitchenOrderResponse(
+            id=order.id,
+            estado_codigo=order.estado_codigo,
+            notas=order.notas or "",
+            items=items_list,
+            kitchen_entry_at=kitchen_entry or order.created_at,
+        ))
+    
+    return KitchenOrderListResponse(items=orders_response, total=len(orders_response))
 
 
 @router.websocket("/ws")

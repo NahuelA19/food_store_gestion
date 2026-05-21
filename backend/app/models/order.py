@@ -7,7 +7,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -79,6 +79,11 @@ class Order(Base, TimestampMixin):
     total_amount: Mapped[Decimal] = mapped_column(
         Numeric(12, 2),
         nullable=False,
+    )
+    notas: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        default=None,
     )
     status_history: Mapped[list[dict] | None] = mapped_column(
         JSON,

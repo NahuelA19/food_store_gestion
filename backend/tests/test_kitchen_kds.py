@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -33,194 +34,201 @@ from app.models.historial_estado_pedido import HistorialEstadoPedido
 from app.security.password import get_password_hash
 from app.security.jwt import create_access_token
 from app.services.websocket_manager import ConnectionManager
+from app.services.order_service import transition as fsm_transition
+
+
+@pytest.fixture
+async def kitchen_user(db_session: AsyncSession) -> User:
+    """Create a user with COCINA role."""
+    # Create COCINA role
+    cocina_role = Role(codigo="COCINA", nombre="Kitchen Staff", descripcion="Kitchen staff")
+    db_session.add(cocina_role)
+    
+    # Create user with COCINA role
+    user = User(
+        email="cocina@foodstore.com",
+        hashed_password=get_password_hash("KitchenPassword123"),
+        is_active=True,
+        role="COCINA"
+    )
+    db_session.add(user)
+    await db_session.flush()
+    
+    # Assign role via UsuarioRol (n:m relationship)
+    user_role = UsuarioRol(usuario_id=user.id, rol_codigo="COCINA")
+    db_session.add(user_role)
+    
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def test_orders_in_kitchen(
+    db_session: AsyncSession, kitchen_user: User
+) -> tuple[Order, Order, Order]:
+    """Create test orders in different kitchen states.
+    
+    Returns:
+        - order_1: CONFIRMADO (first order to enter kitchen)
+        - order_2: CONFIRMADO (second order to enter kitchen)
+        - order_3: EN_PREP (order being prepared)
+    """
+    # Create category
+    category = Category(name="Pizzas", description="Italian pizzas")
+    db_session.add(category)
+    await db_session.flush()
+    
+    # Create products
+    product1 = Product(
+        name="Margherita",
+        description="Classic Margherita pizza",
+        price=Decimal("12.50"),
+        category_id=category.id,
+        is_available=True
+    )
+    product2 = Product(
+        name="Pepperoni",
+        description="Pepperoni pizza",
+        price=Decimal("14.50"),
+        category_id=category.id,
+        is_available=True
+    )
+    db_session.add_all([product1, product2])
+    await db_session.flush()
+    
+    # Create inventory
+    Inventory(product_id=product1.id, stock_quantity=100)
+    Inventory(product_id=product2.id, stock_quantity=100)
+    await db_session.flush()
+    
+    # Create CONFIRMADO and EN_PREP states
+    base_time = datetime.utcnow()
+    confirmado = EstadoPedido(
+        codigo="CONFIRMADO",
+        descripcion="Order confirmed by customer",
+        es_terminal=False,
+        created_at=base_time
+    )
+    en_prep = EstadoPedido(
+        codigo="EN_PREP",
+        descripcion="Order being prepared",
+        es_terminal=False,
+        created_at=base_time
+    )
+    db_session.add_all([confirmado, en_prep])
+    await db_session.flush()
+    
+    # Order 1: CONFIRMADO, entered kitchen 2 minutes ago
+    order1 = Order(
+        user_id=kitchen_user.id,
+        estado_codigo="CONFIRMADO",
+        total_amount=Decimal("12.50"),
+        status="confirmado",
+        notas="Sin cebolla"
+    )
+    db_session.add(order1)
+    await db_session.flush()
+    
+    item1 = OrderItem(
+        order_id=order1.id,
+        product_id=product1.id,
+        quantity=1,
+        unit_price=Decimal("12.50"),
+        nombre_snapshot="Margherita",
+        precio_snapshot=Decimal("12.50")
+    )
+    db_session.add(item1)
+    
+    # Add history entry for order1 (CONFIRMADO state, 2 min ago)
+    hist1 = HistorialEstadoPedido(
+        pedido_id=order1.id,
+        estado_desde="PENDIENTE",
+        estado_hasta="CONFIRMADO",
+        created_at=base_time - timedelta(minutes=2)
+    )
+    db_session.add(hist1)
+    
+    # Order 2: CONFIRMADO, entered kitchen 1 minute ago
+    order2 = Order(
+        user_id=kitchen_user.id,
+        estado_codigo="CONFIRMADO",
+        total_amount=Decimal("14.50"),
+        status="confirmado",
+        notas=""
+    )
+    db_session.add(order2)
+    await db_session.flush()
+    
+    item2 = OrderItem(
+        order_id=order2.id,
+        product_id=product2.id,
+        quantity=1,
+        unit_price=Decimal("14.50"),
+        nombre_snapshot="Pepperoni",
+        precio_snapshot=Decimal("14.50")
+    )
+    db_session.add(item2)
+    
+    hist2 = HistorialEstadoPedido(
+        pedido_id=order2.id,
+        estado_desde="PENDIENTE",
+        estado_hasta="CONFIRMADO",
+        created_at=base_time - timedelta(minutes=1)
+    )
+    db_session.add(hist2)
+    
+    # Order 3: EN_PREP (being prepared)
+    order3 = Order(
+        user_id=kitchen_user.id,
+        estado_codigo="EN_PREP",
+        total_amount=Decimal("12.50"),
+        status="en_prep",
+        notas="Extra queso"
+    )
+    db_session.add(order3)
+    await db_session.flush()
+    
+    item3 = OrderItem(
+        order_id=order3.id,
+        product_id=product1.id,
+        quantity=2,
+        unit_price=Decimal("12.50"),
+        nombre_snapshot="Margherita",
+        precio_snapshot=Decimal("12.50")
+    )
+    db_session.add(item3)
+    
+    hist3_confirm = HistorialEstadoPedido(
+        pedido_id=order3.id,
+        estado_desde="PENDIENTE",
+        estado_hasta="CONFIRMADO",
+        created_at=base_time - timedelta(minutes=3)
+    )
+    hist3_prep = HistorialEstadoPedido(
+        pedido_id=order3.id,
+        estado_desde="CONFIRMADO",
+        estado_hasta="EN_PREP",
+        created_at=base_time - timedelta(minutes=1, seconds=30)
+    )
+    db_session.add_all([hist3_confirm, hist3_prep])
+    
+    await db_session.commit()
+    await db_session.refresh(order1)
+    await db_session.refresh(order2)
+    await db_session.refresh(order3)
+    
+    return order1, order2, order3
 
 
 class TestKitchenOrderListEndpoint:
     """Test GET /api/v1/cocina/pedidos endpoint."""
 
-    @pytest.fixture
-    async def kitchen_user(self, db_session: AsyncSession) -> User:
-        """Create a user with COCINA role."""
-        # Create COCINA role
-        cocina_role = Role(codigo="COCINA", nombre="Kitchen Staff", descripcion="Kitchen staff")
-        db_session.add(cocina_role)
-        
-        # Create user
-        user = User(
-            email="cocina@foodstore.com",
-            hashed_password=get_password_hash("KitchenPassword123"),
-            is_active=True
-        )
-        db_session.add(user)
-        await db_session.flush()
-        
-        # Assign role
-        user_role = UsuarioRol(usuario_id=user.id, rol_codigo="COCINA")
-        db_session.add(user_role)
-        
-        await db_session.commit()
-        await db_session.refresh(user)
-        return user
-
-    @pytest.fixture
-    async def test_orders_in_kitchen(
-        self, db_session: AsyncSession, kitchen_user: User
-    ) -> tuple[Order, Order, Order]:
-        """Create test orders in different kitchen states.
-        
-        Returns:
-            - order_1: CONFIRMADO (first order to enter kitchen)
-            - order_2: CONFIRMADO (second order to enter kitchen)
-            - order_3: EN_PREP (order being prepared)
-        """
-        # Create category
-        category = Category(name="Pizzas", description="Italian pizzas")
-        db_session.add(category)
-        await db_session.flush()
-        
-        # Create products
-        product1 = Product(
-            name="Margherita",
-            description="Classic Margherita pizza",
-            price=Decimal("12.50"),
-            category_id=category.id,
-            is_available=True
-        )
-        product2 = Product(
-            name="Pepperoni",
-            description="Pepperoni pizza",
-            price=Decimal("14.50"),
-            category_id=category.id,
-            is_available=True
-        )
-        db_session.add_all([product1, product2])
-        await db_session.flush()
-        
-        # Create inventory
-        Inventory(product_id=product1.id, stock_quantity=100)
-        Inventory(product_id=product2.id, stock_quantity=100)
-        await db_session.flush()
-        
-        # Create CONFIRMADO and EN_PREP states
-        confirmado = EstadoPedido(
-            codigo="CONFIRMADO",
-            descripcion="Order confirmed by customer",
-            es_estado_terminal=False
-        )
-        en_prep = EstadoPedido(
-            codigo="EN_PREP",
-            descripcion="Order being prepared",
-            es_estado_terminal=False
-        )
-        db_session.add_all([confirmado, en_prep])
-        await db_session.flush()
-        
-        # Create orders
-        base_time = datetime.utcnow()
-        
-        # Order 1: CONFIRMADO, entered kitchen 2 minutes ago
-        order1 = Order(
-            user_id=kitchen_user.id,
-            estado_codigo="CONFIRMADO",
-            total=Decimal("12.50"),
-            notas="Sin cebolla"
-        )
-        db_session.add(order1)
-        await db_session.flush()
-        
-        item1 = OrderItem(
-            order_id=order1.id,
-            product_id=product1.id,
-            quantity=1,
-            unit_price=Decimal("12.50"),
-            nombre_snapshot="Margherita",
-            precio_snapshot=Decimal("12.50")
-        )
-        db_session.add(item1)
-        
-        # Add history entry for order1 (CONFIRMADO state, 2 min ago)
-        hist1 = HistorialEstadoPedido(
-            pedido_id=order1.id,
-            estado_desde="PENDIENTE",
-            estado_hasta="CONFIRMADO",
-            created_at=base_time - timedelta(minutes=2)
-        )
-        db_session.add(hist1)
-        
-        # Order 2: CONFIRMADO, entered kitchen 1 minute ago
-        order2 = Order(
-            user_id=kitchen_user.id,
-            estado_codigo="CONFIRMADO",
-            total=Decimal("14.50"),
-            notas=""
-        )
-        db_session.add(order2)
-        await db_session.flush()
-        
-        item2 = OrderItem(
-            order_id=order2.id,
-            product_id=product2.id,
-            quantity=1,
-            unit_price=Decimal("14.50"),
-            nombre_snapshot="Pepperoni",
-            precio_snapshot=Decimal("14.50")
-        )
-        db_session.add(item2)
-        
-        hist2 = HistorialEstadoPedido(
-            pedido_id=order2.id,
-            estado_desde="PENDIENTE",
-            estado_hasta="CONFIRMADO",
-            created_at=base_time - timedelta(minutes=1)
-        )
-        db_session.add(hist2)
-        
-        # Order 3: EN_PREP (being prepared)
-        order3 = Order(
-            user_id=kitchen_user.id,
-            estado_codigo="EN_PREP",
-            total=Decimal("12.50"),
-            notas="Extra queso"
-        )
-        db_session.add(order3)
-        await db_session.flush()
-        
-        item3 = OrderItem(
-            order_id=order3.id,
-            product_id=product1.id,
-            quantity=2,
-            unit_price=Decimal("12.50"),
-            nombre_snapshot="Margherita",
-            precio_snapshot=Decimal("12.50")
-        )
-        db_session.add(item3)
-        
-        hist3_confirm = HistorialEstadoPedido(
-            pedido_id=order3.id,
-            estado_desde="PENDIENTE",
-            estado_hasta="CONFIRMADO",
-            created_at=base_time - timedelta(minutes=3)
-        )
-        hist3_prep = HistorialEstadoPedido(
-            pedido_id=order3.id,
-            estado_desde="CONFIRMADO",
-            estado_hasta="EN_PREP",
-            created_at=base_time - timedelta(minutes=1, seconds=30)
-        )
-        db_session.add_all([hist3_confirm, hist3_prep])
-        
-        await db_session.commit()
-        await db_session.refresh(order1)
-        await db_session.refresh(order2)
-        await db_session.refresh(order3)
-        
-        return order1, order2, order3
-
     @pytest.mark.asyncio
     async def test_list_kitchen_orders_requires_auth(self, async_client: AsyncClient):
         """Test that GET /cocina/pedidos requires authentication."""
         response = await async_client.get("/api/v1/cocina/pedidos")
-        assert response.status_code == 403, "Should reject request without auth"
+        assert response.status_code == 401, "Should reject request without auth"
 
     @pytest.mark.asyncio
     async def test_list_kitchen_orders_requires_kitchen_role(
@@ -238,7 +246,7 @@ class TestKitchenOrderListEndpoint:
         await db_session.refresh(user)
         
         # Create token for this user
-        token = create_access_token(user_id=user.id)
+        token = create_access_token(data={"user_id": user.id})
         
         # Try to access kitchen endpoint
         response = await async_client.get(
@@ -257,7 +265,7 @@ class TestKitchenOrderListEndpoint:
         test_orders_in_kitchen: tuple[Order, Order, Order],
     ):
         """Test that only CONFIRMADO and EN_PREP orders are returned (RN-CO01)."""
-        token = create_access_token(user_id=kitchen_user.id)
+        token = create_access_token(data={"user_id": kitchen_user.id})
         
         response = await async_client.get(
             "/api/v1/cocina/pedidos",
@@ -286,7 +294,7 @@ class TestKitchenOrderListEndpoint:
         """Test that orders are sorted by kitchen entry time (oldest first) (RN-CO02)."""
         order1, order2, order3 = test_orders_in_kitchen
         
-        token = create_access_token(user_id=kitchen_user.id)
+        token = create_access_token(data={"user_id": kitchen_user.id})
         response = await async_client.get(
             "/api/v1/cocina/pedidos",
             headers={"Authorization": f"Bearer {token}"}
@@ -312,7 +320,7 @@ class TestKitchenOrderListEndpoint:
         """Test that order items and notes are included in response."""
         order1, _, _ = test_orders_in_kitchen
         
-        token = create_access_token(user_id=kitchen_user.id)
+        token = create_access_token(data={"user_id": kitchen_user.id})
         response = await async_client.get(
             "/api/v1/cocina/pedidos",
             headers={"Authorization": f"Bearer {token}"}
@@ -343,7 +351,7 @@ class TestKitchenOrderListEndpoint:
         kitchen_user: User,
     ):
         """Test that endpoint returns empty list when no orders in kitchen."""
-        token = create_access_token(user_id=kitchen_user.id)
+        token = create_access_token(data={"user_id": kitchen_user.id})
         response = await async_client.get(
             "/api/v1/cocina/pedidos",
             headers={"Authorization": f"Bearer {token}"}
@@ -523,7 +531,8 @@ class TestKDSWorkflow:
         kitchen_user = User(
             email="chef@foodstore.com",
             hashed_password=get_password_hash("ChefPass123"),
-            is_active=True
+            is_active=True,
+            role="COCINA"
         )
         db_session.add(kitchen_user)
         await db_session.flush()
@@ -552,7 +561,8 @@ class TestKDSWorkflow:
         confirmado = EstadoPedido(
             codigo="CONFIRMADO",
             descripcion="Confirmed",
-            es_estado_terminal=False
+            es_terminal=False,
+            created_at=datetime.utcnow()
         )
         db_session.add(confirmado)
         await db_session.flush()
@@ -560,7 +570,8 @@ class TestKDSWorkflow:
         order = Order(
             user_id=kitchen_user.id,
             estado_codigo="CONFIRMADO",
-            total=Decimal("13.50"),
+            total_amount=Decimal("13.50"),
+            status="confirmado",
             notas="Al dente"
         )
         db_session.add(order)
@@ -579,14 +590,15 @@ class TestKDSWorkflow:
         hist = HistorialEstadoPedido(
             pedido_id=order.id,
             estado_desde="PENDIENTE",
-            estado_hasta="CONFIRMADO"
+            estado_hasta="CONFIRMADO",
+            created_at=datetime.utcnow()
         )
         db_session.add(hist)
         
         await db_session.commit()
         
         # 4. Fetch from KDS endpoint
-        token = create_access_token(user_id=kitchen_user.id)
+        token = create_access_token(data={"user_id": kitchen_user.id})
         response = await async_client.get(
             "/api/v1/cocina/pedidos",
             headers={"Authorization": f"Bearer {token}"}
@@ -599,3 +611,173 @@ class TestKDSWorkflow:
         assert data["items"][0]["notas"] == "Al dente"
         assert len(data["items"][0]["items"]) == 1
         assert data["items"][0]["items"][0]["nombre_snapshot"] == "Carbonara"
+
+
+class TestFSMKitchenTransitions:
+    """Test FSM transition rules for COCINA role (RN-CO03).
+    
+    RN-CO03: Kitchen staff can only:
+    - CONFIRMADO → EN_PREP (start preparing)
+    - EN_PREP → EN_CAMINO (dispatch order)
+    """
+
+    @pytest.mark.asyncio
+    async def test_cocina_confirmado_to_en_prep(
+        self, db_session: AsyncSession, test_orders_in_kitchen: tuple[Order, Order, Order]
+    ):
+        """Test COCINA can transition CONFIRMADO → EN_PREP."""
+        order1, _, _ = test_orders_in_kitchen
+        assert order1.estado_codigo == "CONFIRMADO"
+
+        # Get a user_id from the order
+        await fsm_transition(
+            order1, "EN_PREP", order1.user_id, db_session,
+            usuario_rol="COCINA",
+        )
+
+        assert order1.estado_codigo == "EN_PREP"
+
+    @pytest.mark.asyncio
+    async def test_cocina_en_prep_to_en_camino(
+        self, db_session: AsyncSession, test_orders_in_kitchen: tuple[Order, Order, Order]
+    ):
+        """Test COCINA can transition EN_PREP → EN_CAMINO."""
+        _, _, order3 = test_orders_in_kitchen
+        assert order3.estado_codigo == "EN_PREP"
+
+        await fsm_transition(
+            order3, "EN_CAMINO", order3.user_id, db_session,
+            usuario_rol="COCINA",
+        )
+
+        assert order3.estado_codigo == "EN_CAMINO"
+
+    @pytest.mark.asyncio
+    async def test_cocina_cannot_skip_states(
+        self, db_session: AsyncSession, test_orders_in_kitchen: tuple[Order, Order, Order]
+    ):
+        """Test COCINA cannot do CONFIRMADO → EN_CAMINO (skip EN_PREP)."""
+        order1, _, _ = test_orders_in_kitchen
+        assert order1.estado_codigo == "CONFIRMADO"
+
+        with pytest.raises(HTTPException) as exc_info:
+            await fsm_transition(
+                order1, "EN_CAMINO", order1.user_id, db_session,
+                usuario_rol="COCINA",
+            )
+
+        assert exc_info.value.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_cocina_cannot_transition_from_terminal(
+        self, db_session: AsyncSession, kitchen_user: User
+    ):
+        """Test COCINA cannot transition from a non-kitchen state."""
+        # Create order in a non-kitchen state (PENDIENTE)
+        pendiente = EstadoPedido(
+            codigo="PENDIENTE",
+            descripcion="Order pending",
+            es_terminal=False,
+            created_at=datetime.utcnow()
+        )
+        db_session.add(pendiente)
+        await db_session.flush()
+
+        order = Order(
+            user_id=kitchen_user.id,
+            estado_codigo="PENDIENTE",
+            total_amount=Decimal("10.00"),
+            status="pendiente"
+        )
+        db_session.add(order)
+        await db_session.commit()
+        await db_session.refresh(order)
+
+        # COCINA trying to transition from PENDIENTE should fail
+        # (only kitchen states are CONFIRMADO → EN_PREP and EN_PREP → EN_CAMINO)
+        with pytest.raises(HTTPException) as exc_info:
+            await fsm_transition(
+                order, "CONFIRMADO", kitchen_user.id, db_session,
+                usuario_rol="COCINA",
+            )
+
+        assert exc_info.value.status_code == 403
+
+
+class TestBroadcastEvents:
+    """Test that FSM transitions emit correct broadcast events (RN-CO05, RN-CO06)."""
+
+    @pytest.mark.asyncio
+    async def test_broadcast_on_confirmado_to_en_prep(
+        self, db_session: AsyncSession, test_orders_in_kitchen: tuple[Order, Order, Order]
+    ):
+        """Test CONFIRMADO → EN_PREP emits PEDIDO_EN_PREPARACION."""
+        order1, _, _ = test_orders_in_kitchen
+        mock_manager = AsyncMock(spec=ConnectionManager)
+
+        await fsm_transition(
+            order1, "EN_PREP", order1.user_id, db_session,
+            usuario_rol="COCINA",
+            websocket_manager=mock_manager,
+        )
+
+        mock_manager.broadcast.assert_called_once()
+        call_args = mock_manager.broadcast.call_args[0][0]
+        assert call_args["event"] == "PEDIDO_EN_PREPARACION"
+        assert call_args["order_id"] == order1.id
+        assert call_args["estado_codigo"] == "EN_PREP"
+
+    @pytest.mark.asyncio
+    async def test_broadcast_on_en_prep_to_en_camino(
+        self, db_session: AsyncSession, test_orders_in_kitchen: tuple[Order, Order, Order]
+    ):
+        """Test EN_PREP → EN_CAMINO emits PEDIDO_EN_CAMINO."""
+        _, _, order3 = test_orders_in_kitchen
+        mock_manager = AsyncMock(spec=ConnectionManager)
+
+        await fsm_transition(
+            order3, "EN_CAMINO", order3.user_id, db_session,
+            usuario_rol="COCINA",
+            websocket_manager=mock_manager,
+        )
+
+        mock_manager.broadcast.assert_called_once()
+        call_args = mock_manager.broadcast.call_args[0][0]
+        assert call_args["event"] == "PEDIDO_EN_CAMINO"
+        assert call_args["order_id"] == order3.id
+        assert call_args["estado_codigo"] == "EN_CAMINO"
+
+    @pytest.mark.asyncio
+    async def test_no_broadcast_without_manager(
+        self, db_session: AsyncSession, test_orders_in_kitchen: tuple[Order, Order, Order]
+    ):
+        """Test no broadcast when websocket_manager is None (backward compat)."""
+        order1, _, _ = test_orders_in_kitchen
+
+        # Should not raise even without websocket_manager
+        await fsm_transition(
+            order1, "EN_PREP", order1.user_id, db_session,
+            usuario_rol="COCINA",
+            websocket_manager=None,
+        )
+
+        assert order1.estado_codigo == "EN_PREP"
+
+    @pytest.mark.asyncio
+    async def test_broadcast_on_cancel(
+        self, db_session: AsyncSession, test_orders_in_kitchen: tuple[Order, Order, Order]
+    ):
+        """Test cancel from CONFIRMADO emits PEDIDO_CANCELADO."""
+        order1, _, _ = test_orders_in_kitchen
+        mock_manager = AsyncMock(spec=ConnectionManager)
+
+        # Cancel needs a user with role other than COCINA (or admin-like)
+        await fsm_transition(
+            order1, "CANCELADO", order1.user_id, db_session,
+            websocket_manager=mock_manager,
+        )
+
+        mock_manager.broadcast.assert_called_once()
+        call_args = mock_manager.broadcast.call_args[0][0]
+        assert call_args["event"] == "PEDIDO_CANCELADO"
+        assert call_args["order_id"] == order1.id
