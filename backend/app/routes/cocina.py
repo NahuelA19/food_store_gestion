@@ -30,7 +30,7 @@ def set_websocket_manager(manager: ConnectionManager) -> None:
     _websocket_manager = manager
 
 
-@router.get("/pedidos", response_model=KitchenOrderListResponse, dependencies=[Depends(require_role("COCINA", "PEDIDOS", "ADMIN"))])
+@router.get("/pedidos", response_model=KitchenOrderListResponse, dependencies=[Depends(require_role("COCINA", "PEDIDOS", "ADMIN", "chef", "cocina"))])
 async def list_kitchen_orders(
     current_user: User = Depends(get_current_user),
     uow: UnitOfWork = Depends(get_uow),
@@ -163,7 +163,7 @@ async def websocket_kitchen_display(
             await websocket.close(code=1008, reason="User not found")
             return
             
-        if user.role.upper() not in ["COCINA", "PEDIDOS", "ADMIN"]:
+        if user.role.upper() not in ["COCINA", "PEDIDOS", "ADMIN", "CHEF"]:
             logger.warning(f"WebSocket forbidden for user {user.id} with role {user.role}")
             await websocket.close(code=1008, reason="Forbidden: Insufficient role")
             return

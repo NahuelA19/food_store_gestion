@@ -30,6 +30,7 @@ export interface KitchenOrderListResponse {
 export type KDSEventType =
   | "PEDIDO_CONFIRMADO"
   | "PEDIDO_EN_PREPARACION"
+  | "PEDIDO_LISTO"
   | "PEDIDO_EN_CAMINO"
   | "PEDIDO_CANCELADO";
 

@@ -130,6 +130,7 @@ function ChefDashboard() {
                     onToggleExpand={() =>
                       setExpandedOrderId(expandedOrderId === order.id ? null : order.id)
                     }
+                    onStatusChange={refetch}
                   />
                 ))
               )}
@@ -156,6 +157,7 @@ function ChefDashboard() {
                     onToggleExpand={() =>
                       setExpandedOrderId(expandedOrderId === order.id ? null : order.id)
                     }
+                    onStatusChange={refetch}
                   />
                 ))
               )}

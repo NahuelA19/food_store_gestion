@@ -104,7 +104,7 @@ async def cancel_user_order(
 async def update_status(
     order_id: int,
     body: OrderStatusUpdate,
-    current_user: User = Depends(require_role("admin", "cajero", "chef")),
+    current_user: User = Depends(require_role("admin", "cajero", "chef", "cocina")),
     uow: UnitOfWork = Depends(get_uow),
     websocket_manager = Depends(get_websocket_manager),
 ) -> OrderDetailResponse:
@@ -112,7 +112,7 @@ async def update_status(
     from app.services.order_service import _STATUS_TO_FSM
 
     role = current_user.role.lower()
-    if role in ("cajero", "chef"):
+    if role in ("cajero", "chef", "cocina"):
         try:
             _enum = OrderStatus(body.status)
             _fsm_target = _STATUS_TO_FSM.get(_enum, body.status.upper())
@@ -125,10 +125,10 @@ async def update_status(
                 detail=f"Cajero no puede cambiar el estado a '{body.status}'. "
                        f"Estados permitidos: {sorted(_CAJERO_ALLOWED_STATES)}",
             )
-        if role == "chef" and _fsm_target not in _CHEF_ALLOWED_STATES:
+        if role in ("chef", "cocina") and _fsm_target not in _CHEF_ALLOWED_STATES:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Chef no puede cambiar el estado a '{body.status}'. "
+                detail=f"Cocinero no puede cambiar el estado a '{body.status}'. "
                        f"Estados permitidos: {sorted(_CHEF_ALLOWED_STATES)}",
             )
 

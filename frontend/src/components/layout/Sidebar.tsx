@@ -47,7 +47,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   const isAdmin = user?.role?.toLowerCase() === "admin";
   const isEmployee = user?.role?.toLowerCase() === "employee";
-  const isCocina = user?.role?.toLowerCase() === "cocina";
+  const isCocina = user?.role?.toLowerCase() === "cocina" || user?.role?.toLowerCase() === "chef";
 
   // Diferentes menús según el rol
   const navSections = isAdmin

@@ -107,6 +107,11 @@ export function useKitchenSocket(): UseKitchenSocketReturn {
           updatedItems = updatedItems.filter((order) => order.id !== event.order_id);
           break;
 
+        case "PEDIDO_LISTO":
+          // Order is ready — remove from kitchen display (goes to cashier)
+          updatedItems = updatedItems.filter((order) => order.id !== event.order_id);
+          break;
+
         case "PEDIDO_CANCELADO":
           // Order is cancelled — remove from kitchen display
           updatedItems = updatedItems.filter((order) => order.id !== event.order_id);

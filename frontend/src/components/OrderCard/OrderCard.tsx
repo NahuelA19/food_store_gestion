@@ -18,19 +18,25 @@ interface OrderCardProps {
   order: KitchenOrder;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  onStatusChange?: () => void; // callback to force-refetch the KDS
 }
 
-export default function OrderCard({ order, isExpanded, onToggleExpand }: OrderCardProps) {
+export default function OrderCard({ order, isExpanded, onToggleExpand, onStatusChange }: OrderCardProps) {
   const queryClient = useQueryClient();
   const [isActioning, setIsActioning] = useState(false);
 
   // Mutation for updating order status
   const updateStatusMutation = useMutation({
-    mutationFn: (newStatus: "preparando" | "listo") =>
+    mutationFn: (newStatus: "en_prep" | "listo") =>
+      // @ts-ignore - bypassing OrderStatus type to send exact backend string
       orderApi.updateOrderStatus(order.id, newStatus),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["kitchenOrders"] });
       setIsActioning(false);
+      // Force immediate refetch — invalidateQueries alone doesn't trigger
+      // a refetch when WebSocket is connected (refetchInterval returns false).
+      queryClient.refetchQueries({ queryKey: ["kitchenOrders"] });
+      // Also call parent callback if provided (extra safety)
+      onStatusChange?.();
     },
     onError: (error) => {
       console.error("Failed to update order status:", error);
@@ -40,15 +46,25 @@ export default function OrderCard({ order, isExpanded, onToggleExpand }: OrderCa
 
   const handleStartPrep = async () => {
     setIsActioning(true);
-    await updateStatusMutation.mutateAsync("preparando");
+    try {
+      await updateStatusMutation.mutateAsync("en_prep");
+    } catch (_) {
+      // onError handles UI reset; swallow to prevent uncaught rejection
+    }
   };
 
   const handleMarkReady = async () => {
     setIsActioning(true);
-    await updateStatusMutation.mutateAsync("listo");
+    try {
+      await updateStatusMutation.mutateAsync("listo");
+    } catch (_) {
+      // onError handles UI reset; swallow to prevent uncaught rejection
+    }
   };
 
-  const totalItems = order.items.reduce((sum, item) => sum + item.cantidad, 0);
+  // Safe fallback if items is undefined (e.g. from a partial WebSocket event)
+  const safeItems = Array.isArray(order.items) ? order.items : [];
+  const totalItems = safeItems.reduce((sum, item) => sum + item.cantidad, 0);
 
   return (
     <div className={`order-card ${order.estado_codigo.toLowerCase()} ${isExpanded ? "expanded" : ""}`}>
@@ -59,7 +75,7 @@ export default function OrderCard({ order, isExpanded, onToggleExpand }: OrderCa
           <span className="item-count">{totalItems} items</span>
         </div>
 
-        <UrgencyTimer kitchenEntryAt={order.kitchen_entry_at} />
+        <UrgencyTimer kitchenEntryAt={order.kitchen_entry_at || new Date().toISOString()} />
 
         <div className="expand-indicator">{isExpanded ? "▼" : "▶"}</div>
       </div>
@@ -71,11 +87,11 @@ export default function OrderCard({ order, isExpanded, onToggleExpand }: OrderCa
           <div className="items-section">
             <h4 className="section-title">Items</h4>
             <ul className="items-list">
-              {order.items.map((item) => (
+              {safeItems.map((item) => (
                 <li key={item.id} className="item-entry">
                   <span className="item-quantity">{item.cantidad}×</span>
                   <span className="item-name">{item.nombre_snapshot}</span>
-                  <span className="item-price">${item.precio_snapshot.toFixed(2)}</span>
+                  <span className="item-price">${Number(item.precio_snapshot || 0).toFixed(2)}</span>
                 </li>
               ))}
             </ul>
@@ -93,8 +109,12 @@ export default function OrderCard({ order, isExpanded, onToggleExpand }: OrderCa
           <div className="action-buttons">
             {order.estado_codigo === "CONFIRMADO" && (
               <button
+                type="button"
                 className="btn btn-primary"
-                onClick={handleStartPrep}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStartPrep();
+                }}
                 disabled={isActioning || updateStatusMutation.isPending}
               >
                 {updateStatusMutation.isPending ? "Starting..." : "Start Prep"}
@@ -103,8 +123,12 @@ export default function OrderCard({ order, isExpanded, onToggleExpand }: OrderCa
 
             {order.estado_codigo === "EN_PREP" && (
               <button
+                type="button"
                 className="btn btn-primary"
-                onClick={handleMarkReady}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMarkReady();
+                }}
                 disabled={isActioning || updateStatusMutation.isPending}
               >
                 {updateStatusMutation.isPending ? "Marking..." : "Ready"}

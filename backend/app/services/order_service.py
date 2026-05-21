@@ -143,6 +143,8 @@ async def transition(
             event_name = "PEDIDO_CONFIRMADO"
         elif nuevo_estado == "EN_PREP":
             event_name = "PEDIDO_EN_PREPARACION"
+        elif nuevo_estado == "LISTO":
+            event_name = "PEDIDO_LISTO"
         elif nuevo_estado == "EN_CAMINO":
             event_name = "PEDIDO_EN_CAMINO"
         elif nuevo_estado == "CANCELADO":
