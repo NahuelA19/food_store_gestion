@@ -224,6 +224,41 @@ curl http://localhost:4040/api/tunnels
 
 ---
 
+## Screenshots
+
+Aquí podés ver las 10 funcionalidades clave del sistema:
+
+![Login](docs/screenshots/01-login.png)
+![Register](docs/screenshots/02-register.png)
+![Catálogo](docs/screenshots/03-home-catalog.png)
+![Detalle de Producto](docs/screenshots/04-product-detail.png)
+![Carrito](docs/screenshots/05-cart.png)
+![Checkout](docs/screenshots/06-checkout.png)
+![Historial de Pedidos](docs/screenshots/07-orders-history.png)
+![Detalle de Pedido](docs/screenshots/08-order-detail.png)
+![Dashboard Admin](docs/screenshots/09-admin-dashboard.png)
+![Gestión de Pedidos](docs/screenshots/10-admin-orders.png)
+
+Para más detalles, ver **[docs/screenshots/README.md](docs/screenshots/README.md)**.
+
+---
+
+## Demo
+
+Mirá una demostración en video de todas las funcionalidades:
+
+📹 **[Ver demo completa en YouTube](#)** (reemplazar con enlace real)
+
+La demo cubre:
+- Autenticación y registro
+- Navegación de catálogo y búsqueda
+- Agregar productos al carrito
+- Checkout con MercadoPago
+- Historial de pedidos
+- Panel de administración
+
+---
+
 ## Git Workflow
 
 Este proyecto usa **Conventional Commits**:
