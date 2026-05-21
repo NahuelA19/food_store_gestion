@@ -565,6 +565,11 @@ function UserShopPage() {
     }
   };
 
+  const featuredProducts = useMemo(() => {
+    if (!sortedProducts) return [];
+    return sortedProducts.slice(0, 3);
+  }, [sortedProducts]);
+
   if (isLoading) {
     return (
       <div className="space-y-8 pb-16">
@@ -582,20 +587,47 @@ function UserShopPage() {
   }
 
   return (
-    <div className="space-y-8 pb-16 animate-fade-in">
-      {/* Page title */}
-      <div>
-        <h1 className="font-display text-2xl font-bold text-text-primary">
-          Nuestros Productos
-        </h1>
-        <p className="text-sm text-text-muted mt-1">
-          Explora nuestro catálogo y agrega productos a tu carrito
-        </p>
+    <div className="pb-16 animate-fade-in">
+      {/* HERO SECTION */}
+      <div className="relative w-full h-[60vh] min-h-[400px] max-h-[600px] rounded-3xl overflow-hidden mb-12 bg-gradient-to-br from-brand-900 to-gray-900 flex items-center shadow-2xl">
+        <div className="absolute inset-0 bg-black/40 z-10" />
+        {/* Placeholder image that looks premium. Ideally a restaurant or food image. */}
+        <img 
+          src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2070&auto=format&fit=crop"
+          alt="Delicious Food"
+          className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
+        />
+        
+        <div className="relative z-20 px-8 md:px-16 w-full max-w-4xl">
+          <Badge className="bg-brand-500/20 text-brand-300 border border-brand-400/30 backdrop-blur-sm px-3 py-1 mb-6 inline-flex uppercase tracking-widest font-semibold">
+            Experiencia Premium
+          </Badge>
+          <h1 className="font-display text-4xl md:text-6xl font-extrabold text-white leading-tight mb-4 drop-shadow-lg">
+            Los mejores sabores, <br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-amber-200">
+              directo a tu mesa
+            </span>
+          </h1>
+          <p className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl font-medium drop-shadow-md">
+            Descubrí nuestro menú diseñado para paladares exigentes. Calidad superior, ingredientes frescos y entrega inmediata.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <button 
+              onClick={() => {
+                document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="bg-brand-600 hover:bg-brand-500 text-white px-10 py-5 text-xl rounded-2xl font-black transition-all duration-300 shadow-[0_0_40px_-10px_rgba(234,88,12,0.6)] flex items-center gap-3 hover:scale-105 hover:-translate-y-1 active:scale-95"
+            >
+              Ver Catálogo
+              <ArrowRight size={24} className="animate-pulse" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Success Message */}
+      {/* SUCCESS & ERROR MESSAGES */}
       {successMessage && (
-        <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg dark:bg-emerald-900/30 dark:border-emerald-800">
+        <div className="mb-8 flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg dark:bg-emerald-900/30 dark:border-emerald-800 animate-in fade-in slide-in-from-top-4">
           <Check size={18} className="text-emerald-600 dark:text-emerald-400" />
           <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
             {successMessage}
@@ -603,9 +635,8 @@ function UserShopPage() {
         </div>
       )}
 
-      {/* Error Message */}
       {errorMessage && (
-        <div className="flex items-center gap-2 p-3 bg-danger-bg border border-danger rounded-lg dark:bg-danger/10 dark:border-danger/30">
+        <div className="mb-8 flex items-center gap-2 p-3 bg-danger-bg border border-danger rounded-lg dark:bg-danger/10 dark:border-danger/30 animate-in fade-in slide-in-from-top-4">
           <AlertCircle size={18} className="text-danger" />
           <p className="text-sm font-medium text-danger">
             {errorMessage}
@@ -613,12 +644,88 @@ function UserShopPage() {
         </div>
       )}
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* FEATURED / PROMOTIONS */}
+      {featuredProducts.length > 0 && (
+        <div className="mb-16">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="font-display text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2">
+                <Heart className="text-rose-500 fill-rose-500" size={24} />
+                Nuestros Favoritos
+              </h2>
+              <p className="text-sm text-text-muted mt-1">Los platos más pedidos por nuestra comunidad</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {featuredProducts.map((product, index) => (
+              <Card 
+                key={`featured-${product.id}`} 
+                className="group hover:shadow-2xl transition-all duration-500 ease-out hover:-translate-y-2 border-border/50 hover:border-brand-500/50 overflow-hidden bg-gradient-to-b from-surface to-surface-alt"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                <div className="relative h-56 w-full overflow-hidden bg-surface-alt flex items-center justify-center">
+                  <Badge className="absolute top-3 left-3 z-10 bg-rose-500 text-white border-none font-bold uppercase tracking-wide">
+                    Top
+                  </Badge>
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                  ) : (
+                    <Icon icon={Package} size={48} className="text-text-muted group-hover:scale-110 transition-transform duration-700" />
+                  )}
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                </div>
+                
+                <CardContent className="p-5">
+                  <Link to={`/products/${product.id}`} className="hover:opacity-80 transition-opacity block mb-2">
+                    <h3 className="font-display text-lg font-bold text-text-primary line-clamp-1">{product.name}</h3>
+                    <p className="text-sm text-text-muted mt-1 line-clamp-2">{product.description}</p>
+                  </Link>
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-xl font-black text-brand-600">${Number(product.price).toFixed(2)}</span>
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      disabled={cartLoading || addingProductId === product.id}
+                      className="bg-brand-100 hover:bg-brand-200 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 dark:hover:bg-brand-800/50 p-2.5 rounded-full transition-colors disabled:opacity-50"
+                    >
+                      {addingProductId === product.id ? (
+                        <div className="w-5 h-5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <ShoppingCart size={20} />
+                      )}
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MAIN CATALOG */}
+      <div id="catalog-section" className="scroll-mt-24">
+        <div className="mb-6">
+          <h2 className="font-display text-2xl font-bold text-text-primary flex items-center gap-2">
+            Catálogo Completo
+          </h2>
+          <p className="text-sm text-text-muted mt-1">
+            Explora todas nuestras opciones y armá tu pedido perfecto
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {sortedProducts && sortedProducts.length > 0 ? (
-          sortedProducts.map((product: Product) => (
-            <div key={product.id}>
-              <Card variant="interactive" className="h-full hover:shadow-lg transition-shadow">
+          sortedProducts.map((product: Product, index: number) => (
+            <div 
+              key={product.id}
+              className="transition-all duration-500 ease-out hover:-translate-y-2"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <Card variant="interactive" className="h-full hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] transition-all duration-300 border-transparent hover:border-brand-500/30">
                 <CardContent className="p-4 h-full flex flex-col">
                   {/* Image Placeholder */}
                   <Link
@@ -708,6 +815,7 @@ function UserShopPage() {
             <p className="text-text-muted">No hay productos disponibles</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

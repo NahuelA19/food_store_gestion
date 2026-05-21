@@ -119,6 +119,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {
           title: "Mi Tienda",
           links: [
+            { to: "/", label: "Inicio", icon: LayoutDashboard },
             { to: "/products", label: "Productos", icon: Package },
             { to: "/orders", label: "Mis Pedidos", icon: ShoppingCart },
             { to: "/wishlist", label: "Favoritos", icon: Heart },

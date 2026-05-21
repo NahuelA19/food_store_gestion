@@ -82,7 +82,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {!isStaff && isMobile && (
         <nav className="glass fixed bottom-0 left-0 right-0 z-30 flex h-16 items-center justify-around border-t border-border px-2">
           {[
-            { to: "/", icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", label: "Dashboard" },
+            { to: "/", icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", label: "Inicio" },
             { to: "/orders", icon: "M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0", label: "Pedidos" },
             { to: "/branches", icon: "M3 21h18 M3 10h18 M5 6l7-3 7 3 M4 10v11 M20 10v11 M8 14v3 M12 14v3 M16 14v3", label: "Sucursales" },
             { to: "/employees", icon: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z", label: "Empleados" },
