@@ -12,15 +12,31 @@
  * Three-column Kanban: CONFIRMADO → EN_PREP → (Auto-removal at EN_CAMINO)
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useKitchenSocket } from "../hooks/useKitchenSocket";
+import { useSound } from "../hooks/useSound";
+import { useUIStore } from "../store/uiStore";
 import OrderCard from "../components/OrderCard/OrderCard";
 import UrgencyTimer from "../components/UrgencyTimer/UrgencyTimer";
 import "./ChefDashboard.css";
 
 function ChefDashboard() {
-  const { orders, isLoading, isConnected, error, refetch } = useKitchenSocket();
+  const { orders, isLoading, isConnected, error, refetch, newOrderSignal } = useKitchenSocket();
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+  const [flash, setFlash] = useState(false);
+  const { playBeep } = useSound();
+  const soundEnabled = useUIStore((s) => s.soundEnabled);
+  const toggleSound = useUIStore((s) => s.toggleSound);
+
+  // Sound + flash alert on new order
+  useEffect(() => {
+    if (newOrderSignal > 0) {
+      playBeep();
+      setFlash(true);
+      const timer = setTimeout(() => setFlash(false), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [newOrderSignal, playBeep]);
 
   // Group orders by estado_codigo
   const groupedOrders = useMemo(() => {
@@ -48,6 +64,14 @@ function ChefDashboard() {
         {/* Quick actions */}
         <div className="kds-actions">
           <button
+            onClick={toggleSound}
+            className="btn btn-icon"
+            aria-label={soundEnabled ? "Mute sound" : "Enable sound"}
+            title={soundEnabled ? "Sound ON" : "Sound OFF"}
+          >
+            {soundEnabled ? "🔊" : "🔇"}
+          </button>
+          <button
             onClick={refetch}
             className="btn btn-secondary"
             disabled={isLoading}
@@ -57,6 +81,9 @@ function ChefDashboard() {
           </button>
         </div>
       </header>
+
+      {/* Flash overlay for new order alert */}
+      {flash && <div className="kds-flash-overlay" />}
 
       {/* Error state */}
       {error && (

@@ -35,6 +35,7 @@ interface UseKitchenSocketReturn {
   isConnected: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  newOrderSignal: number;
 }
 
 export function useKitchenSocket(): UseKitchenSocketReturn {
@@ -42,6 +43,7 @@ export function useKitchenSocket(): UseKitchenSocketReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [newOrderSignal, setNewOrderSignal] = useState(0);
 
   // Fetch kitchen orders via TanStack Query
   const query = useQuery({
@@ -72,14 +74,24 @@ export function useKitchenSocket(): UseKitchenSocketReturn {
       let updatedItems = [...currentData.items];
 
       switch (event.event) {
-        case "PEDIDO_CONFIRMADO":
-          // Order moved to CONFIRMADO — should be in the list if it's here
-          updatedItems = updatedItems.map((order) =>
-            order.id === event.order_id
-              ? { ...order, estado_codigo: "CONFIRMADO" }
-              : order
-          );
+        case "PEDIDO_CONFIRMADO": {
+          // If order is not in the list, add a minimal placeholder
+          const exists = updatedItems.some((o) => o.id === event.order_id);
+          if (!exists) {
+            updatedItems = [
+              ...updatedItems,
+              { id: event.order_id, estado_codigo: "CONFIRMADO" } as KitchenOrder,
+            ];
+          } else {
+            updatedItems = updatedItems.map((order) =>
+              order.id === event.order_id
+                ? { ...order, estado_codigo: "CONFIRMADO" }
+                : order
+            );
+          }
+          setNewOrderSignal((s) => s + 1);
           break;
+        }
 
         case "PEDIDO_EN_PREPARACION":
           // Order is now being prepared
@@ -209,5 +221,6 @@ export function useKitchenSocket(): UseKitchenSocketReturn {
         : "Failed to fetch kitchen orders"
       : null,
     refetch,
+    newOrderSignal,
   };
 }

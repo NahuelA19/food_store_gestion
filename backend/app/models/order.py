@@ -98,6 +98,9 @@ class Order(Base, TimestampMixin):
         nullable=True,
         index=True,
     )
+    notas: Mapped[str | None] = mapped_column(
+        Text, nullable=True, default=""
+    )
 
     # Payment fields (MercadoPago)
     # values_callable ensures SQLAlchemy stores/reads .value strings (lowercase)

@@ -180,6 +180,48 @@ body {
   font-size: 0.75rem;
 }
 
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--kds-bg-tertiary);
+  border: 1px solid var(--kds-text-muted);
+  border-radius: var(--kds-radius-sm);
+  cursor: pointer;
+  font-size: 1.25rem;
+  transition: var(--kds-transition);
+}
+
+.btn-icon:hover {
+  background: var(--kds-accent);
+  border-color: var(--kds-accent);
+}
+
+/* Flash overlay for new order alert */
+.kds-flash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(46, 204, 113, 0.25) 0%, transparent 70%);
+  animation: flash-pulse 1.2s ease-out forwards;
+}
+
+@keyframes flash-pulse {
+  0% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* Error banner */
 .error-banner {
   background: rgba(231, 76, 60, 0.15);

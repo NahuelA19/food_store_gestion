@@ -26,6 +26,7 @@ import {
   ClipboardList,
   Tag,
   UserCheck,
+  Refrigerator,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -45,6 +46,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   const isAdmin = user?.role?.toLowerCase() === "admin";
   const isEmployee = user?.role?.toLowerCase() === "employee";
+  const isCocina = user?.role?.toLowerCase() === "cocina";
 
   // Diferentes menús según el rol
   const navSections = isAdmin
@@ -55,6 +57,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             { to: "/", label: "Dashboard", icon: LayoutDashboard },
             { to: "/products", label: "Productos", icon: Package },
             { to: "/orders", label: "Pedidos", icon: ShoppingCart },
+            { to: "/chef", label: "Cocina", icon: Refrigerator },
           ],
         },
         {
@@ -91,6 +94,22 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           title: "Mi cuenta",
           links: [
             { to: "/notifications", label: "Notificaciones", icon: Bell },
+            { to: "/settings", label: "Configuración", icon: Settings },
+          ],
+        },
+      ]
+    : isCocina
+    ? [
+        {
+          title: "Display Cocina",
+          links: [
+            { to: "/chef", label: "Pedidos", icon: ClipboardList },
+          ],
+        },
+        {
+          title: "Mi cuenta",
+          links: [
+            { to: "/profile", label: "Mi Perfil", icon: User },
             { to: "/settings", label: "Configuración", icon: Settings },
           ],
         },

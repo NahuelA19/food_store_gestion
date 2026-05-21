@@ -40,9 +40,12 @@ export function Navigation() {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const isChef = ["chef", "cocina"].includes(user?.role?.toLowerCase() ?? "");
+
   const navLinks = isAuthenticated
     ? [
         { to: "/", label: "Inicio", icon: Store },
+        ...(isChef ? [{ to: "/chef", label: "Cocina", icon: Package }] : []),
         { to: "/products", label: "Productos", icon: Package },
         { to: "/cart", label: "Carrito", icon: ShoppingBag },
         { to: "/profile", label: "Mi Perfil", icon: User },

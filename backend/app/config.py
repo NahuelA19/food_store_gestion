@@ -29,6 +29,7 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str
+    test_database_url: str = ""
 
     # Security
     secret_key: str
