@@ -23,6 +23,7 @@ import {
   UserPlus,
   Heart,
   Bell,
+  User,
   ClipboardList,
   Tag,
   UserCheck,
@@ -57,7 +58,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             { to: "/", label: "Dashboard", icon: LayoutDashboard },
             { to: "/products", label: "Productos", icon: Package },
             { to: "/orders", label: "Pedidos", icon: ShoppingCart },
-            { to: "/chef", label: "Cocina", icon: Refrigerator },
+            { to: "/cocina", label: "Cocina", icon: Refrigerator },
           ],
         },
         {
@@ -103,7 +104,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {
           title: "Display Cocina",
           links: [
-            { to: "/chef", label: "Pedidos", icon: ClipboardList },
+            { to: "/cocina", label: "Pedidos", icon: ClipboardList },
           ],
         },
         {

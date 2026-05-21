@@ -123,6 +123,7 @@ async def list_kitchen_orders(
 async def websocket_kitchen_display(
     websocket: WebSocket,
     token: str = Query(...),
+    uow: UnitOfWork = Depends(get_uow),
 ) -> None:
     """
     WebSocket endpoint for Kitchen Display System (KDS).
@@ -146,7 +147,7 @@ async def websocket_kitchen_display(
             await websocket.close(code=1008, reason="Invalid token")
             return
         
-        user_id = payload.get("sub")
+        user_id = payload.get("user_id") or payload.get("sub")
         if not user_id:
             await websocket.close(code=1008, reason="Invalid token structure")
             return
@@ -155,8 +156,21 @@ async def websocket_kitchen_display(
         await websocket.close(code=1008, reason="Unauthorized")
         return
     
-    # TODO: Verify user exists and has required role (COCINA, PEDIDOS, ADMIN)
-    # For now, accept any valid JWT (will be enhanced with actual role check)
+    # Verify user exists and has required role (COCINA, PEDIDOS, ADMIN)
+    try:
+        user = await uow.session.get(User, int(user_id))
+        if not user:
+            await websocket.close(code=1008, reason="User not found")
+            return
+            
+        if user.role.upper() not in ["COCINA", "PEDIDOS", "ADMIN"]:
+            logger.warning(f"WebSocket forbidden for user {user.id} with role {user.role}")
+            await websocket.close(code=1008, reason="Forbidden: Insufficient role")
+            return
+    except Exception as e:
+        logger.error(f"WebSocket user validation error: {e}")
+        await websocket.close(code=1011, reason="Server error")
+        return
     
     if not _websocket_manager:
         logger.error("WebSocket manager not initialized")

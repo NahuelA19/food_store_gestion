@@ -45,7 +45,7 @@ export function Navigation() {
   const navLinks = isAuthenticated
     ? [
         { to: "/", label: "Inicio", icon: Store },
-        ...(isChef ? [{ to: "/chef", label: "Cocina", icon: Package }] : []),
+        ...(isChef ? [{ to: "/cocina", label: "Cocina", icon: Package }] : []),
         { to: "/products", label: "Productos", icon: Package },
         { to: "/cart", label: "Carrito", icon: ShoppingBag },
         { to: "/profile", label: "Mi Perfil", icon: User },

@@ -241,7 +241,7 @@ export function Topbar({ onMenuToggle, showMenuButton = false }: TopbarProps) {
         )}
         {isAuthenticated && user?.role?.toLowerCase() === "chef" && (
           <Link
-            to="/chef"
+            to="/cocina"
             className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-card px-3 py-2 text-sm font-semibold text-text-primary hover:border-brand-300 transition-all duration-200"
           >
             <Icon icon={ChefHat} size={16} />

@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 FSM_TRANSITIONS: dict[str, list[str]] = {
     "PENDIENTE": ["CONFIRMADO", "CANCELADO"],       # Pago via IPN → CONFIRMADO
     "CONFIRMADO": ["EN_PREP", "CANCELADO"],          # Chef comienza preparación
-    "EN_PREP": ["LISTO", "CANCELADO"],               # Chef finaliza preparación
+    "EN_PREP": ["EN_CAMINO", "LISTO", "CANCELADO"],  # Chef finaliza preparación
     "LISTO": ["EN_CAMINO", "CANCELADO"],             # Cajero despacha
     "EN_CAMINO": ["ENTREGADO"],                      # Se entrega (terminal)
     "ENTREGADO": [],                                  # Terminal

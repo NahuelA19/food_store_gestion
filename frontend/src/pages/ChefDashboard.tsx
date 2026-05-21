@@ -40,9 +40,13 @@ function ChefDashboard() {
 
   // Group orders by estado_codigo
   const groupedOrders = useMemo(() => {
+    const safeOrders = Array.isArray(orders) ? orders : [];
+    if (!Array.isArray(orders)) {
+      console.error("[ChefDashboard] orders is not an array! It is:", orders);
+    }
     return {
-      CONFIRMADO: orders.filter((o) => o.estado_codigo === "CONFIRMADO"),
-      EN_PREP: orders.filter((o) => o.estado_codigo === "EN_PREP"),
+      CONFIRMADO: safeOrders.filter((o) => o.estado_codigo === "CONFIRMADO"),
+      EN_PREP: safeOrders.filter((o) => o.estado_codigo === "EN_PREP"),
     };
   }, [orders]);
 

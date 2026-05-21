@@ -431,15 +431,15 @@
       'kern' 1,
       'ss01' 1,
       'cv05' 1;
-    background-image: url('./assets/images/fondo-light.png');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+    background-image: url('./assets/images/fondo-light.png') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-attachment: fixed !important;
+    background-repeat: no-repeat !important;
   }
 
   :root.dark body {
-    background-image: url('./assets/images/fondo-darkmode.png');
+    background-image: url('./assets/images/fondo-darkmode.png') !important;
   }
 
   /* ============================================================================

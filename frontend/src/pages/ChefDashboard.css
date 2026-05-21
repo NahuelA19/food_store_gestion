@@ -46,14 +46,6 @@
   box-sizing: border-box;
 }
 
-body {
-  background: var(--kds-bg-primary);
-  color: var(--kds-text-primary);
-  font-family: "IBM Plex Sans", sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
 /* ============================================================================
    CHEF DASHBOARD CONTAINER
    ========================================================================= */
@@ -63,6 +55,8 @@ body {
   flex-direction: column;
   height: 100vh;
   background: var(--kds-bg-primary);
+  color: var(--kds-text-primary);
+  font-family: "IBM Plex Sans", sans-serif;
   overflow: hidden;
 }
 

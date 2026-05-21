@@ -192,7 +192,7 @@ function App() {
               }
             />
             <Route
-              path="/chef"
+              path="/cocina"
               element={
                 <ProtectedRoute allowedRoles={["admin", "chef", "cocina"]}>
                   <ChefPage />
