@@ -17,7 +17,6 @@ import { useKitchenSocket } from "../hooks/useKitchenSocket";
 import { useSound } from "../hooks/useSound";
 import { useUIStore } from "../store/uiStore";
 import OrderCard from "../components/OrderCard/OrderCard";
-import UrgencyTimer from "../components/UrgencyTimer/UrgencyTimer";
 import "./ChefDashboard.css";
 
 function ChefDashboard() {
@@ -195,8 +194,8 @@ function ChefDashboard() {
               <div className="info-section">
                 <h3>Actions</h3>
                 <ul className="action-list">
-                  <li>Click "Start Prep" to begin cooking</li>
-                  <li>Click "Ready" to mark as complete</li>
+                  <li>Click &quot;Start Prep&quot; to begin cooking</li>
+                  <li>Click &quot;Ready&quot; to mark as complete</li>
                   <li>Orders auto-remove when dispatched</li>
                 </ul>
               </div>

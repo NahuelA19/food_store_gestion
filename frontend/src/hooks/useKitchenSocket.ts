@@ -50,7 +50,7 @@ export function useKitchenSocket(): UseKitchenSocketReturn {
     queryKey: QUERY_KEY,
     queryFn: () => kitchenApi.getKitchenOrders(),
     // Polling fallback: if WS is down, refetch every 30s
-    refetchInterval: (data, query) => {
+    refetchInterval: () => {
       // If WebSocket is connected, don't poll; rely on push events instead
       if (isConnected) {
         return false;
@@ -141,7 +141,7 @@ export function useKitchenSocket(): UseKitchenSocketReturn {
       const ws = kitchenApi.connectKDS();
 
       ws.onopen = () => {
-        console.log("[KDS] WebSocket connected");
+        // console.log("[KDS] WebSocket connected");
         setIsConnected(true);
         // Clear any pending reconnect timeout
         if (reconnectTimeoutRef.current) {
@@ -152,8 +152,8 @@ export function useKitchenSocket(): UseKitchenSocketReturn {
 
       ws.onmessage = (event) => {
         try {
-          const kdsEvent: KDSEvent = JSON.parse(event.data);
-          console.log("[KDS] Received event:", kdsEvent);
+           const kdsEvent: KDSEvent = JSON.parse(event.data);
+          // console.log("[KDS] Received event:", kdsEvent);
           handleWSEvent(kdsEvent);
         } catch (err) {
           console.error("[KDS] Failed to parse WebSocket event:", err);
@@ -166,13 +166,13 @@ export function useKitchenSocket(): UseKitchenSocketReturn {
       };
 
       ws.onclose = () => {
-        console.log("[KDS] WebSocket disconnected");
+        // console.log("[KDS] WebSocket disconnected");
         setIsConnected(false);
         wsRef.current = null;
 
         // Auto-reconnect after delay
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log("[KDS] Attempting to reconnect...");
+          // console.log("[KDS] Attempting to reconnect...");
           connectWebSocket();
         }, WS_RECONNECT_DELAY_MS);
       };
@@ -184,7 +184,7 @@ export function useKitchenSocket(): UseKitchenSocketReturn {
 
       // Retry connection
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log("[KDS] Retrying connection...");
+        // console.log("[KDS] Retrying connection...");
         connectWebSocket();
       }, WS_RECONNECT_DELAY_MS);
     }

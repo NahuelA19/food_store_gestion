@@ -28,7 +28,7 @@ export default function OrderCard({ order, isExpanded, onToggleExpand, onStatusC
   // Mutation for updating order status
   const updateStatusMutation = useMutation({
     mutationFn: (newStatus: "en_prep" | "listo") =>
-      // @ts-ignore - bypassing OrderStatus type to send exact backend string
+      // @ts-expect-error - bypassing OrderStatus type to send exact backend string
       orderApi.updateOrderStatus(order.id, newStatus),
     onSuccess: () => {
       setIsActioning(false);
