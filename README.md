@@ -11,8 +11,8 @@
 [![React 18](https://img.shields.io/badge/React-18.2+-61DAFB?logo=react&logoColor=black&style=for-the-badge)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript&logoColor=white&style=for-the-badge)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white&style=for-the-badge)](https://www.postgresql.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-9.0+-F69220?logo=pnpm&logoColor=white&style=for-the-badge)](https://pnpm.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com/)
-[![Node Version](https://img.shields.io/badge/Node-20+-339933?logo=node.js&logoColor=white&style=for-the-badge)](https://nodejs.org/)
 
 **[🚀 Iniciar Rápido](#iniciar-rápido)** • **[📖 Documentación](#documentación)** • **[🎨 Demo](#demo)** • **[🤝 Contribuir](#contribuir)**
 
@@ -68,6 +68,7 @@ Food Store es una **plataforma integral de gestión** diseñada para restaurante
 - **ngrok** — tunneling para webhooks en desarrollo
 
 ### DevOps & Tooling
+- **pnpm** — gestor de paquetes exclusivo para todo el monorepo (NO npm, NO yarn)
 - **Husky + commitlint** — validación de commits convencionales
 - **ESLint + Ruff** — linting automático
 - **Prettier + Black** — formateo de código
@@ -81,8 +82,8 @@ Food Store es una **plataforma integral de gestión** diseñada para restaurante
 ### 📋 Requisitos Previos
 
 - **Docker Desktop** (incluye Docker Compose) — [descargar aquí](https://www.docker.com/products/docker-desktop)
+- **pnpm 9.0+** — gestor de paquetes moderno y eficiente — [instalar aquí](https://pnpm.io/installation)
 - **Git** — para clonar el repositorio
-- *(Opcional)* **Node.js 20+** — si querés trabajar fuera de Docker
 
 ### 1️⃣ Clonar el Repositorio
 
@@ -222,6 +223,8 @@ docker compose up -d --force-recreate backend
 
 ## 📂 Estructura del Proyecto
 
+> 💡 **IMPORTANTE:** Este proyecto usa **pnpm workspaces**. Nunca usar `npm install` o `npm run` — siempre `pnpm`.
+
 ```
 food_store_gestion/
 │
@@ -331,8 +334,8 @@ docker compose exec backend alembic upgrade head
 ### 🧪 Testing
 
 ```bash
-# Frontend — todo con npm workspaces
-npm run test
+# Frontend — todo con pnpm workspaces
+pnpm test
 
 # Backend — desde dentro del contenedor o local
 cd backend
@@ -346,15 +349,15 @@ python -m pytest tests/test_orders.py   # Un archivo específico
 
 ```bash
 # Todos (lint + format + typecheck)
-npm run check:all
+pnpm check:all
 
 # Backend
 cd backend && ruff check .              # Lint
 cd backend && black .                   # Format
 
 # Frontend
-npm run lint --workspace frontend       # ESLint
-npm run format --workspace frontend     # Prettier
+pnpm lint --workspace frontend          # ESLint
+pnpm format --workspace frontend        # Prettier
 ```
 
 ### 🌐 ngrok (Webhooks)
@@ -585,9 +588,9 @@ cd backend && ruff check .
 cd backend && black --check .
 
 # Frontend
-npm run test --workspace frontend
-npm run lint --workspace frontend
-npm run format:check --workspace frontend
+pnpm test --workspace frontend
+pnpm lint --workspace frontend
+pnpm format:check --workspace frontend
 ```
 
 ---
