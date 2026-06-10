@@ -74,3 +74,32 @@ The system SHALL hash all passwords using bcrypt with cost factor of 12 before s
 #### Scenario: Verification against hashed password
 - **WHEN** user logs in and submits password "MyPassword123"
 - **THEN** system verifies submitted password against stored hash using bcrypt, confirms match
+
+## MODIFIED Requirements
+
+### Requirement: Role COCINA exists in seed data
+The seed function `seed_roles()` SHALL create a role with codigo `COCINA` and nombre `Cocina`. The seed function `seed_staff_users()` SHALL create a user with email `cocina@foodstore.com` and role `cocina`.
+
+#### Scenario: COCINA role created in seed
+- **WHEN** `seed_roles()` is executed
+- **THEN** a role with codigo `COCINA` SHALL exist in the database
+- **AND** the total number of roles SHALL be 5 (was 4: ADMIN, STOCK, PEDIDOS, CLIENT)
+
+#### Scenario: COCINA user created in seed
+- **WHEN** `seed_staff_users()` is executed
+- **THEN** a user with email `cocina@foodstore.com` and role `cocina` SHALL exist
+
+### Requirement: Login redirects chef and cocina roles to /cocina
+The login flow SHALL redirect users with role `chef` or `cocina` to the KDS page at `/cocina`.
+
+#### Scenario: Chef logs in and goes to KDS
+- **WHEN** a user with role `chef` logs in
+- **THEN** the system SHALL redirect to `/cocina`
+
+#### Scenario: COCINA logs in and goes to KDS
+- **WHEN** a user with role `cocina` logs in
+- **THEN** the system SHALL redirect to `/cocina`
+
+#### Scenario: Change password redirects chef to KDS
+- **WHEN** a user with role `chef` or `cocina` completes password change
+- **THEN** the system SHALL redirect to `/cocina`

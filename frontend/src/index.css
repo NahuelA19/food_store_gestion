@@ -412,6 +412,50 @@
 }
 
 /* ============================================================================
+   STORE THEME (Premium Dark E-commerce)
+   Applied to the StoreLayout to separate client visuals from Admin dashboard.
+   ============================================================================ */
+.store-theme {
+  /* Store Background: Solid elegant dark, no noisy background images */
+  background-image: none !important;
+  background-color: #0c0a09 !important; /* Tailwind stone-950 */
+
+  /* Gold/Amber brand colors */
+  --color-brand-50: oklch(0.98 0.02 85);
+  --color-brand-100: oklch(0.95 0.05 85);
+  --color-brand-200: oklch(0.91 0.09 85);
+  --color-brand-300: oklch(0.85 0.13 85);
+  --color-brand-400: oklch(0.79 0.16 85); /* #f59e0b approx */
+  --color-brand-500: oklch(0.72 0.17 85);
+  --color-brand-600: oklch(0.64 0.15 85);
+  --color-brand-700: oklch(0.53 0.13 85);
+  --color-brand-800: oklch(0.44 0.11 85);
+  --color-brand-900: oklch(0.37 0.09 85);
+
+  --color-primary: var(--color-brand-500);
+  --color-primary-hover: var(--color-brand-400);
+  --color-primary-active: var(--color-brand-600);
+  
+  /* Text on Brand: Black text on Gold buttons */
+  --color-text-on-brand: #000000;
+
+  /* Surfaces: Dark elegant gray, no blue/indigo tint */
+  --color-surface: rgba(28, 25, 23, 0.85); /* stone-900 */
+  --color-surface-card: rgba(28, 25, 23, 0.95); 
+  --color-surface-alt: rgba(41, 37, 36, 0.95); /* stone-800 */
+  --color-surface-raised: rgba(68, 64, 60, 0.95); /* stone-700 */
+  --glass-border: rgba(245, 158, 11, 0.15); /* Subtle gold border */
+
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-active: var(--color-brand-400);
+
+  /* Typography for Store */
+  --color-text-primary: #f5f5f4; /* stone-100 */
+  --color-text-secondary: #d6d3d1; /* stone-300 */
+  --color-text-muted: #a8a29e; /* stone-400 */
+}
+
+/* ============================================================================
    BASE STYLES
    ============================================================================ */
 @layer base {

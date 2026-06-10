@@ -130,9 +130,11 @@ export const ProductDetailPage: React.FC = () => {
     <div className="animate-fade-in mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Success Message */}
       {successMessage && (
-        <div className="mb-6 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-900/30">
-          <Check size={18} className="text-emerald-600 dark:text-emerald-400" />
-          <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/15 p-4 backdrop-blur-sm animate-slide-up">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
+            <Check size={16} className="text-emerald-400" />
+          </div>
+          <p className="text-sm font-semibold text-emerald-400">
             {successMessage}
           </p>
         </div>
@@ -140,22 +142,23 @@ export const ProductDetailPage: React.FC = () => {
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="mb-6 flex items-center gap-2 rounded-lg border border-danger bg-danger-bg p-3 dark:border-danger/30 dark:bg-danger/10">
-          <AlertCircle size={18} className="text-danger" />
-          <p className="text-sm font-medium text-danger">
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-danger/30 bg-danger/10 p-4 backdrop-blur-sm animate-slide-up">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-danger/20">
+            <AlertCircle size={16} className="text-danger" />
+          </div>
+          <p className="text-sm font-semibold text-danger">
             {errorMessage}
           </p>
         </div>
       )}
 
-      <Button
-        variant="ghost"
+      <button
         onClick={() => navigate("/products")}
-        className="mb-8"
+        className="mb-8 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-text-muted hover:text-text-primary hover:bg-white/10 transition-all duration-200"
       >
         <Icon icon={ArrowLeft} size={16} />
         Volver a productos
-      </Button>
+      </button>
 
       <Card className="overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2">
@@ -210,8 +213,8 @@ export const ProductDetailPage: React.FC = () => {
               </p>
             )}
 
-            <div className="border-b border-border pb-6">
-              <span className="font-display text-4xl font-black text-primary lg:text-5xl">
+            <div className="border-b border-white/10 pb-6">
+              <span className="font-display text-5xl font-black text-accent lg:text-6xl">
                 ${product.price.toFixed(2)}
               </span>
             </div>
@@ -235,9 +238,15 @@ export const ProductDetailPage: React.FC = () => {
 
             {product.inventory && (
               <div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-border-light">
+                <div className="h-3 overflow-hidden rounded-full bg-white/10">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-primary to-brand-300 transition-all duration-500"
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      product.inventory.available_quantity / product.inventory.stock_quantity > 0.5
+                        ? "bg-gradient-to-r from-emerald-500 to-teal-400"
+                        : product.inventory.available_quantity / product.inventory.stock_quantity > 0.2
+                        ? "bg-gradient-to-r from-amber-500 to-orange-400"
+                        : "bg-gradient-to-r from-red-500 to-rose-400"
+                    }`}
                     style={{
                       width: `${(product.inventory.available_quantity / product.inventory.stock_quantity) * 100}%`,
                     }}

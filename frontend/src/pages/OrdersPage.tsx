@@ -123,7 +123,7 @@ export function OrdersPage() {
     : "Todas las sucursales";
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in">
       <div>
         <h1 className="font-display text-2xl font-bold text-text-primary">Pedidos</h1>
         <p className="text-sm text-text-muted mt-1">

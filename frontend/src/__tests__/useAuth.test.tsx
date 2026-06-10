@@ -5,12 +5,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuth } from "../hooks/useAuth";
 import { useAuthStore } from "../store/authStore";
 
+import { MemoryRouter } from "react-router-dom";
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </MemoryRouter>
   );
   TestWrapper.displayName = 'TestWrapper';
   return TestWrapper;
@@ -47,6 +51,7 @@ describe("useAuth hook", () => {
       first_name: "",
       last_name: "",
       phone: "",
+      role: "",
     });
   });
 
@@ -96,6 +101,7 @@ describe("useAuth hook", () => {
       first_name: "",
       last_name: "",
       phone: "",
+      role: "",
     });
   });
 
@@ -140,6 +146,7 @@ describe("useAuth hook", () => {
       first_name: "Jane",
       last_name: "Doe",
       phone: "",
+      role: "customer",
     });
   });
 

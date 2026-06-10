@@ -28,6 +28,7 @@ export const wishlistApi = {
   async list(): Promise<WishlistItem[]> {
     const response = await fetch(`${API_BASE_URL}/wishlist/`, {
       headers: getAuthHeaders(),
+      cache: "no-store",
     });
     if (!response.ok) throw new Error("Failed to fetch wishlist");
     return response.json();
@@ -36,7 +37,7 @@ export const wishlistApi = {
   async check(productIds: number[]): Promise<Record<string, boolean>> {
     const response = await fetch(
       `${API_BASE_URL}/wishlist/check?product_ids=${productIds.join(",")}`,
-      { headers: getAuthHeaders() },
+      { headers: getAuthHeaders(), cache: "no-store" },
     );
     if (!response.ok) throw new Error("Failed to check wishlist");
     return response.json();

@@ -38,6 +38,7 @@ import {
   AlertCircle,
   Heart,
 } from "lucide-react";
+import { StoreHero } from "../components/layout/StoreHero";
 
 /* ─── ADMIN DASHBOARD COMPONENT ─── */
 
@@ -565,11 +566,6 @@ function UserShopPage() {
     }
   };
 
-  const featuredProducts = useMemo(() => {
-    if (!sortedProducts) return [];
-    return sortedProducts.slice(0, 3);
-  }, [sortedProducts]);
-
   if (isLoading) {
     return (
       <div className="space-y-8 pb-16">
@@ -577,9 +573,9 @@ function UserShopPage() {
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-4 w-1/2" />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="h-64" />
+            <Skeleton key={i} className="h-80 rounded-2xl" />
           ))}
         </div>
       </div>
@@ -587,232 +583,158 @@ function UserShopPage() {
   }
 
   return (
-    <div className="pb-16 animate-fade-in">
-      {/* HERO SECTION */}
-      <div className="relative w-full h-[60vh] min-h-[400px] max-h-[600px] rounded-3xl overflow-hidden mb-12 bg-gradient-to-br from-brand-900 to-gray-900 flex items-center shadow-2xl">
-        <div className="absolute inset-0 bg-black/40 z-10" />
-        {/* Placeholder image that looks premium. Ideally a restaurant or food image. */}
-        <img 
-          src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2070&auto=format&fit=crop"
-          alt="Delicious Food"
-          className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
-        />
-        
-        <div className="relative z-20 px-8 md:px-16 w-full max-w-4xl">
-          <Badge className="bg-brand-500/20 text-brand-300 border border-brand-400/30 backdrop-blur-sm px-3 py-1 mb-6 inline-flex uppercase tracking-widest font-semibold">
-            Experiencia Premium
-          </Badge>
-          <h1 className="font-display text-4xl md:text-6xl font-extrabold text-white leading-tight mb-4 drop-shadow-lg">
-            Los mejores sabores, <br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-amber-200">
-              directo a tu mesa
-            </span>
-          </h1>
-          <p className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl font-medium drop-shadow-md">
-            Descubrí nuestro menú diseñado para paladares exigentes. Calidad superior, ingredientes frescos y entrega inmediata.
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <button 
-              onClick={() => {
-                document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="bg-brand-600 hover:bg-brand-500 text-white px-10 py-5 text-xl rounded-2xl font-black transition-all duration-300 shadow-[0_0_40px_-10px_rgba(234,88,12,0.6)] flex items-center gap-3 hover:scale-105 hover:-translate-y-1 active:scale-95"
-            >
-              Ver Catálogo
-              <ArrowRight size={24} className="animate-pulse" />
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="animate-fade-in flex flex-col w-full bg-[#0c0a09]">
+      <StoreHero />
 
-      {/* SUCCESS & ERROR MESSAGES */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-12 space-y-8">
+        {/* Page header (optional now since we have a hero, but keeping a section title) */}
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-2xl font-bold text-white">
+            Más Populares
+          </h2>
+        </div>
+
+      {/* Toast: Success */}
       {successMessage && (
-        <div className="mb-8 flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg dark:bg-emerald-900/30 dark:border-emerald-800 animate-in fade-in slide-in-from-top-4">
-          <Check size={18} className="text-emerald-600 dark:text-emerald-400" />
-          <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+        <div className="flex items-center gap-3 p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-xl backdrop-blur-sm animate-slide-up">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20">
+            <Check size={16} className="text-emerald-400" />
+          </div>
+          <p className="text-sm font-semibold text-emerald-400">
             {successMessage}
           </p>
         </div>
       )}
 
+      {/* Toast: Error */}
       {errorMessage && (
-        <div className="mb-8 flex items-center gap-2 p-3 bg-danger-bg border border-danger rounded-lg dark:bg-danger/10 dark:border-danger/30 animate-in fade-in slide-in-from-top-4">
-          <AlertCircle size={18} className="text-danger" />
-          <p className="text-sm font-medium text-danger">
+        <div className="flex items-center gap-3 p-4 bg-danger/10 border border-danger/30 rounded-xl backdrop-blur-sm animate-slide-up">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-danger/20">
+            <AlertCircle size={16} className="text-danger" />
+          </div>
+          <p className="text-sm font-semibold text-danger">
             {errorMessage}
           </p>
         </div>
       )}
 
-      {/* FEATURED / PROMOTIONS */}
-      {featuredProducts.length > 0 && (
-        <div className="mb-16">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="font-display text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2">
-                <Heart className="text-rose-500 fill-rose-500" size={24} />
-                Nuestros Favoritos
-              </h2>
-              <p className="text-sm text-text-muted mt-1">Los platos más pedidos por nuestra comunidad</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredProducts.map((product, index) => (
-              <Card 
-                key={`featured-${product.id}`} 
-                className="group hover:shadow-2xl transition-all duration-500 ease-out hover:-translate-y-2 border-border/50 hover:border-brand-500/50 overflow-hidden bg-gradient-to-b from-surface to-surface-alt"
-                style={{ animationDelay: `${index * 150}ms` }}
-              >
-                <div className="relative h-56 w-full overflow-hidden bg-surface-alt flex items-center justify-center">
-                  <Badge className="absolute top-3 left-3 z-10 bg-rose-500 text-white border-none font-bold uppercase tracking-wide">
-                    Top
-                  </Badge>
-                  {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                  ) : (
-                    <Icon icon={Package} size={48} className="text-text-muted group-hover:scale-110 transition-transform duration-700" />
-                  )}
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-                </div>
-                
-                <CardContent className="p-5">
-                  <Link to={`/products/${product.id}`} className="hover:opacity-80 transition-opacity block mb-2">
-                    <h3 className="font-display text-lg font-bold text-text-primary line-clamp-1">{product.name}</h3>
-                    <p className="text-sm text-text-muted mt-1 line-clamp-2">{product.description}</p>
-                  </Link>
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="text-xl font-black text-brand-600">${Number(product.price).toFixed(2)}</span>
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      disabled={cartLoading || addingProductId === product.id}
-                      className="bg-brand-100 hover:bg-brand-200 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 dark:hover:bg-brand-800/50 p-2.5 rounded-full transition-colors disabled:opacity-50"
-                    >
-                      {addingProductId === product.id ? (
-                        <div className="w-5 h-5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <ShoppingCart size={20} />
-                      )}
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* MAIN CATALOG */}
-      <div id="catalog-section" className="scroll-mt-24">
-        <div className="mb-6">
-          <h2 className="font-display text-2xl font-bold text-text-primary flex items-center gap-2">
-            Catálogo Completo
-          </h2>
-          <p className="text-sm text-text-muted mt-1">
-            Explora todas nuestras opciones y armá tu pedido perfecto
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Products Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {sortedProducts && sortedProducts.length > 0 ? (
-          sortedProducts.map((product: Product, index: number) => (
-            <div 
+          sortedProducts.map((product: Product) => (
+            <div
               key={product.id}
-              className="transition-all duration-500 ease-out hover:-translate-y-2"
-              style={{ animationDelay: `${index * 50}ms` }}
+              className="group relative flex flex-col rounded-2xl overflow-hidden bg-surface/60 backdrop-blur-md border border-white/10 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 ease-out"
             >
-              <Card variant="interactive" className="h-full hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] transition-all duration-300 border-transparent hover:border-brand-500/30">
-                <CardContent className="p-4 h-full flex flex-col">
-                  {/* Image Placeholder */}
-                  <Link
-                    to={`/products/${product.id}`}
-                    className="relative w-full h-40 bg-surface-alt rounded-lg mb-3 flex items-center justify-center hover:bg-surface-alt/80 transition-colors group"
-                  >
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform"
-                      />
-                    ) : (
-                      <Icon icon={Package} size={40} className="text-text-muted group-hover:scale-110 transition-transform" />
-                    )}
+              {/* Image area */}
+              <Link
+                to={`/products/${product.id}`}
+                className="relative w-full h-52 bg-gradient-to-br from-brand-900/40 to-accent/10 overflow-hidden block"
+              >
+                {product.image_url ? (
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Icon
+                      icon={Package}
+                      size={52}
+                      className="text-brand-300/50 group-hover:scale-110 transition-transform duration-300"
+                    />
+                  </div>
+                )}
 
-                    {/* Favorite heart button */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleToggleFavorite(product.id);
-                      }}
-                      disabled={favLoadingId === product.id}
-                      className={`absolute top-2 right-2 rounded-full p-1.5 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 ${
-                        favLoadingId === product.id ? "animate-pulse" : "hover:scale-110"
-                      } ${
-                        favoriteIds.has(product.id)
-                          ? "text-red-500"
-                          : "text-gray-400 hover:text-red-400"
-                      }`}
-                      aria-label={
-                        favoriteIds.has(product.id)
-                          ? "Quitar de favoritos"
-                          : "Agregar a favoritos"
-                      }
-                    >
-                      <Heart
-                        size={18}
-                        className={`transition-all duration-200 ${
-                          favoriteIds.has(product.id) ? "fill-red-500" : "fill-none"
-                        }`}
-                      />
-                    </button>
-                  </Link>
+                {/* Gradient overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                  {/* Product Info */}
-                  <Link to={`/products/${product.id}`} className="flex-1 hover:opacity-80 transition-opacity">
-                    <p className="font-semibold text-text-primary line-clamp-2">
-                      {product.name}
-                    </p>
-                    <p className="text-xs text-text-muted mt-1 line-clamp-2">
+                {/* Favorite button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleToggleFavorite(product.id);
+                  }}
+                  disabled={favLoadingId === product.id}
+                  className={`absolute top-3 right-3 rounded-full p-2 bg-black/40 backdrop-blur-sm border border-white/10 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 ${
+                    favLoadingId === product.id ? "animate-pulse scale-90" : "hover:scale-110 hover:bg-black/60"
+                  } ${
+                    favoriteIds.has(product.id)
+                      ? "text-red-400"
+                      : "text-white/60 hover:text-red-400"
+                  }`}
+                  aria-label={
+                    favoriteIds.has(product.id)
+                      ? "Quitar de favoritos"
+                      : "Agregar a favoritos"
+                  }
+                >
+                  <Heart
+                    size={16}
+                    className={`transition-all duration-200 ${
+                      favoriteIds.has(product.id) ? "fill-red-400" : "fill-none"
+                    }`}
+                  />
+                </button>
+              </Link>
+
+              {/* Content */}
+              <div className="flex flex-col flex-1 p-4 gap-3">
+                {/* Category badge */}
+                {(product as Product & { category?: { name: string } }).category && (
+                  <span className="inline-flex self-start items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-accent/15 text-accent border border-accent/20">
+                    {(product as Product & { category?: { name: string } }).category!.name}
+                  </span>
+                )}
+
+                {/* Name + description */}
+                <Link to={`/products/${product.id}`} className="flex-1 group/link">
+                  <p className="font-display font-bold text-text-primary text-base leading-tight line-clamp-2 group-hover/link:text-accent transition-colors duration-200">
+                    {product.name}
+                  </p>
+                  {product.description && (
+                    <p className="text-xs text-text-muted mt-1.5 line-clamp-2 leading-relaxed">
                       {product.description}
                     </p>
-                  </Link>
+                  )}
+                </Link>
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                    <p className="font-bold text-brand-600">
-                      ${Number(product.price).toFixed(2)}
-                    </p>
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      disabled={cartLoading || addingProductId === product.id}
-                      className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {addingProductId === product.id ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span className="hidden sm:inline">...</span>
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart size={14} />
-                          <span className="hidden sm:inline">Agregar</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
+                {/* Footer: price + button */}
+                <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                  <p className="text-xl font-black font-display text-accent">
+                    ${Number(product.price).toFixed(2)}
+                  </p>
+                  <button
+                    onClick={() => handleAddToCart(product)}
+                    disabled={cartLoading || addingProductId === product.id}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 active:scale-95 text-white text-sm font-bold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                  >
+                    {addingProductId === product.id ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span className="hidden sm:inline">Agregando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart size={14} />
+                        <span className="hidden sm:inline">Agregar</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           ))
         ) : (
-          <div className="col-span-full text-center py-12">
-            <p className="text-text-muted">No hay productos disponibles</p>
+          <div className="col-span-full flex flex-col items-center justify-center py-20 gap-4 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-surface-alt/50">
+              <Package size={36} className="text-text-muted opacity-50" />
+            </div>
+            <p className="text-lg font-semibold text-text-primary">Sin productos disponibles</p>
+            <p className="text-sm text-text-muted">Volvé más tarde para ver nuestro catálogo</p>
           </div>
         )}
       </div>

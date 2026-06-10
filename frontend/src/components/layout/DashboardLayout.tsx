@@ -20,7 +20,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
-  const isStaff = ["cajero", "chef"].includes(user?.role?.toLowerCase() ?? "");
+  const isStaff = ["cajero", "chef", "cocina"].includes(user?.role?.toLowerCase() ?? "");
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);

@@ -51,3 +51,41 @@ The system SHALL maintain the existing DashboardLayout structure (fixed sidebar,
 #### Scenario: Layout structure unchanged
 - **WHEN** rendering any page
 - **THEN** the layout SHALL still show Topbar at top, Sidebar on left (or drawer on mobile), Breadcrumbs below Topbar, and content in max-width container
+
+## MODIFIED Requirements
+
+### Requirement: Sidebar hidden for COCINA role
+The system SHALL hide the sidebar when a user with role `cocina` is viewing any page. This gives the KDS maximum screen real estate on kitchen tablets.
+
+#### Scenario: Sidebar not rendered for cocina
+- **WHEN** a user with role `cocina` is authenticated
+- **THEN** the sidebar SHALL NOT be rendered in the DashboardLayout
+
+#### Scenario: Sidebar still visible for admin
+- **WHEN** a user with role `admin` is authenticated
+- **THEN** the sidebar SHALL still be rendered as normal
+
+### Requirement: Topbar shows KDS link
+The Topbar navigation SHALL include a link to `/cocina` for users with role `cocina`, `pedidos`, or `admin`.
+
+#### Scenario: Topbar has Cocina link for cocina role
+- **WHEN** a user with role `cocina` views the Topbar
+- **THEN** the Topbar SHALL display a navigation link labeled "Cocina" pointing to `/cocina`
+
+#### Scenario: Topbar has Cocina link for admin
+- **WHEN** a user with role `admin` views the Topbar
+- **THEN** the Topbar SHALL display a navigation link labeled "Cocina" pointing to `/cocina`
+
+### Requirement: Sidebar has KDS link for admin
+The sidebar SHALL include a "Cocina" link under the "Panel" section, visible only to users with role `admin`.
+
+#### Scenario: Admin sees Cocina link in sidebar
+- **WHEN** a user with role `admin` views the sidebar
+- **THEN** the "Panel" section SHALL include a "Cocina" link with icon ChefHat pointing to `/cocina`
+
+### Requirement: ChefPage redirects to /cocina
+The ChefPage component SHALL redirect to `/cocina` on mount, maintaining backward compatibility for bookmarks.
+
+#### Scenario: Navigating to /chef redirects
+- **WHEN** a user navigates to `/chef`
+- **THEN** the system SHALL redirect to `/cocina` using `replace: true` (no back-navigation to /chef)

@@ -28,16 +28,16 @@ describe("LoginPage", () => {
   it("renders login form with email and password inputs", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
 
-    expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /food store/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("Correo electrónico")).toBeInTheDocument();
+    expect(screen.getByLabelText("Contraseña")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /iniciar sesión/i })).toBeInTheDocument();
   });
 
   it("has a link to the registration page", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
 
-    expect(screen.getByRole("link", { name: /create one/i })).toHaveAttribute("href", "/register");
+    expect(screen.getByRole("link", { name: /registrate gratis/i })).toHaveAttribute("href", "/register");
   });
 
   it("calls login with correct credentials on submit", async () => {
@@ -48,12 +48,12 @@ describe("LoginPage", () => {
 
     render(<LoginPage />, { wrapper: createWrapper() });
 
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
+    const emailInput = screen.getByLabelText("Correo electrónico");
+    const passwordInput = screen.getByLabelText("Contraseña");
 
     await userEvent.type(emailInput, "test@example.com");
     await userEvent.type(passwordInput, "password123");
-    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    fireEvent.click(screen.getByRole("button", { name: /iniciar sesión/i }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalled();
@@ -63,20 +63,20 @@ describe("LoginPage", () => {
   it("displays error message when login fails", async () => {
     (global.fetch as any).mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ detail: "Invalid credentials" }),
+      json: async () => ({ detail: "Credenciales incorrectas" }),
     });
 
     render(<LoginPage />, { wrapper: createWrapper() });
 
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
+    const emailInput = screen.getByLabelText("Correo electrónico");
+    const passwordInput = screen.getByLabelText("Contraseña");
 
     await userEvent.type(emailInput, "test@example.com");
     await userEvent.type(passwordInput, "wrongpass");
-    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    await userEvent.click(screen.getByRole("button", { name: /iniciar sesión/i }));
 
     await waitFor(() => {
-      expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
+      expect(screen.getByText("Credenciales incorrectas")).toBeInTheDocument();
     });
   });
 
@@ -84,23 +84,23 @@ describe("LoginPage", () => {
     (global.fetch as any).mockImplementationOnce(() => new Promise(() => {}));
     render(<LoginPage />, { wrapper: createWrapper() });
 
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
+    const emailInput = screen.getByLabelText("Correo electrónico");
+    const passwordInput = screen.getByLabelText("Contraseña");
 
     await userEvent.type(emailInput, "test@example.com");
     await userEvent.type(passwordInput, "secret123");
-    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    await userEvent.click(screen.getByRole("button", { name: /iniciar sesión/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /signing in\.\.\./i })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /ingresando.../i })).toBeDisabled();
     });
   });
 
   it("form fields are required", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
 
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
+    const emailInput = screen.getByLabelText("Correo electrónico");
+    const passwordInput = screen.getByLabelText("Contraseña");
 
     expect(emailInput).toBeRequired();
     expect(passwordInput).toBeRequired();
@@ -109,12 +109,12 @@ describe("LoginPage", () => {
   it("email input has correct type", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
 
-    expect(screen.getByLabelText(/email/i)).toHaveAttribute("type", "email");
+    expect(screen.getByLabelText("Correo electrónico")).toHaveAttribute("type", "email");
   });
 
   it("password input has correct type", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
 
-    expect(screen.getByLabelText(/password/i)).toHaveAttribute("type", "password");
+    expect(screen.getByLabelText("Contraseña")).toHaveAttribute("type", "password");
   });
 });

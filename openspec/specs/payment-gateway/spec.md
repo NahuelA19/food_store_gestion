@@ -46,3 +46,24 @@ The system SHALL load Stripe configuration from environment variables.
 #### Scenario: Stripe config loaded from env
 - **WHEN** application starts
 - **THEN** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `STRIPE_PUBLISHABLE_KEY` are loaded from environment
+
+## MODIFIED Requirements
+
+### Requirement: Payment events broadcast to KDS
+The system SHALL broadcast a WebSocket event to the KDS (Kitchen Display System) whenever an order transitions to CONFIRMADO, regardless of the payment method used.
+
+#### Scenario: Card payment broadcasts CONFIRMADO event
+- **WHEN** a card payment is approved via MercadoPago SDK (`sdk.payment().create()`)
+- **THEN** after the order transitions from PENDIENTE to CONFIRMADO
+- **AND** the system SHALL call `broadcast_cocina_transition()` with the order ID, previous state, and new state
+- **AND** all connected KDS WebSocket clients SHALL receive the PEDIDO_CONFIRMADO event
+
+#### Scenario: Webhook IPN broadcasts CONFIRMADO event
+- **WHEN** MercadoPago sends an IPN notification with status `approved` to `POST /api/v1/pagos/webhook`
+- **THEN** after the order transitions from PENDIENTE to CONFIRMADO
+- **AND** the system SHALL call `broadcast_cocina_transition()` to notify KDS clients
+
+#### Scenario: Simulated payment broadcasts CONFIRMADO event
+- **WHEN** the simulated payment endpoint is called for testing
+- **THEN** after the order transitions from PENDIENTE to CONFIRMADO
+- **AND** the system SHALL call `broadcast_cocina_transition()` to notify KDS clients

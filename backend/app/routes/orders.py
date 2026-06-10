@@ -17,6 +17,7 @@ from app.schemas.order import (
     OrderListResponse,
     OrderStatusUpdate,
 )
+from app.services.cocina_events import broadcast_cocina_transition
 from app.services.order_service import (
     cancel_order,
     get_order_detail,
@@ -32,10 +33,12 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 
 # States each role is allowed to transition to (FSM códigos en UPPERCASE)
 # Chef:   CONFIRMADO→EN_PREP, EN_PREP→LISTO
+# Cocina: CONFIRMADO→EN_PREP, EN_PREP→EN_CAMINO (directo a despacho, feature pack D-2)
 # Cajero: LISTO→EN_CAMINO, EN_CAMINO→ENTREGADO, cualquier→CANCELADO
 #         (PENDIENTE→CONFIRMADO es exclusivo del endpoint pay-cash)
-_CAJERO_ALLOWED_STATES = {"EN_CAMINO", "ENTREGADO", "CANCELADO"}
-_CHEF_ALLOWED_STATES   = {"EN_PREP", "LISTO"}
+_CAJERO_ALLOWED_STATES  = {"EN_CAMINO", "ENTREGADO", "CANCELADO"}
+_CHEF_ALLOWED_STATES    = {"EN_PREP", "LISTO"}
+_COCINA_ALLOWED_STATES  = {"EN_PREP", "EN_CAMINO"}
 
 
 @router.get("/", response_model=OrderListResponse)
@@ -108,7 +111,7 @@ async def update_status(
     uow: UnitOfWork = Depends(get_uow),
     websocket_manager = Depends(get_websocket_manager),
 ) -> OrderDetailResponse:
-    """Update order status (admin, cajero, or chef). Validates status transitions and role permissions."""
+    """Update order status (admin, cajero, chef, or cocina). Validates status transitions and role permissions."""
     from app.services.order_service import _STATUS_TO_FSM
 
     role = current_user.role.lower()
@@ -131,6 +134,12 @@ async def update_status(
                 detail=f"Cocinero no puede cambiar el estado a '{body.status}'. "
                        f"Estados permitidos: {sorted(_CHEF_ALLOWED_STATES)}",
             )
+        if role == "cocina" and _fsm_target not in _COCINA_ALLOWED_STATES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Cocinero no puede cambiar el estado a '{body.status}'. "
+                       f"Estados permitidos: {sorted(_COCINA_ALLOWED_STATES)}",
+            )
 
     try:
         new_status = OrderStatus(body.status)
@@ -139,6 +148,11 @@ async def update_status(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid status: '{body.status}'. Valid values: {[s.value for s in OrderStatus]}",
         )
+
+    # Capturar estado anterior antes de la transición para el evento
+    result = await uow.session.execute(select(Order).where(Order.id == order_id))
+    order_before = result.scalar_one_or_none()
+    old_estado = order_before.estado_codigo if order_before else None
 
     order = await update_order_status(
         order_id=order_id,
@@ -151,6 +165,16 @@ async def update_status(
         "Order status updated: order_id=%s, new_status=%s, by=%s",
         order_id, body.status, current_user.id,
     )
+
+    # Broadcast evento de cocina si aplica (RN-CO05, RN-CO06)
+    from app.services.order_service import _STATUS_TO_FSM
+    nuevo_fsm = _STATUS_TO_FSM.get(new_status, body.status.upper())
+    await broadcast_cocina_transition(
+        order_id=order.id,
+        estado_anterior=old_estado,
+        nuevo_estado=nuevo_fsm if nuevo_fsm else order.estado_codigo,
+    )
+
     return await get_order_detail(
         order_id=order.id,
         user_id=current_user.id,
@@ -189,6 +213,7 @@ async def pay_cash(
             detail=f"El pedido ya fue procesado (payment_status={payment_status_value})",
         )
 
+    old_estado = order.estado_codigo
     await transition(
         order,
         "CONFIRMADO",
@@ -202,6 +227,14 @@ async def pay_cash(
     await uow.commit()
 
     logger.info("Cash payment registered: order_id=%s, by=%s", order_id, current_user.id)
+
+    # Broadcast PEDIDO_CONFIRMADO a las pantallas de cocina (RN-CO05)
+    await broadcast_cocina_transition(
+        order_id=order.id,
+        estado_anterior=old_estado,
+        nuevo_estado="CONFIRMADO",
+    )
+
     return await get_order_detail(order_id=order.id, user_id=current_user.id, uow=uow, is_admin=True)
 
 

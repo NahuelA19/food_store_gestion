@@ -33,11 +33,11 @@ class TestSeedFunctions:
         estados = result.scalars().all()
 
         # Verify we have exactly 6 states
-        assert len(estados) == 6
+        assert len(estados) == 7
 
         # Verify all expected states exist
         estado_codigos = {e.codigo for e in estados}
-        expected_codigos = {"PENDIENTE", "CONFIRMADO", "EN_PREP", "EN_CAMINO", "ENTREGADO", "CANCELADO"}
+        expected_codigos = {"PENDIENTE", "CONFIRMADO", "EN_PREP", "LISTO", "EN_CAMINO", "ENTREGADO", "CANCELADO"}
         assert estado_codigos == expected_codigos
 
     async def test_seed_estados_pedido_marks_terminal_states(
@@ -58,7 +58,7 @@ class TestSeedFunctions:
         assert terminal_estados == {"ENTREGADO", "CANCELADO"}
 
         # Verify non-terminal states
-        assert non_terminal_estados == {"PENDIENTE", "CONFIRMADO", "EN_PREP", "EN_CAMINO"}
+        assert non_terminal_estados == {"PENDIENTE", "CONFIRMADO", "EN_PREP", "LISTO", "EN_CAMINO"}
 
     async def test_seed_formas_pago_creates_three_payment_methods(
         self, db_session: AsyncSession
@@ -102,11 +102,11 @@ class TestSeedFunctions:
         roles = result.scalars().all()
 
         # Verify we have exactly 4 roles
-        assert len(roles) == 4
+        assert len(roles) == 5
 
         # Verify expected role codes
         role_codigos = {r.codigo for r in roles}
-        expected_codigos = {"ADMIN", "STOCK", "PEDIDOS", "CLIENT"}
+        expected_codigos = {"ADMIN", "CAJERO", "CHEF", "COCINA", "CLIENT"}
         assert role_codigos == expected_codigos
 
     async def test_seed_roles_have_descriptions(
@@ -184,7 +184,7 @@ class TestSeedFunctions:
         # Verify we still have exactly 6 estados (not 12)
         result = await db_session.execute(select(EstadoPedido))
         estados = result.scalars().all()
-        assert len(estados) == 6
+        assert len(estados) == 7
 
     async def test_run_seeds_complete_flow(
         self, db_session: AsyncSession
@@ -205,7 +205,7 @@ class TestSeedFunctions:
         ).scalars().first()
 
         # Verify counts
-        assert len(estados) == 6
+        assert len(estados) == 7
         assert len(formas) == 3
-        assert len(roles) == 4
+        assert len(roles) == 5
         assert admin is not None

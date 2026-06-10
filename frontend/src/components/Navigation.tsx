@@ -64,10 +64,10 @@ export function Navigation() {
           className="flex items-center gap-2.5 shrink-0"
           onClick={closeMobile}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 text-white shadow-sm">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-accent text-white shadow-md shadow-brand-500/25">
             <Icon icon={Store} size={IconSize.sm} />
           </div>
-          <span className="font-display text-xl font-bold tracking-tight text-text-primary hidden sm:block">
+          <span className="font-display text-xl font-bold tracking-tight hidden sm:block" style={{ background: 'linear-gradient(135deg, #818cf8, #0ea5a5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
             Food Store
           </span>
         </Link>

@@ -18,7 +18,7 @@ vi.mock('../context/ThemeContext', () => ({
 // Mock localStorage to return a valid token for authenticated state
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { id: 1, email: 'test@example.com' },
+    user: { id: 1, email: 'test@example.com', role: 'admin' },
     isAuthenticated: true,
     isLoading: false,
     error: null,
@@ -26,6 +26,17 @@ vi.mock('../hooks/useAuth', () => ({
     register: vi.fn(),
     logout: vi.fn(),
   }),
+}));
+
+vi.mock('../store/authStore', () => ({
+  useAuthStore: vi.fn().mockImplementation((selector) => {
+    const state = {
+      user: { id: 1, email: 'test@example.com', role: 'admin' },
+      isAuthenticated: true,
+      accessToken: 'token',
+    };
+    return selector ? selector(state) : state;
+  })
 }));
 
 // Mock CartContext — Navigation renders CartBadge which uses useCartContext

@@ -17,6 +17,7 @@ from app.config import Settings
 from app.core.uow import UnitOfWork
 from app.models.order import Order, PaymentStatus
 from app.models.pago import Pago
+from app.services.cocina_events import broadcast_cocina_transition
 from app.services.order_service import transition
 
 logger = logging.getLogger(__name__)
@@ -177,12 +178,19 @@ async def process_card_payment(
 
     # Only approved card payments trigger the FSM transition.
     if mp_status == "approved" and order.estado_codigo == "PENDIENTE":
+        old_estado = order.estado_codigo
         await transition(
             order,
             "CONFIRMADO",
             usuario_id=None,
             session=uow.session,
             motivo="Pago con tarjeta confirmado",
+        )
+        # Broadcast a las pantallas de cocina (RN-CO05)
+        await broadcast_cocina_transition(
+            order_id=order.id,
+            estado_anterior=old_estado,
+            nuevo_estado="CONFIRMADO",
         )
 
     # Store payment record
@@ -412,12 +420,19 @@ async def handle_ipn(
         # Only approved payments trigger the FSM transition.
         # Guard against double-processing if already confirmed.
         if order.estado_codigo == "PENDIENTE":
+            old_estado = order.estado_codigo
             await transition(
                 order,
                 "CONFIRMADO",
                 usuario_id=None,
                 session=uow.session,
                 motivo="Pago confirmado vía MercadoPago",
+            )
+            # Broadcast a las pantallas de cocina (RN-CO05)
+            await broadcast_cocina_transition(
+                order_id=order.id,
+                estado_anterior=old_estado,
+                nuevo_estado="CONFIRMADO",
             )
         order.payment_status = PaymentStatus.APPROVED
         order.paid_at = datetime.now(timezone.utc)

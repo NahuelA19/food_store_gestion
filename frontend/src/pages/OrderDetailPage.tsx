@@ -190,7 +190,7 @@ export function OrderDetailPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in">
       {/* Back link */}
       <Link
         to="/orders"

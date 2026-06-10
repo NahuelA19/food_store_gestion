@@ -248,6 +248,15 @@ export function Topbar({ onMenuToggle, showMenuButton = false }: TopbarProps) {
             <span className="hidden sm:inline">Cocina</span>
           </Link>
         )}
+        {isAuthenticated && ["cocina", "pedidos", "admin"].includes(user?.role?.toLowerCase() ?? "") && (
+          <Link
+            to="/cocina"
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-card px-3 py-2 text-sm font-semibold text-text-primary hover:border-brand-300 transition-all duration-200"
+          >
+            <Icon icon={ChefHat} size={16} />
+            <span className="hidden sm:inline">KDS</span>
+          </Link>
+        )}
 
         {/* Theme toggle */}
         <button

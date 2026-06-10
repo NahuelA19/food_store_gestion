@@ -12,6 +12,7 @@ from app.config import Settings
 from app.core.uow import UnitOfWork
 from app.dependencies import get_current_user, get_settings, get_uow
 from app.models.order import Order
+from app.services.cocina_events import broadcast_cocina_transition
 from app.models.user import User
 from app.models.pago import Pago
 from app.services.order_service import transition
@@ -304,6 +305,8 @@ async def simulate_payment(
         )
     
     try:
+        old_estado = order.estado_codigo
+
         # Transition order to CONFIRMADO (approved)
         await transition(
             order,
@@ -311,6 +314,13 @@ async def simulate_payment(
             usuario_id=current_user.id,
             session=uow.session,
             motivo="Pago simulado para pruebas",
+        )
+
+        # Broadcast a las pantallas de cocina (RN-CO05)
+        await broadcast_cocina_transition(
+            order_id=order.id,
+            estado_anterior=old_estado,
+            nuevo_estado="CONFIRMADO",
         )
 
         # Mark payment as succeeded and record timestamp

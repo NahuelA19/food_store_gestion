@@ -145,8 +145,9 @@ export function CartPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[300px] items-center justify-center">
-        <p className="text-lg text-text-muted">Loading...</p>
+      <div className="flex min-h-[300px] items-center justify-center gap-3">
+        <div className="h-6 w-6 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+        <p className="text-base font-semibold text-text-muted">Cargando carrito...</p>
       </div>
     );
   }
@@ -156,15 +157,15 @@ export function CartPage() {
       <div className="mx-auto max-w-lg px-6 py-12" role="alert">
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-            <h2 className="text-xl font-bold text-danger">Something went wrong</h2>
+            <h2 className="text-xl font-bold text-danger">Algo salió mal</h2>
             <p className="text-text-muted">{error}</p>
             <div className="flex gap-2">
-              <Button onClick={() => window.location.reload()}>Try Again</Button>
+              <Button onClick={() => window.location.reload()}>Reintentar</Button>
               <Link
                 to="/products"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-border bg-surface-card px-4 py-2 text-sm font-semibold text-text-primary transition-all hover:bg-surface-alt"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-text-primary transition-all hover:bg-white/10"
               >
-                Continue Shopping
+                Ver productos
               </Link>
             </div>
           </CardContent>
@@ -178,14 +179,21 @@ export function CartPage() {
   // but we still need to show the payment form (currentOrderId is set).
   if (items.length === 0 && !currentOrderId) {
     return (
-      <div className="flex flex-col items-center gap-4 px-6 py-16 text-center">
-        <Icon icon={ShoppingBag} size={48} className="text-text-muted opacity-60" />
-        <h2 className="text-xl font-bold text-primary">Tu carrito está vacío</h2>
-        <p className="text-text-muted">Agregá productos desde nuestra tienda</p>
+      <div className="flex flex-col items-center gap-5 px-6 py-20 text-center animate-fade-in">
+        <div className="relative">
+          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-brand-600/10 border border-brand-600/20">
+            <Icon icon={ShoppingBag} size={44} className="text-brand-400 opacity-70" />
+          </div>
+        </div>
+        <div>
+          <h2 className="text-xl font-display font-bold text-text-primary">Tu carrito está vacío</h2>
+          <p className="text-sm text-text-muted mt-1.5">Explorá nuestro catálogo y encontrá algo rico</p>
+        </div>
         <Link
           to="/products"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-[color:var(--color-primary)] text-[color:var(--color-text-on-brand)] shadow-sm hover:bg-[color:var(--color-primary-hover)] hover:shadow-md active:scale-[0.98] px-8 py-3 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-brand-500)] focus-visible:ring-offset-2"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 active:scale-95 text-white shadow-md px-8 py-3 text-sm font-bold transition-all duration-200"
         >
+          <Icon icon={ShoppingBag} size={16} />
           Ver productos
         </Link>
       </div>
@@ -232,14 +240,16 @@ export function CartPage() {
               key={item.id}
               variant="bordered"
               role="group"
-              aria-label={`Item: ${item.product_name || `Product ${item.product_id}`}`}
+              aria-label={`Item: ${item.product_name || `Producto ${item.product_id}`}`}
             >
               <CardContent className="flex flex-wrap items-center gap-4 p-4">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <Icon icon={Package} size={32} className="shrink-0 text-text-muted" />
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600/10 border border-brand-600/15">
+                    <Icon icon={Package} size={22} className="text-brand-400" />
+                  </div>
                   <div className="min-w-0">
                     <h3 className="truncate text-base font-semibold text-primary">
-                      {item.product_name || `Product #${item.product_id}`}
+                      {item.product_name || `Producto #${item.product_id}`}
                     </h3>
                     <p className="text-sm text-text-muted">
                       ${Number(item.unit_price).toFixed(2)} c/u
@@ -363,13 +373,12 @@ export function CartPage() {
                   </div>
                 )}
 
-                <div className="flex flex-col gap-2">
-                  <Button
-                    variant="default"
-                    size="lg"
-                    className="w-full gap-2"
+                <div className="flex flex-col gap-2.5">
+                  {/* MercadoPago */}
+                  <button
                     disabled={!shippingAddress.trim() || isProcessing}
                     onClick={handleMpCheckout}
+                    className="w-full flex items-center justify-center gap-2 h-12 rounded-xl font-bold text-sm text-white bg-[#009ee3] hover:bg-[#0090d0] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     {isProcessing ? (
                       <Icon icon={Loader2} size={18} className="animate-spin" />
@@ -377,14 +386,13 @@ export function CartPage() {
                       <Icon icon={CreditCard} size={18} />
                     )}
                     {isProcessing ? "Procesando..." : "Pagar con MercadoPago"}
-                  </Button>
+                  </button>
 
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full gap-2"
+                  {/* Tarjeta */}
+                  <button
                     disabled={!shippingAddress.trim() || isProcessing}
                     onClick={handleCardCheckout}
+                    className="w-full flex items-center justify-center gap-2 h-12 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     {isProcessing ? (
                       <Icon icon={Loader2} size={18} className="animate-spin" />
@@ -392,14 +400,13 @@ export function CartPage() {
                       <Icon icon={Landmark} size={18} />
                     )}
                     Pagar con Tarjeta
-                  </Button>
+                  </button>
 
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full gap-2"
+                  {/* Efectivo */}
+                  <button
                     disabled={!shippingAddress.trim() || isProcessing}
                     onClick={handleCashCheckout}
+                    className="w-full flex items-center justify-center gap-2 h-12 rounded-xl font-bold text-sm text-white bg-amber-600 hover:bg-amber-500 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     {isProcessing ? (
                       <Icon icon={Loader2} size={18} className="animate-spin" />
@@ -407,12 +414,12 @@ export function CartPage() {
                       <Icon icon={Banknote} size={18} />
                     )}
                     Pagar en efectivo
-                  </Button>
+                  </button>
                 </div>
 
                 <Link
                   to="/products"
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-border bg-surface-card px-4 py-3 text-sm font-semibold text-text-primary transition-all hover:bg-surface-alt"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-text-primary transition-all hover:bg-white/10"
                 >
                   <Icon icon={ArrowLeft} size={16} />
                   Seguir comprando

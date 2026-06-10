@@ -30,22 +30,29 @@ export function WishlistPage() {
 
   return (
     <div className="animate-fade-in mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <Heart size={28} className="fill-red-500 text-red-500" />
-            <h1 className="font-display text-3xl font-bold text-text-primary">
-              Mis Favoritos
-            </h1>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 border border-red-500/20">
+              <Heart size={22} className="fill-red-400 text-red-400 animate-[status-pulse_2s_ease-in-out_infinite]" />
+            </div>
+            <div>
+              <h1 className="font-display text-2xl font-bold text-text-primary">
+                Mis Favoritos
+              </h1>
+              <p className="text-sm text-text-muted">
+                {count > 0
+                  ? `${count} ${count === 1 ? "producto guardado" : "productos guardados"}`
+                  : "Sin favoritos todavía"}
+              </p>
+            </div>
           </div>
-          <p className="mt-1 text-text-muted">
-            {count} {count === 1 ? "producto guardado" : "productos guardados"}
-          </p>
         </div>
         <Link to="/products">
-          <Button variant="outline">
+          <Button variant="outline" size="sm">
             <Icon icon={ArrowLeft} size={16} />
-            Ver productos
+            Ver catálogo
           </Button>
         </Link>
       </div>
@@ -64,18 +71,22 @@ export function WishlistPage() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <Heart size={64} className="mb-4 text-gray-300 dark:text-gray-600" />
-          <h2 className="mb-2 font-display text-2xl font-bold text-text-primary">
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="relative mb-6">
+            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-red-500/10 border border-red-500/20">
+              <Heart size={44} className="text-red-400/50" />
+            </div>
+          </div>
+          <h2 className="mb-2 font-display text-xl font-bold text-text-primary">
             Todavía no tenés favoritos
           </h2>
-          <p className="mb-8 max-w-md text-text-muted">
+          <p className="mb-8 max-w-sm text-sm text-text-muted">
             Explorá los productos y hacé clic en el corazón para guardar tus favoritos.
           </p>
           <Link to="/products">
-            <Button variant="default" size="lg">
+            <Button variant="default" size="lg" className="gap-2">
               <Icon icon={ShoppingBag} size={18} />
-              Ver productos
+              Explorar productos
             </Button>
           </Link>
         </div>

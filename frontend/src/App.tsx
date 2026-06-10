@@ -33,11 +33,27 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { SettingsPage } from "./pages/SettingsPage";
 import { CajeroPage } from "./pages/CajeroPage";
 import { ChefPage } from "./pages/ChefPage";
+import { CocinaPage } from "./pages/CocinaPage";
+import { StoreLayout } from "./components/layout/StoreLayout";
+import { useAuthStore } from "./store/authStore";
+
+function RootLayout({ children }: { children: React.ReactNode }) {
+  const user = useAuthStore((s) => s.user);
+  const isAdminOrStaff = 
+    user?.role === "admin" || 
+    ["cajero", "chef", "cocina", "pedidos"].includes(user?.role?.toLowerCase() ?? "");
+
+  if (isAdminOrStaff) {
+    return <DashboardLayout>{children}</DashboardLayout>;
+  }
+  
+  return <StoreLayout>{children}</StoreLayout>;
+}
 
 function App() {
   return (
     <BrowserRouter>
-        <DashboardLayout>
+        <RootLayout>
           <Routes>
             <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
@@ -199,8 +215,16 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/cocina"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "cocina", "pedidos", "chef", "cajero"]}>
+                  <CocinaPage />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
-        </DashboardLayout>
+        </RootLayout>
     </BrowserRouter>
   );
 }
