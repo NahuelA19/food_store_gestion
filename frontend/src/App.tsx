@@ -33,7 +33,6 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { SettingsPage } from "./pages/SettingsPage";
 import { CajeroPage } from "./pages/CajeroPage";
 import { ChefPage } from "./pages/ChefPage";
-import { CocinaPage } from "./pages/CocinaPage";
 import { StoreLayout } from "./components/layout/StoreLayout";
 import { useAuthStore } from "./store/authStore";
 
@@ -212,14 +211,6 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["admin", "chef", "cocina"]}>
                   <ChefPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/cocina"
-              element={
-                <ProtectedRoute allowedRoles={["admin", "cocina", "pedidos", "chef", "cajero"]}>
-                  <CocinaPage />
                 </ProtectedRoute>
               }
             />
